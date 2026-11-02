@@ -73,6 +73,7 @@
 - 앉기(E 또는 "앉기" 버튼): 벤치 2.2m 안이면 벤치로 걸어가 앉고, 아니면 그 자리 바닥에. 걷는 중에 누르면 도착 지점에서 앉음. 벤치를 클릭해도 앉으러 감. 움직이면 일어남(`sitAt`, `sitQueued`, 포즈 `sitGround`/`sitBench`)
 - 메뉴 숨기기(사진·영상용): "메뉴 숨기기" 버튼 또는 H. `body.clean`이 상·하단 UI를 숨기고, 오른쪽 위 "메뉴 보기" 버튼만 2.5초 뒤 투명해짐(마우스·터치·키 입력 시 다시 보임). 이름표는 별도 토글 그대로
 - BGM: 코드로 합성하는 2곡(`MUSIC.TRACKS`: 오르골 소풍 / 노을 로파이. 우쿨렐레 왈츠는 사용자 선호로 뺌). 입장 시 시작(브라우저 자동재생 정책 때문에 클릭 후에만 소리 가능), "♪ BGM 켜짐/꺼짐" 버튼·M 키로 토글, 곡 이름 버튼으로 다음 곡. 탭이 숨겨지면 일시정지
+  - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
 - localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`
 
 ## 좌표·포즈 규약

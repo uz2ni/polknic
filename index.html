@@ -1624,8 +1624,27 @@ try { bgmOn = localStorage.getItem('pole-bgm') !== '0'; const t = localStorage.g
 const bgmTog = document.getElementById('bgmTog');
 const bgmTrackBtn = document.getElementById('bgmTrack');
 function syncBgm(){ bgmTog.setAttribute('aria-pressed', String(bgmOn)); bgmTog.textContent = bgmOn ? '♪ BGM 켜짐' : '♪ BGM 꺼짐'; bgmTrackBtn.textContent = MUSIC.TRACKS[bgmTrack].name + ' ›'; }
+// iPhone (Safari, and Chrome/KakaoTalk which use the same engine) mutes Web Audio while the ring/silent switch
+// is on. Declaring the page as music playback lifts that: the audioSession API on iOS 17+, and on older iOS
+// a looping silent <audio> element started from the same tap, which switches the page into playback mode.
+let silentLoop = null;
+function unmuteIOS(){
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (!/iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return;
+  if (!silentLoop){
+    const n = 4000, buf = new Uint8Array(44 + n), v = new DataView(buf.buffer);   // 0.5 s of 8 kHz 8-bit silence
+    [...'RIFF'].forEach((c, i) => buf[i] = c.charCodeAt(0)); v.setUint32(4, 36 + n, true);
+    [...'WAVEfmt '].forEach((c, i) => buf[8 + i] = c.charCodeAt(0)); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    [...'data'].forEach((c, i) => buf[36 + i] = c.charCodeAt(0)); v.setUint32(40, n, true); buf.fill(128, 44);
+    silentLoop = new Audio('data:audio/wav;base64,' + btoa(String.fromCharCode(...buf)));
+    silentLoop.loop = true; silentLoop.setAttribute('playsinline', '');
+  }
+  silentLoop.play().catch(() => {});
+}
 function startMusic(){
   try {
+    unmuteIOS();
     if (!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); music = MUSIC.create(audioCtx, audioCtx.destination, bgmTrack); }
     audioCtx.resume(); music.start();
   } catch (e) {}
@@ -1633,7 +1652,7 @@ function startMusic(){
 function setBgm(on){
   bgmOn = on; syncBgm();
   try { localStorage.setItem('pole-bgm', on ? '1' : '0'); } catch (e) {}
-  if (on) startMusic(); else if (music) music.stop();
+  if (on) startMusic(); else { if (music) music.stop(); if (silentLoop) silentLoop.pause(); }
 }
 bgmTog.addEventListener('click', () => setBgm(!bgmOn));
 bgmTrackBtn.addEventListener('click', () => {   // cycle through the songs; picking one also turns music on
@@ -1643,7 +1662,11 @@ bgmTrackBtn.addEventListener('click', () => {   // cycle through the songs; pick
   if (!bgmOn) setBgm(true); else { syncBgm(); startMusic(); }
 });
 syncBgm();
-document.addEventListener('visibilitychange', () => { if (!audioCtx) return; if (document.hidden) audioCtx.suspend(); else if (bgmOn) audioCtx.resume(); });
+document.addEventListener('visibilitychange', () => {
+  if (!audioCtx) return;
+  if (document.hidden){ audioCtx.suspend(); if (silentLoop) silentLoop.pause(); }
+  else if (bgmOn){ audioCtx.resume(); if (silentLoop) silentLoop.play().catch(() => {}); }
+});
 window.__music = MUSIC;   // offline preview hook
 
 // photo mode: hide the menus so people can take clean screenshots and recordings
