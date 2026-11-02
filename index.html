@@ -13,6 +13,21 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+// Google Analytics 4: put the measurement ID (G-...) in GA_ID to turn tracking on.
+// Nothing is sent while it is empty, and local test hosts are never counted. Nicknames are never sent.
+window.GA_ID = '';
+window.polkTrack = function(){};
+(function(){
+  var id = window.GA_ID, h = location.hostname;
+  if (!id || location.protocol === 'file:' || h === 'localhost' || h === '127.0.0.1' || /\.local$/.test(h)) return;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ dataLayer.push(arguments); };
+  gtag('js', new Date()); gtag('config', id);
+  var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id; document.head.appendChild(s);
+  window.polkTrack = function(name, params){ gtag('event', name, params || {}); };
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
@@ -1182,7 +1197,12 @@ function rebase(pos, rotY){
   char.position.copy(tmpWP.sub(holder.position).applyQuaternion(inv));
   char.quaternion.copy(inv.multiply(tmpWQ));
 }
-function setPose(name){ poseName = name; poseStart = clock; poseYaw = yaw; if (POSES[name].emote) showEmote(POSES[name].emote); updateUI(); }
+function setPose(name){
+  poseName = name; poseStart = clock; poseYaw = yaw;
+  if (POSES[name].emote) showEmote(POSES[name].emote);
+  if (MOVE_ORDER.includes(name)) polkTrack('pose_start', { pose:name });
+  updateUI();
+}
 function startMove(name){
   if (mode === 'pole'){ pendingLeave = null; setPose(name); return; }
   standUp(); sitQueued = null;
@@ -1225,6 +1245,7 @@ const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z
 let sitAt = null, sitQueued = null;   // null | 'ground' | a bench
 const benchFront = b => new V3(b.x + Math.sin(b.rot)*0.95, 0, b.z + Math.cos(b.rot)*0.95);
 function sitDown(target){
+  polkTrack('sit', { spot: target === 'ground' ? 'ground' : 'bench' });
   walkTarget = null; sitQueued = null;
   if (target === 'ground'){ sitAt = 'ground'; setPose('sitGround'); return; }
   rebase(new V3(target.x, 0, target.z), target.rot);
@@ -1497,7 +1518,7 @@ FACES.forEach(([v, label]) => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'face'; b.textContent = label; b.dataset.v = v; b.id = 'face-' + v;
   b.addEventListener('click', () => {
-    faceMode = v; blinking = 0;
+    faceMode = v; blinking = 0; polkTrack('face_change', { face:v });
     if (FACE_EMOTE[v]) showEmote(FACE_EMOTE[v]);
     try { localStorage.setItem('pole-face', v); } catch (e) {}
     syncFaces();
@@ -1652,6 +1673,7 @@ function startMusic(){
   } catch (e) {}
 }
 function setBgm(on){
+  polkTrack('bgm_toggle', { on });
   bgmOn = on; syncBgm();
   try { localStorage.setItem('pole-bgm', on ? '1' : '0'); } catch (e) {}
   if (on) startMusic(); else { if (music) music.stop(); if (silentLoop) silentLoop.pause(); }
@@ -1659,6 +1681,7 @@ function setBgm(on){
 bgmTog.addEventListener('click', () => setBgm(!bgmOn));
 bgmTrackBtn.addEventListener('click', () => {   // cycle through the songs; picking one also turns music on
   bgmTrack = TRACK_IDS[(TRACK_IDS.indexOf(bgmTrack) + 1) % TRACK_IDS.length];
+  polkTrack('bgm_track', { track:bgmTrack });
   try { localStorage.setItem('pole-bgm-track', bgmTrack); } catch (e) {}
   if (music) music.setTrack(bgmTrack);
   if (!bgmOn) setBgm(true); else { syncBgm(); startMusic(); }
@@ -1680,6 +1703,7 @@ function wakeShowBtn(){
   clearTimeout(idleTimer); idleTimer = setTimeout(() => uiShow.classList.add('idle'), 2500);
 }
 function setClean(on){
+  polkTrack('photo_mode', { on });
   document.body.classList.toggle('clean', on);
   uiShow.hidden = !on;
   if (on){ wakeShowBtn(); canvas.focus && canvas.blur(); } else clearTimeout(idleTimer);
@@ -1694,6 +1718,7 @@ document.getElementById('entryForm').addEventListener('submit', e => {
   e.preventDefault();
   const v = cleanName(nameInput.value);
   if (!v){ nameErr.textContent = '닉네임을 입력해주세요'; nameInput.focus(); return; }
+  polkTrack('enter_game', { returning: !!playerName });
   setName(v); entry.hidden = true; nameInput.blur();
   if (bgmOn) startMusic();
 });
@@ -1729,7 +1754,7 @@ document.querySelectorAll('.chips').forEach(el => {
   OPTIONS[key].forEach(([v, label]) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'chip'; b.textContent = label; b.dataset.v = v; b.id = `opt-${key}-${v}`;
-    b.addEventListener('click', () => { outfit[key] = v; applyOutfit(); });
+    b.addEventListener('click', () => { outfit[key] = v; applyOutfit(); polkTrack('outfit_change', { slot:key, value:v }); });
     el.appendChild(b);
   });
 });
@@ -1739,7 +1764,7 @@ document.querySelectorAll('.sw').forEach(el => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'swatch'; b.style.background = v; b.dataset.v = v; b.title = label; b.id = `sw-${key}-${v.slice(1)}`;
     b.setAttribute('aria-label', label);
-    b.addEventListener('click', () => { outfit[key] = v; applyOutfit(); });
+    b.addEventListener('click', () => { outfit[key] = v; applyOutfit(); polkTrack('outfit_change', { slot:key, value:v }); });
     el.appendChild(b);
   });
 });
