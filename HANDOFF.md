@@ -1,7 +1,7 @@
 # 야외 폴 연습장 — Claude Code 인계 문서
 
 브라우저에서 동작하는 3D 폴댄스 연습 공간 프로토타입. 서버 없이 혼자 접속해서 쓰는 단계까지 완성되어 있음.
-현재 결과물은 단일 파일 `online-poledance.html` (같이 전달). 이 문서는 그 파일의 구조, 설계 결정, 알려진 한계, 다음 작업을 정리한 것.
+현재 결과물은 단일 파일 `index.html` (같이 전달). 이 문서는 그 파일의 구조, 설계 결정, 알려진 한계, 다음 작업을 정리한 것.
 
 ---
 
@@ -24,7 +24,7 @@
 - 폰트: Google Fonts `Nanum Myeongjo`(타이틀), `IBM Plex Sans KR`(본문)
 - 현재 claude.ai Artifact로 배포 중. Artifact 환경 제약: CDN 화이트리스트(cdnjs, jsdelivr, unpkg), 외부 fetch 불가. 자체 호스팅으로 옮기면 이 제약은 사라짐
 
-## 3. 파일 구조 (`online-poledance.html` 위에서 아래 순서)
+## 3. 파일 구조 (`index.html` 위에서 아래 순서)
 
 | 블록 | 내용 |
 |---|---|
@@ -151,7 +151,7 @@ roam ──(동작 버튼/숫자키)──▶ approach ──(폴 0.34m 지점 �
 ```bash
 # three r128을 로컬로 받고, CDN 주소를 로컬 경로로 바꾼 테스트 사본 생성
 npm pack three@0.128.0 && tar xzf three-0.128.0.tgz
-sed 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#package/build/three.min.js#' online-poledance.html > test.html
+sed 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#package/build/three.min.js#' index.html > test.html
 # doctype/html/body로 감싸고 UI 숨기는 CSS(.hud,#wardrobe,.brand{display:none}) 추가 후 렌더
 ```
 - Chrome 실행 인자: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`
@@ -188,7 +188,7 @@ sed 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#package
 ## 12. Claude Code에 줄 첫 지시 예시
 
 ```
-HANDOFF.md와 online-poledance.html을 읽고, 동작은 그대로 유지한 채
+HANDOFF.md와 index.html을 읽고, 동작은 그대로 유지한 채
 Vite + three.js 최신 버전 프로젝트로 모듈 분리해줘.
 - r128 전용 API(LuminanceFormat, outputEncoding, convertSRGBToLinear 등)는 최신 API로 교체
 - 분리 후 헤드리스 크롬으로 5개 포즈 스크린샷을 찍어 이전 버전과 비교

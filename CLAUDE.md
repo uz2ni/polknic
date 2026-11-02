@@ -11,10 +11,11 @@
 
 ## 현재 상태
 
-- 결과물은 단일 파일 [online-poledance.html](online-poledance.html) (~1430줄, CSS/JS 인라인, 빌드 없음)
-  - HANDOFF.md에서 `pole-studio.html`이라고 부르는 파일이 바로 이것 (이름만 다름)
+- 결과물은 단일 파일 [index.html](index.html) (~1430줄, CSS/JS 인라인, 빌드 없음)
+  - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
   - 1번째 줄의 `<!doctype>...<body>` + 기본 `<style>`은 claude.ai Artifact 배포 시 씌워진 래퍼. 실제 페이지는 `<title>`부터
-- git 저장소 아님. 큰 변경 전에 `git init` 여부를 사용자에게 확인할 것
+- git: GitHub `uz2ni/pole-3d`(공개). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://uz2ni.github.io/pole-3d/
+  - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
 - 사용자 주력 스택: Java / Spring Boot (멀티플레이 백엔드는 나중에 Spring WebSocket 예정)
 - 문서·UI 텍스트·커밋 메시지는 한국어
 
@@ -27,7 +28,7 @@
 - 폰트: Google Fonts `Jua`(타이틀·동작 버튼), `IBM Plex Sans KR`(본문)
 - Artifact로 배포하는 동안은 CDN 화이트리스트(cdnjs / jsdelivr / unpkg)만 가능, 외부 fetch 불가
 
-## 코드 지도 (online-poledance.html, 위→아래)
+## 코드 지도 (index.html, 위→아래)
 
 | 대략 줄 | 블록 |
 |---|---|
@@ -87,11 +88,11 @@
 
 포즈·외형을 바꾸면 반드시 렌더링해서 눈으로 확인한다(코드만 보고 "됐다"고 하지 말 것).
 
-- 빠른 확인: `.claude/launch.json`의 `static`(python http.server, 5173)으로 띄우고 Browser pane에서 `http://localhost:5173/online-poledance.html`을 열어 `__poleDebug` 사용
+- 빠른 확인: `.claude/launch.json`의 `static`(python http.server, 5173)으로 띄우고 Browser pane에서 `http://localhost:5173/index.html`을 열어 `__poleDebug` 사용
 - 헤드리스 비교: three r128을 로컬로 받아 CDN 경로 치환한 사본으로 Playwright 스크린샷
   ```bash
   npm pack three@0.128.0 && tar xzf three-0.128.0.tgz
-  sed 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#package/build/three.min.js#' online-poledance.html > test.html
+  sed 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#package/build/three.min.js#' index.html > test.html
   ```
   Chrome 인자: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`. UI 숨김 CSS `.hud,#wardrobe,.brand{display:none}` 주입
   테스트 사본·스크린샷은 프로젝트 폴더가 아니라 스크래치 디렉터리에 둘 것
