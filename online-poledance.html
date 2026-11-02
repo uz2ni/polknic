@@ -58,6 +58,24 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .move:disabled{opacity:.45;cursor:default}
 .hint{font-size:12px;color:#fff;text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 8px rgba(40,90,50,.55);margin:0;text-align:center}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.faces{display:flex;align-items:center;gap:2px;padding:4px 6px}
+.faces span{font:600 11px var(--f-body);color:var(--muted);letter-spacing:.08em;padding:0 6px 0 4px}
+.face{border:0;background:transparent;font:400 13.5px var(--f-display);color:var(--ink);padding:6px 10px;border-radius:999px;cursor:pointer}
+.face[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+#nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:600 12px var(--f-body);color:var(--ink);background:rgba(255,250,238,.88);border:1.5px solid #fff;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.12)}
+
+#entry{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(198,235,248,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#entry form{width:min(340px,100%);padding:26px 24px 22px;display:flex;flex-direction:column;gap:12px;text-align:center}
+#entry h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;color:var(--ink)}
+#entry p{margin:0;color:var(--muted);font-size:13.5px}
+#entry input,.name-row input{font:500 16px var(--f-body);color:var(--ink);padding:11px 14px;border-radius:14px;border:2px solid var(--line);background:#fff;outline:none;min-width:0}
+#entry input:focus,.name-row input:focus{border-color:var(--accent)}
+#entry .err{color:#d4567b;font-size:12.5px;min-height:1em}
+.go{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 18px var(--f-display);padding:12px;cursor:pointer;box-shadow:0 3px 0 #c95a7c}
+.name-row{display:flex;gap:6px}
+.name-row input{flex:1;font-size:14px;padding:8px 12px}
+.name-row .chip{flex:0 0 auto}
 @media (max-width:640px){
   .brand{top:calc(16px + env(safe-area-inset-top,0px));text-align:left;padding-left:max(16px,env(safe-area-inset-left,0px))}
   .brand h1{letter-spacing:.06em;font-size:26px}
@@ -76,8 +94,20 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <button id="wardrobeBtn" class="glass" type="button" aria-controls="wardrobe" aria-expanded="false">옷장 열기</button>
 
+<div id="entry">
+  <form id="entryForm" class="glass" autocomplete="off">
+    <h2>야외 폴 연습장</h2>
+    <p>연습장에서 쓸 닉네임을 정해주세요</p>
+    <input id="nameInput" type="text" maxlength="12" placeholder="닉네임 (최대 12자)" aria-label="닉네임" required>
+    <div class="err" id="nameErr" role="alert"></div>
+    <button class="go" type="submit">입장하기</button>
+  </form>
+</div>
+<div id="nameTag" hidden></div>
+
 <aside id="wardrobe" class="glass" aria-label="옷장">
   <div class="w-head"><h2>옷장</h2><button id="wardrobeClose" class="textbtn" type="button">닫기</button></div>
+  <div class="w-sec"><h3>닉네임</h3><form class="name-row" id="renameForm" autocomplete="off"><input id="renameInput" type="text" maxlength="12" aria-label="닉네임 바꾸기"><button class="chip" type="submit">바꾸기</button></form></div>
   <div class="w-sec"><h3>상의</h3><div class="chips" data-key="top"></div><div class="sw" data-key="topColor"></div></div>
   <div class="w-sec"><h3>하의</h3><div class="chips" data-key="bottom"></div><div class="sw" data-key="bottomColor"></div></div>
   <div class="w-sec"><h3>신발</h3><div class="chips" data-key="shoes"></div></div>
@@ -90,11 +120,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div class="hud">
   <div class="status">
     <span>지금: <b id="statusText">자유 이동</b></span>
+    <button id="sitTog" class="tog" type="button" aria-pressed="false">앉기</button>
     <button id="spinTog" class="tog" type="button" aria-pressed="false">스핀 폴</button>
     <button id="camTog" class="tog" type="button" aria-pressed="false">전체 보기</button>
+    <button id="nameTog" class="tog" type="button" aria-pressed="true">이름 표시</button>
   </div>
+  <div class="faces glass" id="faces" role="group" aria-label="표정"><span>표정</span></div>
   <nav class="moves glass" id="moves" aria-label="폴 동작"></nav>
-  <p class="hint">바닥 클릭 또는 WASD로 이동 · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작</p>
+  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -416,6 +449,7 @@ const POLE_H = 3.0, STAGE_H = 0.06;
 }
 /* props: stepping stones, benches, a sign, low fences, rocks by the water, butterflies */
 const OBSTACLES = [];   // [x, z, r] circles the character walks around
+const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on
 {
   const stoneM = toonF('#ddd5c4'), woodM = toonF('#c99462'), woodD = toonF('#a8784e'), rockM = toonF('#b9b8b0');
   const stoneGeo = new T.CylinderGeometry(1, 1.06, 1, 18);
@@ -433,6 +467,7 @@ const OBSTACLES = [];   // [x, z, r] circles the character walks around
     [-0.55, 0.55].forEach(dx => { box(0.07, 0.42, 0.34, dx, 0.21, 0, woodD); box(0.07, 0.9, 0.06, dx, 0.45, -0.2, woodD); });
     g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -(z - 0.3)); scene.add(g);
     OBSTACLES.push([x, z, 0.8]);
+    BENCHES.push({ x, z, rot:g.rotation.y, mesh:g });
   }
   bench(-3.7, 3.3); bench(3.9, 2.7);
   {
@@ -884,7 +919,7 @@ function updateEmote(){
   const t = clock - emoteAt;
   if (t > 1.5){ emote.visible = false; return; }
   emote.visible = true;
-  skull.getWorldPosition(emote.position); emote.position.y += 0.36 + t*0.12;
+  skull.getWorldPosition(emote.position); emote.position.y += (showName ? 0.5 : 0.36) + t*0.12;
   emote.material.opacity = Math.min(1, t/0.15) * (1 - smooth(1.1, 1.5, t));
   emote.scale.setScalar(0.17*(t < 0.25 ? 0.5 + 0.5*Math.sin(t/0.25*PI/2)*1.2 : 1.1 - 0.1*Math.min(1, (t - 0.25)/0.2)));
 }
@@ -973,6 +1008,13 @@ function applyOutfit(){
    `view` = from which side of the pose the camera looks.
    ========================================================= */
 const POSES = {
+  // sitting on the grass (legs out, leaning back on her hands) and on a bench (legs swinging)
+  sitGround: { label:'앉아서 쉬는 중', p:[0,0.085,0], r:[-0.14,0,0],
+    j:{ spine:[0.06,0,0], head:[0.1,0,0.12], lUp:[0.55,0,0.4], rUp:[0.55,0,-0.4], lFore:[-0.15,0,0], rFore:[-0.15,0,0],
+        lThigh:[-1.45,0,0.14], rThigh:[-1.45,0,-0.14], lShin:[0.08,0,0], rShin:[0.18,0,0], lFoot:[-0.3,0,0], rFoot:[-0.3,0,0] } },
+  sitBench: { label:'벤치에서 쉬는 중', p:[0,0.52,0.03], r:[0,0,0],
+    j:{ head:[0.06,0,-0.08], lUp:[-0.45,0,0.12], rUp:[-0.45,0,-0.12], lFore:[-0.7,0,0], rFore:[-0.7,0,0],
+        lThigh:[-1.5,0,0.08], rThigh:[-1.5,0,-0.08], lShin:[1.15,0,0], rShin:[1.15,0,0], lFoot:[0.2,0,0], rFoot:[0.2,0,0] } },
   stand: { label:'자유 이동', p:[0,STAND_Y,0], r:[0,0,0],
     j:{ lUp:[0,0,0.3], rUp:[0,0,-0.3], lFore:[-0.25,0,0], rFore:[-0.25,0,0], head:[0.04,0,0.06] } },
   ready: { label:'레디', face:'open', p:[0.17,STAND_Y,-0.21], r:[0,0,0],
@@ -1105,6 +1147,7 @@ function rebase(pos, rotY){
 function setPose(name){ poseName = name; poseStart = clock; poseYaw = yaw; if (POSES[name].emote) showEmote(POSES[name].emote); updateUI(); }
 function startMove(name){
   if (mode === 'pole'){ pendingLeave = null; setPose(name); return; }
+  standUp(); sitQueued = null;
   const wp = holder.position;
   const a = Math.atan2(wp.x - POLE.x, wp.z - POLE.z);
   walkTarget = new V3(POLE.x + Math.sin(a)*0.34, 0, POLE.z + Math.cos(a)*0.34);
@@ -1130,10 +1173,42 @@ function doLeave(){
   spinVel = 0; landAt = clock; setPose('stand');
 }
 function goTo(p){
+  sitQueued = null;
   if (mode === 'pole'){ requestLeave(p); return; }
+  standUp();
   mode = 'roam'; queuedMove = null; walkTarget = p; updateUI();
 }
 const walkable = (x, z) => Math.hypot(x, z - 1) < 8.5 && !inLake(x, z, 0.8) && OBSTACLES.every(([ox, oz, r]) => Math.hypot(x - ox, z - oz) > r);
+// a step is fine if it lands somewhere walkable, or at least moves her out of an obstacle she is already inside
+const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z1, 0.8)
+  && OBSTACLES.every(([ox, oz, r]) => { const d1 = Math.hypot(x1 - ox, z1 - oz); return d1 > r || d1 > Math.hypot(x0 - ox, z0 - oz); });
+
+/* ---------- sitting: on the grass wherever she is, or on a bench ---------- */
+let sitAt = null, sitQueued = null;   // null | 'ground' | a bench
+const benchFront = b => new V3(b.x + Math.sin(b.rot)*0.95, 0, b.z + Math.cos(b.rot)*0.95);
+function sitDown(target){
+  walkTarget = null; sitQueued = null;
+  if (target === 'ground'){ sitAt = 'ground'; setPose('sitGround'); return; }
+  rebase(new V3(target.x, 0, target.z), target.rot);
+  sitAt = target; setPose('sitBench');
+}
+function standUp(){
+  if (!sitAt) return;
+  if (sitAt !== 'ground') rebase(benchFront(sitAt), sitAt.rot);
+  sitAt = null; setPose('stand');
+}
+function goSitBench(b){
+  if (mode === 'pole'){ requestLeave(benchFront(b)); sitQueued = b; return; }
+  standUp(); mode = 'roam'; queuedMove = null; walkTarget = benchFront(b); sitQueued = b; updateUI();
+}
+function toggleSit(){
+  if (sitAt){ standUp(); return; }
+  if (sitQueued){ sitQueued = null; updateUI(); return; }
+  if (mode === 'pole'){ requestLeave(null); sitQueued = 'ground'; updateUI(); return; }
+  if (mode === 'roam' && walkTarget){ sitQueued = 'ground'; updateUI(); return; }   // sit down where she is headed
+  const near = BENCHES.find(b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z) < 2.2);
+  if (near) goSitBench(near); else sitDown('ground');
+}
 
 /* ---------- camera orbit ---------- */
 let yaw = 0.05, pitch = 0.12, camDist = 3.6, wide = false;
@@ -1164,7 +1239,7 @@ function update(dt){
   // blink
   if (clock > blinkAt){ blinking = 0.13; blinkAt = clock + 2.5 + Math.random()*3; }
   if (blinking > 0) blinking -= dt;
-  const expr = (mode === 'pole' && POSES[poseName].face) || 'open';
+  const expr = faceMode !== 'auto' ? faceMode : (mode === 'pole' && POSES[poseName].face) || 'open';
   faceM.map = faceTex[blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
 
   // hop up onto the pole, squash a little when landing back on the ground
@@ -1187,7 +1262,7 @@ function update(dt){
   let moving = false;
   if (mode === 'roam' || mode === 'approach'){
     let dir = null, dist = Infinity;
-    if (keyDir){ dir = keyDir; walkTarget = null; }
+    if (keyDir){ dir = keyDir; walkTarget = null; sitQueued = null; standUp(); }
     else if (walkTarget){
       _v.set(walkTarget.x - holder.position.x, 0, walkTarget.z - holder.position.z);
       dist = _v.length();
@@ -1200,11 +1275,12 @@ function update(dt){
       // only block steps that go further into the pole's space (after coming down she stands inside it)
       const dNew = Math.hypot(nx - POLE.x, nz - POLE.z), dOld = Math.hypot(holder.position.x - POLE.x, holder.position.z - POLE.z);
       const nearPole = dNew < (mode === 'approach' ? 0.3 : 0.4) && dNew < dOld;
-      if (walkable(nx, nz) && !nearPole){ holder.position.x = nx; holder.position.z = nz; moving = true; }
+      if (stepOK(holder.position.x, holder.position.z, nx, nz) && !nearPole){ holder.position.x = nx; holder.position.z = nz; moving = true; }
       else if (mode === 'approach' && nearPole){ enterPole(); }
       else { walkTarget = null; }
       if (mode !== 'pole') holder.rotation.y = angLerp(holder.rotation.y, Math.atan2(dir.x, dir.z), 1 - Math.exp(-10*dt));
     }
+    if (mode === 'roam' && sitQueued && !walkTarget && !keyDir) sitDown(sitQueued);   // arrived (or stopped): sit here
   }
   moveAmp += ((moving ? 1 : 0) - moveAmp)*(1 - Math.exp(-8*dt));
   walkPhase += dt*11*moveAmp;
@@ -1247,6 +1323,7 @@ function update(dt){
       if (n === 'spine')  y += 0.08*sw;
     }
     if (n === 'chest') x += breath;
+    if (poseName === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
     if (outfit.shoes === 'heels' && (n === 'lFoot' || n === 'rFoot') && (poseName === 'stand' || poseName === 'ready')) x += 0.35;
     _q.setFromEuler(_e.set(x, y, z));
     J[n].quaternion.slerp(_q, k);
@@ -1311,6 +1388,8 @@ const ray = new T.Raycaster(), groundPlane = new T.Plane(new V3(0, 1, 0), 0);
 function clickGround(e){
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera({ x:((e.clientX - r.left)/r.width)*2 - 1, y:-((e.clientY - r.top)/r.height)*2 + 1 }, camera);
+  const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
+  if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
   const hit = new V3();
   if (!ray.ray.intersectPlane(groundPlane, hit)) return;
   if (Math.hypot(hit.x - POLE.x, hit.z - POLE.z) < 0.6) return;
@@ -1321,6 +1400,7 @@ function clickGround(e){
 // physical keys (e.code), so WASD / 1–5 / Q still work while a Korean input source is active
 const DIRS = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right' };
 window.addEventListener('keydown', e => {
+  if (e.target.matches && e.target.matches('input, textarea')) return;   // typing a nickname
   if (e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
   const dir = DIRS[e.code] || DIRS[e.key];
   if (dir){ keys[dir] = true; e.preventDefault(); return; }   // arrows must not scroll the panels instead
@@ -1329,6 +1409,7 @@ window.addEventListener('keydown', e => {
   const m = MOVE_ORDER.find(n => POSES[n].key === digit);
   if (m) startMove(m);
   if (e.key === 'Escape' || e.code === 'KeyQ') requestLeave(null);
+  if (e.code === 'KeyE') toggleSit();
 });
 window.addEventListener('keyup', e => { const dir = DIRS[e.code] || DIRS[e.key]; if (dir) keys[dir] = false; });
 window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
@@ -1352,13 +1433,83 @@ const statusText = document.getElementById('statusText');
 function updateUI(){
   const active = mode === 'approach' ? queuedMove : (mode === 'pole' ? poseName : null);
   movesEl.querySelectorAll('.move[data-move]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.move === active)));
-  statusText.textContent = mode === 'approach' ? '폴로 이동 중' : (mode === 'pole' ? (pendingLeave ? '내려오는 중' : POSES[poseName].label) : '자유 이동');
+  statusText.textContent = mode === 'approach' ? '폴로 이동 중' : (mode === 'pole' ? (pendingLeave ? '내려오는 중' : POSES[poseName].label)
+    : sitAt ? POSES[poseName].label : sitQueued ? '앉으러 가는 중' : '자유 이동');
+  const sitting = !!(sitAt || sitQueued);
+  const st = document.getElementById('sitTog');
+  st.setAttribute('aria-pressed', String(sitting)); st.textContent = sitting ? '일어나기' : '앉기';
   leaveBtn.disabled = mode !== 'pole';
 }
+const sitTog = document.getElementById('sitTog');
+sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
 spinTog.addEventListener('click', () => { spinPole = !spinPole; spinTog.setAttribute('aria-pressed', String(spinPole)); if (!spinPole) poseYaw = holder.rotation.y + (POSES[poseName].view || 0); }); // stop where it is
 const camTog = document.getElementById('camTog');
 camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.textContent = wide ? '캐릭터 보기' : '전체 보기'; });
+
+// expressions: auto follows each move, or the player picks one
+const FACES = [['auto','자동'], ['open','방긋'], ['wink','윙크'], ['joy','활짝'], ['wow','깜짝']];
+const FACE_EMOTE = { open:'sparkle', wink:'note', joy:'heart', wow:'wow' };
+let faceMode = 'auto';
+try { const f = localStorage.getItem('pole-face'); if (FACES.some(([v]) => v === f)) faceMode = f; } catch (e) {}
+const facesEl = document.getElementById('faces');
+FACES.forEach(([v, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'face'; b.textContent = label; b.dataset.v = v; b.id = 'face-' + v;
+  b.addEventListener('click', () => {
+    faceMode = v; blinking = 0;
+    if (FACE_EMOTE[v]) showEmote(FACE_EMOTE[v]);
+    try { localStorage.setItem('pole-face', v); } catch (e) {}
+    syncFaces();
+  });
+  facesEl.appendChild(b);
+});
+function syncFaces(){ facesEl.querySelectorAll('.face').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === faceMode))); }
+syncFaces();
+
+// nickname: chosen on the entry screen, shown in a small tag over the head (can be hidden)
+const nameTag = document.getElementById('nameTag'), nameTog = document.getElementById('nameTog');
+let playerName = '', showName = true;
+try { playerName = localStorage.getItem('pole-name') || ''; showName = localStorage.getItem('pole-name-show') !== '0'; } catch (e) {}
+const cleanName = v => v.replace(/\s+/g, ' ').trim().slice(0, 12);
+function setName(v){
+  playerName = v; nameTag.textContent = v;
+  document.getElementById('renameInput').value = v;
+  try { localStorage.setItem('pole-name', v); } catch (e) {}
+}
+function setShowName(v){
+  showName = v; nameTog.setAttribute('aria-pressed', String(v)); nameTog.textContent = v ? '이름 표시' : '이름 숨김';
+  try { localStorage.setItem('pole-name-show', v ? '1' : '0'); } catch (e) {}
+}
+nameTog.addEventListener('click', () => setShowName(!showName));
+setShowName(showName);
+const entry = document.getElementById('entry'), nameInput = document.getElementById('nameInput'), nameErr = document.getElementById('nameErr');
+nameInput.value = playerName;
+document.getElementById('entryForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = cleanName(nameInput.value);
+  if (!v){ nameErr.textContent = '닉네임을 입력해주세요'; nameInput.focus(); return; }
+  setName(v); entry.hidden = true; nameInput.blur();
+});
+document.getElementById('renameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const inp = document.getElementById('renameInput'), v = cleanName(inp.value);
+  if (v) setName(v); else inp.value = playerName;
+  inp.blur();
+});
+setTimeout(() => { if (!entry.hidden) nameInput.focus(); }, 50);
+const _tag = new V3();
+function updateNameTag(){
+  if (!showName || !playerName || !entry.hidden){ nameTag.hidden = true; return; }
+  skull.getWorldPosition(_tag); _tag.y += HEAD_R + 0.1;
+  char.getWorldPosition(_v); _tag.y = Math.max(_tag.y, _v.y + 0.42);   // upside down: float above the feet instead
+  camera.updateMatrixWorld(); _tag.project(camera);
+  if (_tag.z > 1){ nameTag.hidden = true; return; }
+  const r = canvas.getBoundingClientRect();
+  nameTag.hidden = false;
+  nameTag.style.left = (r.left + (_tag.x + 1)/2*r.width) + 'px';
+  nameTag.style.top = (r.top + (1 - _tag.y)/2*r.height) + 'px';
+}
 
 const wardrobe = document.getElementById('wardrobe');
 const wBtn = document.getElementById('wardrobeBtn');
@@ -1415,6 +1566,7 @@ function frame(now){
   const dt = Math.min(0.05, Math.max(0, (now - last)/1000)); last = Math.max(last, now);
   update(reduced ? dt*0.6 : dt);
   renderer.render(scene, camera);
+  updateNameTag();
   requestAnimationFrame(frame);
 }
 for (let i = 0; i < 30; i++) update(1/30);
