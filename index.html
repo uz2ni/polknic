@@ -70,6 +70,7 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .move[aria-pressed="true"] small{color:rgba(255,255,255,.7)}
 .move.leave{color:#d4567b}
 .move:disabled{opacity:.45;cursor:default}
+.copy{margin:-4px 0 0;font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 6px rgba(40,90,50,.5);letter-spacing:.04em}
 .hint{font-size:12px;color:#fff;text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 8px rgba(40,90,50,.55);margin:0;text-align:center}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .faces{display:flex;align-items:center;gap:2px;padding:4px 6px}
@@ -154,6 +155,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
   <div class="faces glass" id="faces" role="group" aria-label="표정"><span>표정</span></div>
   <nav class="moves glass" id="moves" aria-label="폴 동작"></nav>
   <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · M 음악 · H 메뉴 숨기기</p>
+  <p class="copy">© 2026 폴크닉</p>
 </div>
 <button id="uiShow" type="button" hidden aria-label="메뉴 보기" title="메뉴 보기 (H)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
 
