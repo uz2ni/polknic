@@ -1032,13 +1032,15 @@ const POSES = {
     ik:{ rArm:{ t:[0,1.5,0], h:[-0.3,-0.3,-1] },
          lArm:{ t:[0.02,1.36,0.05], h:[0.3,-1,0.5] } } },
 
-  // 2. 피겨헤드 — one knee hooked, the other foot on the pole, leaning back with arms out like wings
-  figurehead: { label:'피겨헤드', key:'2', sub:'레그 홀드', view:2.0, face:'joy', emote:'heart',
-    p:[-0.17,1.45,0.03], up:[-0.5,0.866,0], fwd:[0.866,0.5,0],
-    j:{ spine:[-0.2,0,0], chest:[-0.25,0,0], head:[-0.3,0.4,0],
-        lUp:[0.2,0,1.4], lFore:[-0.1,0,0], rUp:[0.2,0,-1.4], rFore:[-0.1,0,0],
-        lThigh:[-1.2,0,-0.1], lShin:[1.8,0,0], lFoot:[0.5,0,0] },
-    ik:{ rLeg:{ t:[-0.02,1.25,0.04], h:[1,0.3,0] } } },
+  // 2. P포즈 — both hands on the pole, hips against it, back arched away with the head dropped back;
+  //    the near leg folds high over the pole (the loop of the P) and its foot hooks the far leg, which reaches long behind the pole
+  ppose: { label:'P포즈', key:'2', sub:'백 아치', view:0, face:'joy', emote:'sparkle',
+    p:[-0.09,1.35,0], up:[-0.8,0.6,0], fwd:[0.6,0.8,0],
+    j:{ spine:[-0.15,0,0], chest:[-0.2,0,0], neck:[-0.25,0,0], head:[-0.45,0,0], rFoot:[0.6,0,0], lFoot:[0.7,0,0] },
+    ik:{ rArm:{ t:[0,1.5,0.03], h:[-0.2,-1,0.5] },
+         lArm:{ t:[0,1.46,-0.03], h:[-0.2,-1,-0.5] },
+         rLeg:{ t:[0.06,1.3,0.03], h:[0.25,1,0.15] },
+         lLeg:{ t:[0.16,1.13,-0.03], h:[0.3,0.2,1] } } },
 
   // 3. 헤라 — back to the pole, one hand reaching up behind, legs long down the pole
   hera: { label:'헤라', key:'3', sub:'싯 & 리치', view:PI/2, face:'open', emote:'sparkle',
@@ -1062,7 +1064,7 @@ const POSES = {
     ik:{ rArm:{ t:[0,1.38,-0.04], h:[0,0.3,-1] },
          lArm:{ t:[0,1.34,0.05], h:[0,-0.3,1] } } },
 };
-const MOVE_ORDER = ['chair','figurehead','hera','brass','ayesha'];
+const MOVE_ORDER = ['chair','ppose','hera','brass','ayesha'];
 const JOINTS = ['spine','chest','neck','head','lUp','lFore','lHand','rUp','rFore','rHand','lThigh','lShin','lFoot','rThigh','rShin','rFoot'];
 const LIMBS = {
   lArm:{ a:'lUp', b:'lFore', L1:0.13, L2:0.152, arm:true },
