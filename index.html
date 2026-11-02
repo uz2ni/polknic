@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>야외 폴 연습장</title>
+<title>폴크닉 · 호숫가 폴 놀이터</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -26,7 +26,8 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 #scene canvas:active{cursor:grabbing}
 
 .brand{position:fixed;top:calc(20px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;pointer-events:none;color:#fff;text-shadow:0 2px 0 rgba(90,66,55,.35),0 3px 18px rgba(40,110,150,.3)}
-.brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.8vw,46px);letter-spacing:.08em;margin:0;text-wrap:balance}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.8vw,46px);letter-spacing:.08em;margin:0;text-wrap:balance;display:inline-flex;align-items:center;gap:.3em}
+.brand h1 img{width:1.05em;height:1.05em;border-radius:.25em;box-shadow:0 2px 0 rgba(90,66,55,.25)}
 .brand p{margin:.4em 0 0;font-size:12.5px;font-weight:600;letter-spacing:.12em}
 
 .glass{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:2px solid #fff;box-shadow:0 4px 0 rgba(90,66,55,.12),0 12px 28px rgba(60,110,130,.16);border-radius:22px}
@@ -70,7 +71,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 #entry{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(198,235,248,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #entry form{width:min(340px,100%);padding:26px 24px 22px;display:flex;flex-direction:column;gap:12px;text-align:center}
-#entry h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;color:var(--ink)}
+#entry h2{font-family:var(--f-display);font-weight:400;font-size:34px;margin:-4px 0 0;color:var(--ink)}
+#entry .logo{width:64px;height:64px;margin:0 auto -2px;border-radius:16px;box-shadow:0 3px 0 rgba(90,66,55,.12)}
+#entry .eyebrow{font:600 12px var(--f-body);letter-spacing:.14em;color:var(--accent)}
 #entry p{margin:0;color:var(--muted);font-size:13.5px}
 #entry input,.name-row input{font:500 16px var(--f-body);color:var(--ink);padding:11px 14px;border-radius:14px;border:2px solid var(--line);background:#fff;outline:none;min-width:0}
 #entry input:focus,.name-row input:focus{border-color:var(--accent)}
@@ -88,19 +91,21 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 }
 </style>
 
-<div id="scene" aria-label="호숫가 야외 폴 연습장 3D 화면"></div>
+<div id="scene" aria-label="폴크닉 호숫가 3D 화면"></div>
 
 <header class="brand">
-  <h1>야외 폴 스튜디오</h1>
-  <p>호숫가 스테이지 · 폴 1개 · 혼자 연습</p>
+  <h1><img src="favicon.svg" alt="">폴크닉</h1>
+  <p>호숫가에서 폴 한 바퀴</p>
 </header>
 
 <button id="wardrobeBtn" class="glass" type="button" aria-controls="wardrobe" aria-expanded="false">옷장 열기</button>
 
 <div id="entry">
   <form id="entryForm" class="glass" autocomplete="off">
-    <h2>야외 폴 연습장</h2>
-    <p>연습장에서 쓸 닉네임을 정해주세요</p>
+    <img class="logo" src="favicon.svg" alt="">
+    <div class="eyebrow">호숫가 폴 놀이터</div>
+    <h2>폴크닉</h2>
+    <p>폴 타러 소풍 왔어요! 여기서 쓸 닉네임을 정해주세요</p>
     <input id="nameInput" type="text" maxlength="12" placeholder="닉네임 (최대 12자)" aria-label="닉네임" required>
     <div class="err" id="nameErr" role="alert"></div>
     <button class="go" type="submit">입장하기</button>
@@ -478,7 +483,7 @@ const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit
       x.fillStyle = '#e6bd88'; x.fillRect(0, 0, s, s);
       x.strokeStyle = 'rgba(120,70,30,.35)'; x.lineWidth = 3; [64, 128, 192].forEach(y => { x.beginPath(); x.moveTo(0, y); x.lineTo(s, y); x.stroke(); });
       x.fillStyle = '#5a4237'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '58px Jua, "Apple SD Gothic Neo", sans-serif'; x.fillText('폴 연습장', 128, 100);
+      x.font = '66px Jua, "Apple SD Gothic Neo", sans-serif'; x.fillText('폴크닉', 128, 100);
       x.fillStyle = '#f0789a'; x.font = '54px sans-serif'; x.fillText('♥', 128, 172);
     });
     const g = new T.Group();
