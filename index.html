@@ -1724,8 +1724,10 @@ function syncWardrobe(){
 }
 
 /* ---------- loop ---------- */
+let viewW = 0, viewH = 0;
 function resize(){
   const w = host.clientWidth || window.innerWidth, h = host.clientHeight || window.innerHeight;
+  viewW = w; viewH = h;
   renderer.setSize(w, h, false);
   camera.aspect = w/h;
   camera.fov = w < 640 ? 55 : 45;
@@ -1733,6 +1735,10 @@ function resize(){
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
+// in-app browsers (KakaoTalk, Instagram) often resize the page when their toolbars slide without firing 'resize';
+// the canvas then stretches a stale image and everything looks squashed, so also watch the element itself
+if (window.ResizeObserver) new ResizeObserver(resize).observe(host);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 resize();
 applyOutfit();
 updateUI();
@@ -1741,6 +1747,7 @@ let last = performance.now();
 const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let paused = false;
 function frame(now){
+  if (host.clientWidth !== viewW || host.clientHeight !== viewH) resize();   // last-resort size check
   if (paused){ last = now; requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, Math.max(0, (now - last)/1000)); last = Math.max(last, now);
   update(reduced ? dt*0.6 : dt);
