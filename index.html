@@ -67,6 +67,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .face{border:0;background:transparent;font:400 13.5px var(--f-display);color:var(--ink);padding:6px 10px;border-radius:999px;cursor:pointer}
 .face[aria-pressed="true"]{background:var(--accent);color:#fff}
 
+/* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
+body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{display:none!important}
+#uiShow{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));z-index:6;border:2px solid #fff;border-radius:999px;background:var(--glass);color:var(--ink);font:600 13px var(--f-body);padding:9px 14px;cursor:pointer;transition:opacity .4s}
+#uiShow.idle{opacity:0}
 #nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:600 12px var(--f-body);color:var(--ink);background:rgba(255,250,238,.88);border:1.5px solid #fff;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.12)}
 
 #entry{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(198,235,248,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -132,11 +136,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button id="spinTog" class="tog" type="button" aria-pressed="false">스핀 폴</button>
     <button id="camTog" class="tog" type="button" aria-pressed="false">전체 보기</button>
     <button id="nameTog" class="tog" type="button" aria-pressed="true">이름 표시</button>
+    <button id="uiHide" class="tog" type="button" title="단축키 H">메뉴 숨기기</button>
   </div>
   <div class="faces glass" id="faces" role="group" aria-label="표정"><span>표정</span></div>
   <nav class="moves glass" id="moves" aria-label="폴 동작"></nav>
-  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작</p>
+  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · H 메뉴 숨기기</p>
 </div>
+<button id="uiShow" type="button" hidden>메뉴 보기</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -1424,6 +1430,7 @@ window.addEventListener('keydown', e => {
   if (m) startMove(m);
   if (e.key === 'Escape' || e.code === 'KeyQ') requestLeave(null);
   if (e.code === 'KeyE') toggleSit();
+  if (e.code === 'KeyH') setClean(!document.body.classList.contains('clean'));
 });
 window.addEventListener('keyup', e => { const dir = DIRS[e.code] || DIRS[e.key]; if (dir) keys[dir] = false; });
 window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
@@ -1496,6 +1503,23 @@ function setShowName(v){
   try { localStorage.setItem('pole-name-show', v ? '1' : '0'); } catch (e) {}
 }
 nameTog.addEventListener('click', () => setShowName(!showName));
+
+// photo mode: hide the menus so people can take clean screenshots and recordings
+const uiShow = document.getElementById('uiShow');
+let idleTimer = 0;
+function wakeShowBtn(){
+  if (!document.body.classList.contains('clean')) return;
+  uiShow.classList.remove('idle');
+  clearTimeout(idleTimer); idleTimer = setTimeout(() => uiShow.classList.add('idle'), 2500);
+}
+function setClean(on){
+  document.body.classList.toggle('clean', on);
+  uiShow.hidden = !on;
+  if (on){ wakeShowBtn(); canvas.focus && canvas.blur(); } else clearTimeout(idleTimer);
+}
+document.getElementById('uiHide').addEventListener('click', () => setClean(true));
+uiShow.addEventListener('click', () => setClean(false));
+['pointermove', 'pointerdown', 'keydown'].forEach(t => window.addEventListener(t, e => { if (!(t === 'keydown' && e.code === 'KeyH')) wakeShowBtn(); }));
 setShowName(showName);
 const entry = document.getElementById('entry'), nameInput = document.getElementById('nameInput'), nameErr = document.getElementById('nameErr');
 nameInput.value = playerName;
