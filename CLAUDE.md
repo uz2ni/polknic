@@ -81,8 +81,8 @@
 - 블렌딩은 `1 - exp(-rate*dt)` (폴 4, 자유이동 10, IK 9)
 - 상태: `roam → approach → pole → (requestLeave) ready 1.3s → doLeave → roam`
 - 포즈 옵션 `face`(open/wink/joy/wow, 눈 깜빡임은 open·wow일 때만)와 `emote`(heart/note/wow/sparkle). 폴 진입 시 폴짝(`hopAt`), 내려올 때 착지 찌그러짐(`landAt`)은 `holder.position.y`와 `char.scale`로 처리
-- 동작 키: 1 체어(스플릿 그립) · 2 P포즈(`ppose`, 피겨헤드를 대체) · 3 헤라 · 4 브라스 · 5 아이샤. `ready`/`stand`는 버튼 없음
-  - 1번 이름과 아이샤 형태는 사용자 확인 대기 중(사진 받으면 수정)
+- 동작 키: 1 체어(스플릿 그립) · 2 P포즈(`ppose`, 피겨헤드를 대체) · 3 헤라 · 4 브라스 · 5 스플릿(`split`, 아이샤를 대체). `ready`/`stand`는 버튼 없음
+  - P포즈·스플릿은 사용자가 준 사진을 보고 "귀엽게 따라 하기" 수준으로 맞춤. 다리가 짧아 스플릿 폭은 작음
 
 ## 검증 방법
 
