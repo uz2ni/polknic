@@ -11,7 +11,7 @@
 
 ## 현재 상태
 
-- 결과물은 단일 파일 [online-poledance.html](online-poledance.html) (~1240줄, CSS/JS 인라인, 빌드 없음)
+- 결과물은 단일 파일 [online-poledance.html](online-poledance.html) (~1430줄, CSS/JS 인라인, 빌드 없음)
   - HANDOFF.md에서 `pole-studio.html`이라고 부르는 파일이 바로 이것 (이름만 다름)
   - 1번째 줄의 `<!doctype>...<body>` + 기본 `<style>`은 claude.ai Artifact 배포 시 씌워진 래퍼. 실제 페이지는 `<title>`부터
 - git 저장소 아님. 큰 변경 전에 `git init` 여부를 사용자에게 확인할 것
@@ -34,13 +34,14 @@
 | 6–68 | `<style>` 크림색 둥근 패널 UI(타이틀 폰트 Jua), 640px 이하 모바일 대응 |
 | 70–97 | HTML: `#scene`, `.brand`, `#wardrobe`, `.hud`(`#statusText`, `#spinTog`, `#camTog`, `#moves`) |
 | 100–148 | renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
-| 149–433 | 하늘(+PMREM), 조명, 호수(`LAKE`, `inLake()`, `lakeShape()` 모래톱·물거품·물), 잔디(틱 텍스처)·풀·꽃, 둥근 나무/침엽수·덤불·언덕·구름, 나무 데크 스테이지+폴(`POLE_H`, `STAGE_H`) |
-| 435–737 | 캐릭터: 헬퍼(`mesh/lathe/ell/tube/strandGeo/shellGeo`), 리그(`joint()` → `J[name]`), `skull` 그룹(머리·얼굴·헤어 셸), `chinify()`, `drawFace()`, 헤어 스타일, 팔다리 |
-| 739–785 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `applyOutfit()` (localStorage `pole-outfit-v2`) |
-| 786–901 | `POSES`, `MOVE_ORDER`, `JOINTS`, `LIMBS`, `boneQuat()`, `solveIK()` |
-| 903–1079 | 상태 머신: `rebase`, `startMove`, `enterPole`, `requestLeave`, `doLeave`, `goTo`, `updateCamera`, `update(dt)` |
-| 1080–1216 | `hang()`(스커트/머리 늘어짐), 포인터·키보드 입력, UI 동기화, `resize` |
-| 1217–끝 | `frame()` 루프, `window.__poleDebug` |
+| 150–416 | 하늘(+PMREM), 조명, 호수(`LAKE`, `inLake()`, `lakeShape()` 모래톱·물거품·물), 잔디(틱 텍스처)·꽃, 둥근 나무/침엽수·덤불·언덕·구름, 나무 데크 스테이지+폴(`POLE_H`, `STAGE_H`) |
+| 417–505 | 소품: 징검돌, 벤치, 표지판, 울타리, 물가 바위(`OBSTACLES`), 나비(`updateButterflies`) |
+| 506–918 | 캐릭터: 헬퍼(`mesh/lathe/ell/tube/strandGeo/shellGeo/frillGeo`), 리그(`joint()` → `J[name]`), `skull` 그룹(머리·얼굴·헤어 셸), `chinify()`, 표정별 `drawFace()`(`EXPRS`), 헤어 스타일, 팔다리, 리본·머리 장식, 이모트 스프라이트 |
+| 919–964 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `applyOutfit()` (localStorage `pole-outfit-v2`) |
+| 965–1081 | `POSES`, `MOVE_ORDER`, `JOINTS`, `LIMBS`, `boneQuat()`, `solveIK()` |
+| 1082–1271 | 상태 머신: `rebase`, `startMove`, `enterPole`, `requestLeave`, `doLeave`, `goTo`, `updateCamera`, `update(dt)` |
+| 1272–1412 | `hang()`(스커트/머리 늘어짐), 포인터·키보드 입력, UI 동기화, `resize` |
+| 1413–끝 | `frame()` 루프, `window.__poleDebug` |
 
 줄 번호는 편집하면서 밀리니 함수명으로 grep 할 것.
 
@@ -54,6 +55,10 @@
 - InstancedMesh에 툰 재질(`tcol`이 이미 곱해진 흰색)을 쓸 땐 `setColorAt`에 **원래 색**을 넣는다. `TOON_K`를 또 곱하면 두 번 어두워짐
 - 모래톱/물거품은 `depthWrite:false` + `renderOrder`(1, 2, 물 3)로 겹침. polygonOffset만으로는 먼 거리에서 물이 가려짐
 - 모드 전환 시 holder를 옮길 땐 `rebase()`를 거쳐 캐릭터 월드 위치가 튀지 않게
+- 키 입력은 물리 키(`e.code`) 기준. `e.key`만 보면 한글 입력 상태에서 WASD·숫자·Q가 'ㅈ' 등으로 들어와 무시됨. 화살표는 `preventDefault`(패널 스크롤 방지)
+- 이동 시 폴 근처 차단은 "폴에 더 가까워지는 걸음"만 막는다. 내려온 직후 캐릭터가 폴 0.4m 안에 서 있어서, 거리만으로 막으면 아무 방향으로도 못 움직임
+- 카메라 드래그는 캐릭터 방향을 바꾸지 않는다(`poseYaw`는 동작 선택 시에만 카메라 쪽으로 맞춤). 스핀을 끄면 그 자리에서 멈춤
+- 걸어서 피해야 하는 소품은 `OBSTACLES`(`[x, z, r]`)에 넣으면 `walkable()`이 막아줌
 
 ## 좌표·포즈 규약
 
@@ -65,6 +70,7 @@
   - IK 걸린 팔다리는 FK 블렌딩에서 제외(`ikSkip`). `LIMBS`: 팔 0.13/0.152(손 중심까지), 다리 0.14/0.135
 - 블렌딩은 `1 - exp(-rate*dt)` (폴 4, 자유이동 10, IK 9)
 - 상태: `roam → approach → pole → (requestLeave) ready 1.3s → doLeave → roam`
+- 포즈 옵션 `face`(open/wink/joy/wow, 눈 깜빡임은 open·wow일 때만)와 `emote`(heart/note/wow/sparkle). 폴 진입 시 폴짝(`hopAt`), 내려올 때 착지 찌그러짐(`landAt`)은 `holder.position.y`와 `char.scale`로 처리
 - 동작 키: 1 체어(스플릿 그립) · 2 피겨헤드 · 3 헤라 · 4 브라스 · 5 아이샤. `ready`/`stand`는 버튼 없음
   - 1번 이름과 아이샤 형태는 사용자 확인 대기 중(사진 받으면 수정)
 
@@ -72,7 +78,7 @@
 
 포즈·외형을 바꾸면 반드시 렌더링해서 눈으로 확인한다(코드만 보고 "됐다"고 하지 말 것).
 
-- 빠른 확인: Browser pane으로 HTML 파일을 열고 `__poleDebug` 사용
+- 빠른 확인: `.claude/launch.json`의 `static`(python http.server, 5173)으로 띄우고 Browser pane에서 `http://localhost:5173/online-poledance.html`을 열어 `__poleDebug` 사용
 - 헤드리스 비교: three r128을 로컬로 받아 CDN 경로 치환한 사본으로 Playwright 스크린샷
   ```bash
   npm pack three@0.128.0 && tar xzf three-0.128.0.tgz
