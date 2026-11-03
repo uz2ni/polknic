@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터 1명(아직 1인 전용, 사람만), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://uz2ni.github.io/polknic/ 에 배포 중.
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터 1명(아직 1인 전용, 사람만), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -17,7 +17,7 @@
 - 결과물은 단일 파일 [index.html](index.html) (~1830줄, CSS/JS 인라인, 빌드 없음)
   - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
-- git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://uz2ni.github.io/polknic/
+- git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
 - 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Supabase Realtime으로 시작해 Spring WebSocket으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 - 문서·UI 텍스트·커밋 메시지는 한국어
@@ -125,6 +125,6 @@
 4. 성능: 캐릭터 메쉬 합치기·LOD, 풀/그림자/픽셀비율 자동 하향
 5. 동작 전환 애니메이션, 다리 접촉점 IK
 6. 필요해지면 Vite 프로젝트화 + three.js 최신화(r128 전용 API 교체, 분리 전후 포즈 스크린샷 비교)
-7. 커스텀 도메인 `polknic.yujamong.com`(Cloudflare에서 구매 예정), 홍보 시 UTM 링크([docs/DECISIONS.md](docs/DECISIONS.md))
+7. 홍보 시 UTM 링크([docs/DECISIONS.md](docs/DECISIONS.md))
 
 HANDOFF.md 로드맵 중 "VRoid VRM으로 캐릭터 교체"는 치비 스타일 결정으로 보류.
