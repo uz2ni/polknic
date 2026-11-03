@@ -6,14 +6,10 @@
 
 ### 도메인: `yujamong.com` + Cloudflare (아직 구매 전)
 - 폴크닉·폴기록장 등 여러 서비스를 한 도메인 아래 서브도메인으로 운영: `polknic.yujamong.com`, `polenote.yujamong.com`, 메인 `yujamong.com`은 서비스 목록
-  - 상위 도메인에 `pole`을 넣으면 `polenote.polezip.com`처럼 중복돼서 폴과 무관한 이름으로. `uz2ni.com`은 말로 전하기 어려워 탈락
-  - `yujamong`: 말로 전하기 쉽고 파스텔 귀여운 결과 맞음. 공식 로마자 `yuja`. 검색하면 음료가 먼저 나오지만 서비스 이름으로 찾으니 괜찮음
-  - 조회 당시 `.com`·`.net`·`.kr`·`.co.kr` 모두 비어 있었음. `.kr`도 같이 사두는 걸 추천(가비아 등 국내 업체, Cloudflare는 `.kr` 미판매)
-  - 로그인 쿠키를 `.yujamong.com`에 두면 서비스끼리 계정 공유 가능
 - 구매·DNS: **Cloudflare Registrar**
   - 원가 판매라 갱신가가 안 오름, WHOIS 개인정보 보호·DNS 무료, 한국어 대시보드, 서브도메인 여러 개 관리가 편함. 비교: Porkbun(비슷한 가격, DNS 자유), Route 53(`.com` 약 15달러 + 영역당 월 0.5달러)
   - 제약: Cloudflare에서 산 도메인은 네임서버를 못 바꿈 → 도메인 전체를 Route 53으로 관리하려면 다른 업체로 이전해야 함(구매 60일 후). 서브도메인 하나만 NS 레코드로 Route 53에 위임하는 건 가능
-  - 서버·DB·로드밸런서를 AWS에 둬도 문제없음: ALB는 CNAME(루트 도메인은 CNAME 평탄화), RDS는 DNS 불필요, ACM은 와일드카드 `*.yujamong.com` 확인 CNAME을 한 번 추가. `dajoba.kr`(가비아 구매 + Route 53)은 `.kr`을 Route 53에서 못 사고 루트를 ALB에 Alias로 걸려고 그렇게 한 것으로 보임
+  - 서버·DB·로드밸런서를 AWS에 둬도 문제없음: ALB는 CNAME(루트 도메인은 CNAME 평탄화), RDS는 DNS 불필요, ACM은 와일드카드 `*.yujamong.com` 확인 CNAME을 한 번 추가.
 - API 주소는 `polenote-api.yujamong.com`처럼 한 단계로. `api.polenote.yujamong.com`은 와일드카드 인증서와 Cloudflare 무료 인증서가 두 단계를 덮지 못함
 - 로드밸런서는 ALB 하나 + 호스트 기반 라우팅으로 여러 서비스 공유(ALB 하나당 월 2만~3만 원)
 - 프록시(주황 구름): 웹·API만 켬. 인증서 확인 CNAME·메일·웹 아닌 포트는 끔. GitHub Pages(`polknic.`)는 꺼도 손해 없음(첫 인증서 발급이 실패할 수 있음). 켤 땐 SSL 모드 Full (strict), 실제 IP는 `CF-Connecting-IP`, 무료 플랜 업로드 100MB·응답 100초 제한
