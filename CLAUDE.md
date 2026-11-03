@@ -3,7 +3,7 @@
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
 브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터 1명(아직 1인 전용, 사람만), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://uz2ni.github.io/polknic/ 에 배포 중.
-상세 설계·배경·이력은 [HANDOFF.md](HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
+상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ## 스타일 방향
@@ -125,6 +125,6 @@
 4. 성능: 캐릭터 메쉬 합치기·LOD, 풀/그림자/픽셀비율 자동 하향
 5. 동작 전환 애니메이션, 다리 접촉점 IK
 6. 필요해지면 Vite 프로젝트화 + three.js 최신화(r128 전용 API 교체, 분리 전후 포즈 스크린샷 비교)
-7. 커스텀 도메인, 홍보 시 UTM 링크([docs/DECISIONS.md](docs/DECISIONS.md))
+7. 커스텀 도메인 `polknic.yujamong.com`(Cloudflare에서 구매 예정), 홍보 시 UTM 링크([docs/DECISIONS.md](docs/DECISIONS.md))
 
 HANDOFF.md 로드맵 중 "VRoid VRM으로 캐릭터 교체"는 치비 스타일 결정으로 보류.
