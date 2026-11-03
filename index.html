@@ -594,12 +594,14 @@ marker.rotation.x = -PI/2; marker.position.y = 0.02; scene.add(marker);
    with a painted face texture, a scalloped hair shell, and
    clothing as separate meshes over the body (shown/hidden
    per outfit).
+   createAvatar() builds one; every avatar owns its meshes,
+   outfit-colored materials and face textures, and
+   animateAvatar() poses it from a small state object.
    ========================================================= */
-const skinM = toon('#ffe2d2');
-const topM  = toon('#f4e9d2');
-const botM  = toon('#f4e9d2');
-const hairM = toon('#2b1d16');
-const shoeM = toon('#e9798f');
+// materials every avatar shares (colors that never follow the outfit)
+const accM = toon('#ff8fa8'), accY = toon('#ffd23f'), accW = toon('#fffaf2');
+const navelM = toon('#e2a894');
+const shineM = toon('#ffffff', { transparent:true, opacity:0.2, depthWrite:false });
 
 // lace pattern for the lace pieces
 const laceTex = (() => {
@@ -676,50 +678,12 @@ function shellGeo(r, bottom, bump, segU = 96, segV = 22){
   return g;
 }
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a)/(b - a))); return t*t*(3 - 2*t); };
-
-const holder = new T.Group(); scene.add(holder);
-const char = new T.Group(); holder.add(char);
-const J = {}, P = {};
-function joint(name, parent, x, y, z){ const g = new T.Group(); g.position.set(x, y, z); parent.add(g); J[name] = g; return g; }
-function piece(key, obj, parent){ parent.add(obj); (P[key] = P[key] || []).push(obj); return obj; }
-
-/* --- body: a short, round torso --- */
+/* --- shared shapes and sizes --- */
 const STAND_Y = 0.367;                       // pelvis height when standing (feet on the ground)
 const PELVIS = [[0.02,-0.078],[0.055,-0.072],[0.082,-0.056],[0.097,-0.03],[0.101,0.0],[0.097,0.03],[0.092,0.05]];
 const ABD    = [[0.092,-0.01],[0.089,0.03],[0.091,0.07],[0.094,0.09]];
 const CHEST  = [[0.094,-0.01],[0.098,0.04],[0.096,0.085],[0.086,0.118],[0.062,0.14],[0.036,0.15]];
-char.add(lathe(PELVIS, skinM, 1, 0.86));
-char.add(at(ell(0.03, 1.2, 0.5, 1, skinM), 0, -0.075, 0));
-piece('brief', lathe(sub(PELVIS, -0.078, 0.0), botM, 1, 0.86, 0.004), char);
-piece('brief', at(ell(0.032, 1.2, 0.5, 1, botM), 0, -0.075, 0), char);
-piece('briefHi', lathe(sub(PELVIS, 0.0, 0.05), botM, 1, 0.86, 0.004), char);
-piece('leoBot', lathe(PELVIS, topM, 1, 0.86, 0.003), char);
-piece('leoBot', at(ell(0.032, 1.2, 0.5, 1, topM), 0, -0.075, 0), char);
-
-const spine = joint('spine', char, 0, 0.03, 0);
-spine.add(lathe(ABD, skinM, 1, 0.86));
-spine.add(at(ell(0.005, 1, 1.4, 1, toon('#e2a894')), 0, 0.03, 0.077)); // navel
-piece('leoMid', lathe(ABD, topM, 1, 0.86, 0.004), spine);
-piece('briefHi', lathe(sub(ABD, -0.01, 0.03), botM, 1, 0.86, 0.004), spine);
-
-const chest = joint('chest', spine, 0, 0.08, 0);
-chest.add(lathe(CHEST, skinM, 1, 0.84));
-piece('topFull', lathe(sub(CHEST, -0.01, 0.13), topM, 1, 0.84, 0.004), chest);
-piece('topSport', lathe(sub(CHEST, 0.0, 0.09), topM, 1, 0.84, 0.004), chest);
-piece('topBand', lathe(sub(CHEST, 0.02, 0.065), topM, 1, 0.84, 0.004), chest);
-// straps
-[-1, 1].forEach(s => {
-  piece('halterStrap', tube([[s*0.045,0.06,0.083],[s*0.04,0.11,0.06],[s*0.03,0.15,0.015],[s*0.01,0.16,-0.03],[0,0.155,-0.045]], 0.006, topM), chest);
-  piece('sportStrap', tube([[s*0.055,0.085,0.075],[s*0.068,0.135,0.03],[s*0.066,0.135,-0.03],[s*0.04,0.09,-0.078],[-s*0.02,0.05,-0.085]], 0.008, topM), chest);
-  piece('fullStrap', tube([[s*0.06,0.1,0.065],[s*0.075,0.135,0.0],[s*0.06,0.1,-0.065]], 0.014, topM), chest);
-});
-
-/* --- neck & head --- */
-const neck = joint('neck', chest, 0, 0.14, 0);
-neck.add(lathe([[0.042,-0.02],[0.038,0.045]], skinM, 1, 0.95));
-const head = joint('head', neck, 0, 0.03, 0);
 const HEAD_R = 0.22, HEAD_Y = 0.2;
-const skull = new T.Group(); skull.position.y = HEAD_Y; skull.scale.set(1.06, 0.97, 1); head.add(skull);
 // one smooth head shape: a sphere with slightly fuller, softly narrowed cheeks
 function chinify(geo, r){
   const p = geo.attributes.position;
@@ -734,28 +698,19 @@ function chinify(geo, r){
   geo.computeVertexNormals();
   return geo;
 }
-skull.add(mesh(chinify(new T.SphereGeometry(HEAD_R, 48, 36), HEAD_R), skinM));
-[-1, 1].forEach(s => skull.add(at(ell(0.032, 0.55, 1, 0.8, skinM), s*0.212, -0.02, -0.01))); // ears
 
 // painted face (eyes, brows, nose, mouth, cheeks) on a shell over the front of the head
 const FACE_W = 768, FACE_H = 576;
 const FACE_PHI = 2.0, FACE_TH0 = 1.0, FACE_THL = 1.5;
 // one texture per expression: open (default), blink, wink, joy (^ ^), wow (surprised)
 const EXPRS = ['open', 'blink', 'wink', 'joy', 'wow'];
-const faceCanvases = {}, faceTex = {};
-EXPRS.forEach(n => {
-  const c = faceCanvases[n] = document.createElement('canvas'); c.width = FACE_W; c.height = FACE_H;
-  const t = faceTex[n] = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 4;
-});
-const faceM = new T.MeshToonMaterial({ map:faceTex.open, color:new T.Color(TOON_K,TOON_K,TOON_K), gradientMap:grad, toneMapped:false, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2 });
-const faceMesh = mesh(chinify(new T.SphereGeometry(HEAD_R*1.004, 48, 32, PI/2 - FACE_PHI/2, FACE_PHI, FACE_TH0, FACE_THL), HEAD_R*1.004), faceM);
-faceMesh.castShadow = false;
-skull.add(faceMesh);
 
 function shade(hex, k){ const c = new T.Color(hex); return '#' + c.multiplyScalar(k).getHexString(); }
 function mixHex(a, b, t){ return '#' + new T.Color(a).lerp(new T.Color(b), t).getHexString(); }
+// drawn in FACE_W x FACE_H units; smaller canvases (other players) are scaled to fit
 function drawFace(cv, expr, eye, hair){
   const x = cv.getContext('2d');
+  const s = cv.width/FACE_W; x.setTransform(s, 0, 0, s, 0, 0);
   x.clearRect(0, 0, FACE_W, FACE_H);
   x.lineCap = 'round'; x.lineJoin = 'round';
   const ink = '#2a1a16';
@@ -826,87 +781,13 @@ function drawFace(cv, expr, eye, hair){
   });
 }
 
-// hair: one scalloped shell — short chunky fringe in front, a bob around the sides and back
 const frontBack = phi => Math.abs(Math.atan2(Math.sin(phi - PI/2), Math.cos(phi - PI/2))); // 0 = front, PI = back
-const hairShell = mesh(shellGeo(HEAD_R*1.07,
-  phi => {
-    const d = frontBack(phi);
-    const fringe = 1.2 + 0.11*Math.pow(Math.abs(Math.cos((phi - PI/2)*5.5)), 0.6);
-    const bob = 2.08 + 0.1*Math.pow(Math.abs(Math.cos(phi*7)), 0.6);
-    return fringe + (bob - fringe)*smooth(0.72, 1.45, d);
-  },
-  phi => 0.012*(1 + Math.cos(phi*6))), hairM);
-skull.add(hairShell);
-// crown shine
-skull.add(at(ell(HEAD_R*1.1, 1, 1, 1, toon('#ffffff', { transparent:true, opacity:0.2, depthWrite:false }), 0.45, 0.14, 0, PI*2), 0, 0, 0));
-
-// long hair: one smooth curtain around the back, gently flared, with a scalloped hem
-const longPivot = joint('long', head, 0, 0.2, -0.02);
-{
-  const len = 0.4, g = new T.CylinderGeometry(0.235, 0.27, len, 48, 8, true, PI*0.5 - 0.15, PI + 0.3);
-  g.translate(0, -len/2, 0);
-  const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++){
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = -y/len, a = Math.atan2(x, z);
-    p.setY(i, y - t*0.03*(1 + Math.cos(a*9)));               // scallops at the tips
-    p.setZ(i, z*(1 - 0.25*t*t) - 0.02*t);                    // tuck in toward the shoulders
-  }
-  g.computeVertexNormals();
-  longPivot.add(mesh(g, hairM));
-}
-piece('long', longPivot, head);
-// high ponytail
-const tailPivot = joint('tail', head, 0, 0.38, -0.2);
-tailPivot.add(at(ell(0.05, 1.1, 1, 1, hairM), 0, 0, 0));
-tailPivot.add(at(mesh(new T.TorusGeometry(0.04, 0.012, 8, 20), toon('#ff8fa8')), 0, 0, 0.012));
-[[0, 0.32, 0.085], [-0.35, 0.27, 0.065], [0.35, 0.28, 0.065]].forEach(([a, len, w]) => {
-  const pv = new T.Group(); pv.rotation.y = PI + a; tailPivot.add(pv);
-  const s = mesh(strandGeo(len, w, 0.7), hairM); s.position.set(0, -0.01, 0.03); s.rotation.x = -0.55; pv.add(s);
-});
-piece('tail', tailPivot, head);
-// round bun at the back with a ribbon
-const bunG = new T.Group();
-bunG.add(at(ell(0.09, 1.05, 1, 0.95, hairM), 0, 0.1, -0.215));
-const tie = mesh(new T.TorusGeometry(0.075, 0.016, 8, 24), toon('#ff8fa8'));
-tie.position.set(0, 0.1, -0.165); tie.rotation.set(0.2, 0, 0); bunG.add(tie);
-piece('bun', bunG, skull);
-
-/* --- arms: short and round, mitten hands --- */
 const UPPER = [[0.028,-0.13],[0.031,-0.08],[0.034,-0.03],[0.035,0]];
 const FORE  = [[0.027,-0.12],[0.029,-0.06],[0.03,0]];
-[['l', 1], ['r', -1]].forEach(([s, x]) => {
-  const up = joint(s + 'Up', chest, x*0.1, 0.11, 0);
-  up.add(at(ell(0.038, 1, 1, 1, skinM), 0, 0, 0));
-  up.add(lathe(UPPER, skinM));
-  up.add(at(ell(0.029, 1, 1, 1, skinM), 0, -0.13, 0));
-  piece('sleeve', at(ell(0.058, 1, 0.82, 1, topM), 0, -0.025, 0), up);
-  const fore = joint(s + 'Fore', up, 0, -0.13, 0);
-  fore.add(lathe(FORE, skinM));
-  const hand = joint(s + 'Hand', fore, 0, -0.12, 0);
-  hand.add(at(ell(0.042, 0.95, 1.05, 0.85, skinM), 0, -0.03, 0));
-  hand.add(at(ell(0.016, 1, 1.2, 1, skinM), x*0.0, -0.022, 0.03)); // thumb nub
-});
-
-/* --- legs: stubby, round feet --- */
 const THIGH = [[0.04,-0.14],[0.045,-0.09],[0.05,-0.04],[0.052,0]];
 const SHIN  = [[0.034,-0.135],[0.036,-0.09],[0.04,-0.03],[0.04,0]];
-[['l', 1], ['r', -1]].forEach(([s, x]) => {
-  const th = joint(s + 'Thigh', char, x*0.052, -0.035, 0);
-  th.add(at(ell(0.05, 1, 1, 1, skinM), 0, 0, 0));
-  th.add(lathe(THIGH, skinM));
-  th.add(at(ell(0.04, 1, 1, 1, skinM), 0, -0.14, 0));
-  piece('hiShortLeg', lathe([[0.056,-0.05],[0.056,0.0]], botM), th);
-  const sh = joint(s + 'Shin', th, 0, -0.14, 0);
-  sh.add(lathe(SHIN, skinM));
-  const ft = joint(s + 'Foot', sh, 0, -0.135, 0);
-  ft.add(at(ell(0.036, 1, 1, 1, skinM), 0, -0.008, 0));
-  ft.add(at(ell(1, 0.042, 0.033, 0.068, skinM), 0, -0.024, 0.022));
-  piece('heel' + s, at(ell(1, 0.048, 0.04, 0.076, shoeM), 0, -0.022, 0.022), ft);
-  piece('heel' + s, at(mesh(new T.CylinderGeometry(0.014, 0.01, 0.04, 10), shoeM), 0, -0.05, -0.035), ft);
-});
 
 /* --- accents: little bows and hair clips --- */
-const accM = toon('#ff8fa8'), accY = toon('#ffd23f'), accW = toon('#fffaf2');
 function bow(scale){
   const g = new T.Group();
   [-1, 1].forEach(sd => {
@@ -917,8 +798,6 @@ function bow(scale){
   g.scale.setScalar(scale);
   return g;
 }
-// lace crop & leotard: a bow at the neckline
-piece('topBow', at(bow(0.42), 0, 0.118, 0.083), chest);
 // hair accessories sit on the upper-left of the head, facing outward
 function onHair(obj, dir){
   const d = new V3(...dir).normalize();
@@ -926,19 +805,18 @@ function onHair(obj, dir){
   obj.quaternion.setFromUnitVectors(new V3(0, 0, 1), d);
   return obj;
 }
-piece('acc-ribbon', onHair(bow(1), [0.55, 0.78, 0.3]), skull);
-{
-  const g = new T.Group();
-  for (let i = 0; i < 5; i++){ const a = i/5*PI*2; const pt = at(ell(0.03, 1, 1, 0.4, accW), Math.cos(a)*0.032, Math.sin(a)*0.032, 0); g.add(pt); }
-  g.add(at(ell(0.02, 1, 1, 0.6, accY), 0, 0, 0.008));
-  piece('acc-flower', onHair(g, [0.6, 0.72, 0.36]), skull);
-}
-{
-  const shape = new T.Shape();
-  for (let i = 0; i <= 10; i++){ const a = i/10*PI*2 + PI/2, r = i % 2 ? 0.022 : 0.05; i ? shape.lineTo(Math.cos(a)*r, Math.sin(a)*r) : shape.moveTo(Math.cos(a)*r, Math.sin(a)*r); }
-  const g = new T.ExtrudeGeometry(shape, { depth:0.014, bevelEnabled:true, bevelThickness:0.006, bevelSize:0.006, bevelSegments:2 });
-  g.translate(0, 0, -0.007);
-  piece('acc-star', onHair(mesh(g, accY), [0.6, 0.72, 0.36]), skull);
+
+// open cone whose bottom edge ripples like a frill
+function frillGeo(r0, r1, h, waves, amp){
+  const g = new T.CylinderGeometry(r0, r1, h, 64, 2, true);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++){
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = (h/2 - y)/h, a = Math.atan2(x, z);
+    const k = 1 + amp*t*t*Math.sin(a*waves);
+    p.setXYZ(i, x*k, y - t*t*amp*0.25*Math.cos(a*waves), z*k);
+  }
+  g.computeVertexNormals();
+  return g;
 }
 
 /* --- emotes: a small icon pops up over the head when a move lands --- */
@@ -962,44 +840,204 @@ const emoteTex = {};
     }
   });
 });
-const emote = new T.Sprite(new T.SpriteMaterial({ map:emoteTex.heart, transparent:true, depthWrite:false, toneMapped:false, opacity:0 }));
-emote.renderOrder = 10; scene.add(emote);
-function showEmote(kind){ emote.material.map = emoteTex[kind]; emoteAt = clock; }
-function updateEmote(){
-  const t = clock - emoteAt;
-  if (t > 1.5){ emote.visible = false; return; }
-  emote.visible = true;
-  skull.getWorldPosition(emote.position); emote.position.y += (showName ? 0.5 : 0.36) + t*0.12;
-  emote.material.opacity = Math.min(1, t/0.15) * (1 - smooth(1.1, 1.5, t));
-  emote.scale.setScalar(0.17*(t < 0.25 ? 0.5 + 0.5*Math.sin(t/0.25*PI/2)*1.2 : 1.1 - 0.1*Math.min(1, (t - 0.25)/0.2)));
+function showEmote(av, kind){ av.emote.material.map = emoteTex[kind]; av.emoteAt = clock; }
+function updateEmote(av){
+  const e = av.emote, t = clock - av.emoteAt;
+  if (t > 1.5){ e.visible = false; return; }
+  e.visible = true;
+  av.skull.getWorldPosition(e.position); e.position.y += (av.nameShown ? 0.5 : 0.36) + t*0.12;
+  e.material.opacity = Math.min(1, t/0.15) * (1 - smooth(1.1, 1.5, t));
+  e.scale.setScalar(0.17*(t < 0.25 ? 0.5 + 0.5*Math.sin(t/0.25*PI/2)*1.2 : 1.1 - 0.1*Math.min(1, (t - 0.25)/0.2)));
 }
 
-/* --- skirts hang from the waist and are re-aimed at world down every frame --- */
-const skirtPivot = joint('skirt', char, 0, 0.045, 0);
-// open cone whose bottom edge ripples like a frill
-function frillGeo(r0, r1, h, waves, amp){
-  const g = new T.CylinderGeometry(r0, r1, h, 64, 2, true);
-  const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++){
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = (h/2 - y)/h, a = Math.atan2(x, z);
-    const k = 1 + amp*t*t*Math.sin(a*waves);
-    p.setXYZ(i, x*k, y - t*t*amp*0.25*Math.cos(a*waves), z*k);
+/* --- one avatar: look = outfit object (kept by reference), faceRes < 1 for smaller face textures --- */
+function createAvatar(look, faceRes = 1){
+  const skinM = toon('#ffe2d2');
+  const topM  = toon('#f4e9d2');
+  const botM  = toon('#f4e9d2');
+  const hairM = toon('#2b1d16');
+  const shoeM = toon('#e9798f');
+
+  const holder = new T.Group(); scene.add(holder);
+  const char = new T.Group(); holder.add(char);
+  const J = {}, P = {};
+  function joint(name, parent, x, y, z){ const g = new T.Group(); g.position.set(x, y, z); parent.add(g); J[name] = g; return g; }
+  function piece(key, obj, parent){ parent.add(obj); (P[key] = P[key] || []).push(obj); return obj; }
+
+  /* --- body: a short, round torso --- */
+  char.add(lathe(PELVIS, skinM, 1, 0.86));
+  char.add(at(ell(0.03, 1.2, 0.5, 1, skinM), 0, -0.075, 0));
+  piece('brief', lathe(sub(PELVIS, -0.078, 0.0), botM, 1, 0.86, 0.004), char);
+  piece('brief', at(ell(0.032, 1.2, 0.5, 1, botM), 0, -0.075, 0), char);
+  piece('briefHi', lathe(sub(PELVIS, 0.0, 0.05), botM, 1, 0.86, 0.004), char);
+  piece('leoBot', lathe(PELVIS, topM, 1, 0.86, 0.003), char);
+  piece('leoBot', at(ell(0.032, 1.2, 0.5, 1, topM), 0, -0.075, 0), char);
+
+  const spine = joint('spine', char, 0, 0.03, 0);
+  spine.add(lathe(ABD, skinM, 1, 0.86));
+  spine.add(at(ell(0.005, 1, 1.4, 1, navelM), 0, 0.03, 0.077)); // navel
+  piece('leoMid', lathe(ABD, topM, 1, 0.86, 0.004), spine);
+  piece('briefHi', lathe(sub(ABD, -0.01, 0.03), botM, 1, 0.86, 0.004), spine);
+
+  const chest = joint('chest', spine, 0, 0.08, 0);
+  chest.add(lathe(CHEST, skinM, 1, 0.84));
+  piece('topFull', lathe(sub(CHEST, -0.01, 0.13), topM, 1, 0.84, 0.004), chest);
+  piece('topSport', lathe(sub(CHEST, 0.0, 0.09), topM, 1, 0.84, 0.004), chest);
+  piece('topBand', lathe(sub(CHEST, 0.02, 0.065), topM, 1, 0.84, 0.004), chest);
+  // straps
+  [-1, 1].forEach(s => {
+    piece('halterStrap', tube([[s*0.045,0.06,0.083],[s*0.04,0.11,0.06],[s*0.03,0.15,0.015],[s*0.01,0.16,-0.03],[0,0.155,-0.045]], 0.006, topM), chest);
+    piece('sportStrap', tube([[s*0.055,0.085,0.075],[s*0.068,0.135,0.03],[s*0.066,0.135,-0.03],[s*0.04,0.09,-0.078],[-s*0.02,0.05,-0.085]], 0.008, topM), chest);
+    piece('fullStrap', tube([[s*0.06,0.1,0.065],[s*0.075,0.135,0.0],[s*0.06,0.1,-0.065]], 0.014, topM), chest);
+  });
+
+  /* --- neck & head --- */
+  const neck = joint('neck', chest, 0, 0.14, 0);
+  neck.add(lathe([[0.042,-0.02],[0.038,0.045]], skinM, 1, 0.95));
+  const head = joint('head', neck, 0, 0.03, 0);
+  const skull = new T.Group(); skull.position.y = HEAD_Y; skull.scale.set(1.06, 0.97, 1); head.add(skull);
+  skull.add(mesh(chinify(new T.SphereGeometry(HEAD_R, 48, 36), HEAD_R), skinM));
+  [-1, 1].forEach(s => skull.add(at(ell(0.032, 0.55, 1, 0.8, skinM), s*0.212, -0.02, -0.01))); // ears
+
+  const faceCanvases = {}, faceTex = {};
+  EXPRS.forEach(n => {
+    const c = faceCanvases[n] = document.createElement('canvas'); c.width = FACE_W*faceRes; c.height = FACE_H*faceRes;
+    const t = faceTex[n] = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 4;
+  });
+  const faceM = new T.MeshToonMaterial({ map:faceTex.open, color:new T.Color(TOON_K,TOON_K,TOON_K), gradientMap:grad, toneMapped:false, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2 });
+  const faceMesh = mesh(chinify(new T.SphereGeometry(HEAD_R*1.004, 48, 32, PI/2 - FACE_PHI/2, FACE_PHI, FACE_TH0, FACE_THL), HEAD_R*1.004), faceM);
+  faceMesh.castShadow = false;
+  skull.add(faceMesh);
+
+  // hair: one scalloped shell — short chunky fringe in front, a bob around the sides and back
+  const hairShell = mesh(shellGeo(HEAD_R*1.07,
+    phi => {
+      const d = frontBack(phi);
+      const fringe = 1.2 + 0.11*Math.pow(Math.abs(Math.cos((phi - PI/2)*5.5)), 0.6);
+      const bob = 2.08 + 0.1*Math.pow(Math.abs(Math.cos(phi*7)), 0.6);
+      return fringe + (bob - fringe)*smooth(0.72, 1.45, d);
+    },
+    phi => 0.012*(1 + Math.cos(phi*6))), hairM);
+  skull.add(hairShell);
+  // crown shine
+  skull.add(at(ell(HEAD_R*1.1, 1, 1, 1, shineM, 0.45, 0.14, 0, PI*2), 0, 0, 0));
+
+  // long hair: one smooth curtain around the back, gently flared, with a scalloped hem
+  const longPivot = joint('long', head, 0, 0.2, -0.02);
+  {
+    const len = 0.4, g = new T.CylinderGeometry(0.235, 0.27, len, 48, 8, true, PI*0.5 - 0.15, PI + 0.3);
+    g.translate(0, -len/2, 0);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++){
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = -y/len, a = Math.atan2(x, z);
+      p.setY(i, y - t*0.03*(1 + Math.cos(a*9)));               // scallops at the tips
+      p.setZ(i, z*(1 - 0.25*t*t) - 0.02*t);                    // tuck in toward the shoulders
+    }
+    g.computeVertexNormals();
+    longPivot.add(mesh(g, hairM));
   }
-  g.computeVertexNormals();
-  return g;
-}
-const skirtShort = at(mesh(frillGeo(0.098, 0.17, 0.13, 11, 0.07), botM), 0, -0.065, 0);
-skirtShort.scale.z = 0.9; skirtShort.castShadow = false;
-skirtShort.add(at(mesh(frillGeo(0.168, 0.2, 0.035, 16, 0.08), botM), 0, -0.078, 0)); // ruffle tier at the hem
-const skirtLong = at(mesh(frillGeo(0.098, 0.2, 0.3, 13, 0.06), botM), 0, -0.15, 0);
-skirtLong.scale.z = 0.9; skirtLong.castShadow = false;
-skirtLong.traverse(o => o.castShadow = false); skirtShort.traverse(o => o.castShadow = false);
-piece('skirtShort', skirtShort, skirtPivot);
-piece('skirtLong', skirtLong, skirtPivot);
-piece('skirtShort', at(mesh(new T.TorusGeometry(0.098, 0.008, 6, 40), botM), 0, 0, 0), skirtPivot).rotation.x = PI/2;
-piece('skirtLong', at(mesh(new T.TorusGeometry(0.098, 0.008, 6, 40), botM), 0, 0, 0), skirtPivot).rotation.x = PI/2;
+  piece('long', longPivot, head);
+  // high ponytail
+  const tailPivot = joint('tail', head, 0, 0.38, -0.2);
+  tailPivot.add(at(ell(0.05, 1.1, 1, 1, hairM), 0, 0, 0));
+  tailPivot.add(at(mesh(new T.TorusGeometry(0.04, 0.012, 8, 20), accM), 0, 0, 0.012));
+  [[0, 0.32, 0.085], [-0.35, 0.27, 0.065], [0.35, 0.28, 0.065]].forEach(([a, len, w]) => {
+    const pv = new T.Group(); pv.rotation.y = PI + a; tailPivot.add(pv);
+    const s = mesh(strandGeo(len, w, 0.7), hairM); s.position.set(0, -0.01, 0.03); s.rotation.x = -0.55; pv.add(s);
+  });
+  piece('tail', tailPivot, head);
+  // round bun at the back with a ribbon
+  const bunG = new T.Group();
+  bunG.add(at(ell(0.09, 1.05, 1, 0.95, hairM), 0, 0.1, -0.215));
+  const tie = mesh(new T.TorusGeometry(0.075, 0.016, 8, 24), accM);
+  tie.position.set(0, 0.1, -0.165); tie.rotation.set(0.2, 0, 0); bunG.add(tie);
+  piece('bun', bunG, skull);
 
-char.traverse(o => { if (o.isMesh) o.receiveShadow = false; }); // toon look: no self-shadow bands
+  /* --- arms: short and round, mitten hands --- */
+  [['l', 1], ['r', -1]].forEach(([s, x]) => {
+    const up = joint(s + 'Up', chest, x*0.1, 0.11, 0);
+    up.add(at(ell(0.038, 1, 1, 1, skinM), 0, 0, 0));
+    up.add(lathe(UPPER, skinM));
+    up.add(at(ell(0.029, 1, 1, 1, skinM), 0, -0.13, 0));
+    piece('sleeve', at(ell(0.058, 1, 0.82, 1, topM), 0, -0.025, 0), up);
+    const fore = joint(s + 'Fore', up, 0, -0.13, 0);
+    fore.add(lathe(FORE, skinM));
+    const hand = joint(s + 'Hand', fore, 0, -0.12, 0);
+    hand.add(at(ell(0.042, 0.95, 1.05, 0.85, skinM), 0, -0.03, 0));
+    hand.add(at(ell(0.016, 1, 1.2, 1, skinM), x*0.0, -0.022, 0.03)); // thumb nub
+  });
+
+  /* --- legs: stubby, round feet --- */
+  [['l', 1], ['r', -1]].forEach(([s, x]) => {
+    const th = joint(s + 'Thigh', char, x*0.052, -0.035, 0);
+    th.add(at(ell(0.05, 1, 1, 1, skinM), 0, 0, 0));
+    th.add(lathe(THIGH, skinM));
+    th.add(at(ell(0.04, 1, 1, 1, skinM), 0, -0.14, 0));
+    piece('hiShortLeg', lathe([[0.056,-0.05],[0.056,0.0]], botM), th);
+    const sh = joint(s + 'Shin', th, 0, -0.14, 0);
+    sh.add(lathe(SHIN, skinM));
+    const ft = joint(s + 'Foot', sh, 0, -0.135, 0);
+    ft.add(at(ell(0.036, 1, 1, 1, skinM), 0, -0.008, 0));
+    ft.add(at(ell(1, 0.042, 0.033, 0.068, skinM), 0, -0.024, 0.022));
+    piece('heel' + s, at(ell(1, 0.048, 0.04, 0.076, shoeM), 0, -0.022, 0.022), ft);
+    piece('heel' + s, at(mesh(new T.CylinderGeometry(0.014, 0.01, 0.04, 10), shoeM), 0, -0.05, -0.035), ft);
+  });
+
+  // lace crop & leotard: a bow at the neckline
+  piece('topBow', at(bow(0.42), 0, 0.118, 0.083), chest);
+  piece('acc-ribbon', onHair(bow(1), [0.55, 0.78, 0.3]), skull);
+  {
+    const g = new T.Group();
+    for (let i = 0; i < 5; i++){ const a = i/5*PI*2; const pt = at(ell(0.03, 1, 1, 0.4, accW), Math.cos(a)*0.032, Math.sin(a)*0.032, 0); g.add(pt); }
+    g.add(at(ell(0.02, 1, 1, 0.6, accY), 0, 0, 0.008));
+    piece('acc-flower', onHair(g, [0.6, 0.72, 0.36]), skull);
+  }
+  {
+    const shape = new T.Shape();
+    for (let i = 0; i <= 10; i++){ const a = i/10*PI*2 + PI/2, r = i % 2 ? 0.022 : 0.05; i ? shape.lineTo(Math.cos(a)*r, Math.sin(a)*r) : shape.moveTo(Math.cos(a)*r, Math.sin(a)*r); }
+    const g = new T.ExtrudeGeometry(shape, { depth:0.014, bevelEnabled:true, bevelThickness:0.006, bevelSize:0.006, bevelSegments:2 });
+    g.translate(0, 0, -0.007);
+    piece('acc-star', onHair(mesh(g, accY), [0.6, 0.72, 0.36]), skull);
+  }
+
+  /* --- skirts hang from the waist and are re-aimed at world down every frame --- */
+  const skirtPivot = joint('skirt', char, 0, 0.045, 0);
+  const skirtShort = at(mesh(frillGeo(0.098, 0.17, 0.13, 11, 0.07), botM), 0, -0.065, 0);
+  skirtShort.scale.z = 0.9; skirtShort.castShadow = false;
+  skirtShort.add(at(mesh(frillGeo(0.168, 0.2, 0.035, 16, 0.08), botM), 0, -0.078, 0)); // ruffle tier at the hem
+  const skirtLong = at(mesh(frillGeo(0.098, 0.2, 0.3, 13, 0.06), botM), 0, -0.15, 0);
+  skirtLong.scale.z = 0.9; skirtLong.castShadow = false;
+  skirtLong.traverse(o => o.castShadow = false); skirtShort.traverse(o => o.castShadow = false);
+  piece('skirtShort', skirtShort, skirtPivot);
+  piece('skirtLong', skirtLong, skirtPivot);
+  piece('skirtShort', at(mesh(new T.TorusGeometry(0.098, 0.008, 6, 40), botM), 0, 0, 0), skirtPivot).rotation.x = PI/2;
+  piece('skirtLong', at(mesh(new T.TorusGeometry(0.098, 0.008, 6, 40), botM), 0, 0, 0), skirtPivot).rotation.x = PI/2;
+
+  char.traverse(o => { if (o.isMesh) o.receiveShadow = false; }); // toon look: no self-shadow bands
+  char.position.set(0, STAND_Y, 0);
+
+  const emote = new T.Sprite(new T.SpriteMaterial({ map:emoteTex.heart, transparent:true, depthWrite:false, toneMapped:false, opacity:0 }));
+  emote.renderOrder = 10; emote.visible = false; scene.add(emote);
+
+  const av = {
+    holder, char, J, P, skull, emote, faceM, faceTex, faceCanvases,
+    mats:{ skinM, topM, botM, hairM, shoeM }, skirtPivot, skirtShort, skirtLong, tailPivot, longPivot,
+    outfit: look,
+    // what animateAvatar() shows; the player's controls or the network fill these in
+    pose:'stand', onPole:false, faceMode:'auto', moveAmp:0, walkPhase:0, spinVel:0, nameShown:true,
+    hopAt:-9, landAt:-9, emoteAt:-9, blinkAt:3, blinking:0,
+  };
+  dressAvatar(av);
+  return av;
+}
+// remove an avatar (a player who left); shared materials and the lace texture stay
+function removeAvatar(av){
+  const own = new Set([...Object.values(av.mats), av.faceM, av.emote.material]);
+  av.holder.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+  own.forEach(m => m.dispose());
+  Object.values(av.faceTex).forEach(t => t.dispose());
+  scene.remove(av.holder); scene.remove(av.emote);
+}
 
 /* ---------- outfit ---------- */
 const OPTIONS = {
@@ -1032,17 +1070,27 @@ const DEFAULT = { top:'lace', topColor:'#f4e9d2', bottom:'laceSkirt', bottomColo
 let outfit = Object.assign({}, DEFAULT);
 try { const s = JSON.parse(localStorage.getItem('pole-outfit-v2') || 'null'); if (s) outfit = Object.assign(outfit, s); } catch (e) {}
 
+// show the pieces and colors of av.outfit on that avatar
+function dressAvatar(av){
+  const o = av.outfit, { topM, botM, hairM, skinM } = av.mats;
+  const on = new Set([...TOP_PARTS[o.top], ...BOT_PARTS[o.bottom], o.hair, 'acc-' + o.acc]);
+  if (o.shoes === 'heels'){ on.add('heell'); on.add('heelr'); }
+  Object.entries(av.P).forEach(([k, list]) => list.forEach(m => { m.visible = on.has(k); }));
+  topM.color.copy(tcol(o.topColor));
+  botM.color.copy(tcol(o.bottomColor));
+  topM.map = o.top === 'lace' ? laceTex : null; topM.needsUpdate = true;
+  botM.map = o.bottom === 'laceSkirt' ? laceTex : null; botM.needsUpdate = true;
+  hairM.color.copy(tcol(o.hairColor));
+  skinM.color.copy(tcol(o.skin));
+  EXPRS.forEach(n => { drawFace(av.faceCanvases[n], n, o.eyeColor, o.hairColor); av.faceTex[n].needsUpdate = true; });
+}
+
+// the player's own avatar; input, camera and the name tag work on it through these names
+const me = createAvatar(outfit);
+const { holder, char, J, skull } = me;
+
 function applyOutfit(){
-  const on = new Set([...TOP_PARTS[outfit.top], ...BOT_PARTS[outfit.bottom], outfit.hair, 'acc-' + outfit.acc]);
-  if (outfit.shoes === 'heels'){ on.add('heell'); on.add('heelr'); }
-  Object.entries(P).forEach(([k, list]) => list.forEach(o => { o.visible = on.has(k); }));
-  topM.color.copy(tcol(outfit.topColor));
-  botM.color.copy(tcol(outfit.bottomColor));
-  topM.map = outfit.top === 'lace' ? laceTex : null; topM.needsUpdate = true;
-  botM.map = outfit.bottom === 'laceSkirt' ? laceTex : null; botM.needsUpdate = true;
-  hairM.color.copy(tcol(outfit.hairColor));
-  skinM.color.copy(tcol(outfit.skin));
-  EXPRS.forEach(n => { drawFace(faceCanvases[n], n, outfit.eyeColor, outfit.hairColor); faceTex[n].needsUpdate = true; });
+  dressAvatar(me);
   try { localStorage.setItem('pole-outfit-v2', JSON.stringify(outfit)); } catch (e) {}
   syncWardrobe();
 }
@@ -1149,10 +1197,10 @@ function boneQuat(dir, hz, out){
   _bz.crossVectors(_bx, _by);
   return out.setFromRotationMatrix(_bm.makeBasis(_bx, _by, _bz));
 }
-function solveIK(limb, spec, k){
-  const A = J[limb.a], B = J[limb.b];
-  _Tt.set(...spec.t); holder.localToWorld(_Tt);
-  _H.set(...spec.h).normalize().applyQuaternion(holder.quaternion);
+function solveIK(av, limb, spec, k){
+  const A = av.J[limb.a], B = av.J[limb.b];
+  _Tt.set(...spec.t); av.holder.localToWorld(_Tt);
+  _H.set(...spec.h).normalize().applyQuaternion(av.holder.quaternion);
   A.getWorldPosition(_S);
   _d.subVectors(_Tt, _S);
   let dist = _d.length(); _d.normalize();
@@ -1182,12 +1230,10 @@ let mode = 'roam';          // roam | approach | pole
 let poseName = 'stand';
 let poseStart = 0, poseYaw = 0;
 let walkTarget = null, queuedMove = null, pendingLeave = null;
-let spinVel = 0, spinPole = false, moveAmp = 0, walkPhase = 0, clock = 0, blinkAt = 3, blinking = 0;
-let hopAt = -9, landAt = -9, emoteAt = -9;   // little reactions: hop onto the pole, squash on landing, emote pop
+let spinPole = false, clock = 0;
 const keys = {};
 
 holder.position.set(0.9, 0, 1.6); holder.rotation.y = 0.35;
-char.position.set(0, STAND_Y, 0);
 
 const _q = new Q(), _q2 = new Q(), _q3 = new Q(), _v = new V3(), _e = new T.Euler(), DOWN = new V3(0, -1, 0);
 const tmpWP = new V3(), tmpWQ = new Q();
@@ -1202,7 +1248,7 @@ function rebase(pos, rotY){
 }
 function setPose(name){
   poseName = name; poseStart = clock; poseYaw = yaw;
-  if (POSES[name].emote) showEmote(POSES[name].emote);
+  if (POSES[name].emote) showEmote(me, POSES[name].emote);
   if (MOVE_ORDER.includes(name)) polkTrack('pose_start', { pose:name });
   updateUI();
 }
@@ -1217,7 +1263,7 @@ function startMove(name){
 function enterPole(){
   const a = Math.atan2(holder.position.x - POLE.x, holder.position.z - POLE.z);
   rebase(POLE.clone(), a + PI);
-  mode = 'pole'; walkTarget = null; hopAt = clock;
+  mode = 'pole'; walkTarget = null; me.hopAt = clock;
   setPose(queuedMove || 'ready'); queuedMove = null;
 }
 function requestLeave(target){
@@ -1231,7 +1277,7 @@ function doLeave(){
   const fwd = new V3(0, 0, 1).applyQuaternion(char.getWorldQuaternion(_q));
   rebase(new V3(_v.x, 0, _v.z), Math.atan2(fwd.x, fwd.z));
   mode = 'roam'; walkTarget = pendingLeave && pendingLeave.target; pendingLeave = null;
-  spinVel = 0; landAt = clock; setPose('stand');
+  me.spinVel = 0; me.landAt = clock; setPose('stand');
 }
 function goTo(p){
   sitQueued = null;
@@ -1298,18 +1344,6 @@ function update(dt){
   updateButterflies(clock);
   if (marker.material.opacity > 0){ marker.material.opacity = Math.max(0, marker.material.opacity - dt*0.8); marker.scale.setScalar(1 + (1 - marker.material.opacity)*0.6); }
 
-  // blink
-  if (clock > blinkAt){ blinking = 0.13; blinkAt = clock + 2.5 + Math.random()*3; }
-  if (blinking > 0) blinking -= dt;
-  const expr = faceMode !== 'auto' ? faceMode : (mode === 'pole' && POSES[poseName].face) || 'open';
-  faceM.map = faceTex[blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
-
-  // hop up onto the pole, squash a little when landing back on the ground
-  const tHop = clock - hopAt, tLand = clock - landAt;
-  const squash = tLand < 0.35 ? Math.sin(tLand/0.35*PI)*0.14 : 0;
-  holder.position.y = (tHop < 0.4 ? Math.sin(tHop/0.4*PI)*0.16 : 0) - squash*STAND_Y;
-  char.scale.set(1 + squash*0.5, 1 - squash, 1 + squash*0.5);
-
   let f = 0, s = 0;
   if (keys.up) f += 1; if (keys.down) f -= 1;
   if (keys.right) s += 1; if (keys.left) s -= 1;
@@ -1344,69 +1378,91 @@ function update(dt){
     }
     if (mode === 'roam' && sitQueued && !walkTarget && !keyDir) sitDown(sitQueued);   // arrived (or stopped): sit here
   }
-  moveAmp += ((moving ? 1 : 0) - moveAmp)*(1 - Math.exp(-8*dt));
-  walkPhase += dt*11*moveAmp;
+  me.moveAmp += ((moving ? 1 : 0) - me.moveAmp)*(1 - Math.exp(-8*dt));
+  me.walkPhase += dt*11*me.moveAmp;
 
-  const pose = POSES[poseName];
   if (mode === 'pole'){
+    const view = POSES[poseName].view;
     if (spinPole && poseName !== 'ready'){
-      spinVel += (-0.65 - spinVel)*(1 - Math.exp(-2.5*dt));
-      holder.rotation.y += spinVel*dt;
+      me.spinVel += (-0.65 - me.spinVel)*(1 - Math.exp(-2.5*dt));
+      holder.rotation.y += me.spinVel*dt;
     } else {
-      spinVel *= Math.exp(-3*dt);
-      holder.rotation.y += spinVel*dt;
-      if (pose.view != null) holder.rotation.y = angLerp(holder.rotation.y, poseYaw - pose.view, 1 - Math.exp(-1.6*dt));
+      me.spinVel *= Math.exp(-3*dt);
+      holder.rotation.y += me.spinVel*dt;
+      if (view != null) holder.rotation.y = angLerp(holder.rotation.y, poseYaw - view, 1 - Math.exp(-1.6*dt));
     }
   }
 
+  me.pose = poseName; me.onPole = mode === 'pole'; me.faceMode = faceMode;
+  animateAvatar(me, dt);
+  others.forEach(av => { if (av.bot) updateBot(av, dt); animateAvatar(av, dt); });
+  updateCamera(dt);
+}
+
+// pose one avatar from its state: face, hop/squash, root and joint blending, IK grips, hair and skirts
+function animateAvatar(av, dt){
+  const { holder, char, J } = av, pose = POSES[av.pose];
+
+  // blink
+  if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
+  if (av.blinking > 0) av.blinking -= dt;
+  const expr = av.faceMode !== 'auto' ? av.faceMode : (av.onPole && pose.face) || 'open';
+  av.faceM.map = av.faceTex[av.blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
+
+  // hop up onto the pole, squash a little when landing back on the ground
+  const tHop = clock - av.hopAt, tLand = clock - av.landAt;
+  const squash = tLand < 0.35 ? Math.sin(tLand/0.35*PI)*0.14 : 0;
+  holder.position.y = (tHop < 0.4 ? Math.sin(tHop/0.4*PI)*0.16 : 0) - squash*STAND_Y;
+  char.scale.set(1 + squash*0.5, 1 - squash, 1 + squash*0.5);
+
   // blend root toward the pose
-  const lift = (outfit.shoes === 'heels' && (poseName === 'stand' || poseName === 'ready') ? 0.022 : 0)
+  const heels = av.outfit.shoes === 'heels' && (av.pose === 'stand' || av.pose === 'ready');
+  const lift = (heels ? 0.022 : 0)
     + (Math.hypot(holder.position.x - POLE.x, holder.position.z - POLE.z) < 1.38 ? STAGE_H : 0);
-  const walkBob = Math.abs(Math.sin(walkPhase))*0.03*moveAmp;
-  const sway = mode === 'pole' && poseName !== 'ready' ? Math.sin(clock*1.3)*0.012 : 0;
-  const k = 1 - Math.exp(-(mode === 'pole' ? 4 : 10)*dt);
+  const walkBob = Math.abs(Math.sin(av.walkPhase))*0.03*av.moveAmp;
+  const sway = av.onPole && av.pose !== 'ready' ? Math.sin(clock*1.3)*0.012 : 0;
+  const k = 1 - Math.exp(-(av.onPole ? 4 : 10)*dt);
   _v.set(pose.p[0], pose.p[1] + lift + walkBob + sway, pose.p[2]);
   char.position.lerp(_v, k);
   char.quaternion.slerp(pose.q, k);
 
-  const sw = Math.sin(walkPhase)*moveAmp;
+  const sw = Math.sin(av.walkPhase)*av.moveAmp;
   const breath = Math.sin(clock*1.6)*0.018;
   JOINTS.forEach(n => {
     if (pose.ikSkip.has(n)) return;
     const b = pose.j[n] || [0,0,0];
     let x = b[0], y = b[1], z = b[2];
-    if (moveAmp > 0.001){
+    if (av.moveAmp > 0.001){
       if (n === 'lThigh') x += -0.6*sw;
       if (n === 'rThigh') x +=  0.6*sw;
-      if (n === 'lShin')  x += Math.max(0,  Math.sin(walkPhase - 0.9))*0.65*moveAmp;
-      if (n === 'rShin')  x += Math.max(0, -Math.sin(walkPhase - 0.9))*0.65*moveAmp;
+      if (n === 'lShin')  x += Math.max(0,  Math.sin(av.walkPhase - 0.9))*0.65*av.moveAmp;
+      if (n === 'rShin')  x += Math.max(0, -Math.sin(av.walkPhase - 0.9))*0.65*av.moveAmp;
       if (n === 'lUp')    x +=  0.5*sw;
       if (n === 'rUp')    x += -0.5*sw;
       if (n === 'spine')  y += 0.08*sw;
     }
     if (n === 'chest') x += breath;
-    if (poseName === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
-    if (outfit.shoes === 'heels' && (n === 'lFoot' || n === 'rFoot') && (poseName === 'stand' || poseName === 'ready')) x += 0.35;
+    if (av.pose === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
+    if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
     _q.setFromEuler(_e.set(x, y, z));
     J[n].quaternion.slerp(_q, k);
   });
 
   // IK grips on the pole
   holder.updateMatrixWorld(true);
-  const kIK = 1 - Math.exp(-(mode === 'pole' ? 9 : 14)*dt);
-  Object.entries(pose.ik || {}).forEach(([name, spec]) => solveIK(LIMBS[name], spec, kIK));
+  const kIK = 1 - Math.exp(-(av.onPole ? 9 : 14)*dt);
+  Object.entries(pose.ik || {}).forEach(([name, spec]) => solveIK(av, LIMBS[name], spec, kIK));
 
   // hair and skirts hang with gravity; skirts flare while spinning
   holder.updateMatrixWorld(true);
-  hang(skirtPivot, char, 0.82, dt, 7);
-  hang(tailPivot, head, 0.85, dt, 9);
-  hang(longPivot, head, 0.7, dt, 9);
-  const flare = Math.min(1, Math.abs(spinVel)/2.5);
-  skirtShort.scale.set(1 + 0.3*flare, 1, 0.9 + 0.3*flare);
-  skirtLong.scale.set(1 + 0.4*flare, 1 - 0.1*flare, 0.9 + 0.4*flare);
+  hang(av.skirtPivot, char, 0.82, dt, 7);
+  hang(av.tailPivot, J.head, 0.85, dt, 9);
+  hang(av.longPivot, J.head, 0.7, dt, 9);
+  const flare = Math.min(1, Math.abs(av.spinVel)/2.5);
+  av.skirtShort.scale.set(1 + 0.3*flare, 1, 0.9 + 0.3*flare);
+  av.skirtLong.scale.set(1 + 0.4*flare, 1 - 0.1*flare, 0.9 + 0.4*flare);
 
-  updateEmote();
-  updateCamera(dt);
+  updateEmote(av);
 }
 function hang(pivot, parent, amount, dt, rate){
   parent.getWorldQuaternion(_q2); _q2.invert();
@@ -1521,8 +1577,8 @@ FACES.forEach(([v, label]) => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'face'; b.textContent = label; b.dataset.v = v; b.id = 'face-' + v;
   b.addEventListener('click', () => {
-    faceMode = v; blinking = 0; polkTrack('face_change', { face:v });
-    if (FACE_EMOTE[v]) showEmote(FACE_EMOTE[v]);
+    faceMode = v; me.blinking = 0; polkTrack('face_change', { face:v });
+    if (FACE_EMOTE[v]) showEmote(me, FACE_EMOTE[v]);
     try { localStorage.setItem('pole-face', v); } catch (e) {}
     syncFaces();
   });
@@ -1542,7 +1598,7 @@ function setName(v){
   try { localStorage.setItem('pole-name', v); } catch (e) {}
 }
 function setShowName(v){
-  showName = v; nameTog.setAttribute('aria-pressed', String(v)); nameTog.textContent = v ? '이름 표시' : '이름 숨김';
+  showName = me.nameShown = v; nameTog.setAttribute('aria-pressed', String(v)); nameTog.textContent = v ? '이름 표시' : '이름 숨김';
   try { localStorage.setItem('pole-name-show', v ? '1' : '0'); } catch (e) {}
 }
 nameTog.addEventListener('click', () => setShowName(!showName));
@@ -1778,6 +1834,125 @@ function syncWardrobe(){
   });
 }
 
+/* ---------- other avatars: test bots for now (?bots=N), network players later ---------- */
+const others = [];
+const pick = list => list[Math.random()*list.length | 0][0];
+function randomLook(){
+  const o = {};
+  Object.keys(OPTIONS).forEach(k => o[k] = pick(OPTIONS[k]));
+  Object.keys(COLORS).forEach(k => o[k] = pick(COLORS[k]));
+  return o;
+}
+let botRange = 7;   // how far from the middle bots wander (the benchmark keeps them on screen)
+function randomSpot(){
+  for (let i = 0; i < 50; i++){
+    const x = (Math.random()*2 - 1)*botRange, z = 1 + (Math.random()*2 - 1)*botRange;
+    if (walkable(x, z) && Math.hypot(x - POLE.x, z - POLE.z) > 1.6) return new V3(x, 0, z);
+  }
+  return new V3(2, 0, 3);
+}
+function addBot(){
+  const av = createAvatar(randomLook(), 0.5);
+  av.holder.position.copy(randomSpot()); av.holder.rotation.y = Math.random()*PI*2;
+  av.bot = { target:randomSpot(), rest:Math.random()*3 };
+  others.push(av);
+}
+function setBots(n){
+  while (others.length < n) addBot();
+  while (others.length > n) removeAvatar(others.pop());
+}
+// wander between random spots, pausing (and sometimes emoting) in between
+function updateBot(av, dt){
+  const b = av.bot, h = av.holder.position;
+  let moving = false;
+  if (b.rest > 0) b.rest -= dt;
+  else {
+    _v.set(b.target.x - h.x, 0, b.target.z - h.z);
+    const d = _v.length();
+    if (d < 0.1){
+      b.target = randomSpot(); b.rest = 1 + Math.random()*4;
+      if (Math.random() < 0.4) showEmote(av, pick([['heart'], ['note'], ['wow'], ['sparkle']]));
+    } else {
+      _v.normalize();
+      const step = Math.min(dt, d), nx = h.x + _v.x*step, nz = h.z + _v.z*step;
+      if (stepOK(h.x, h.z, nx, nz) && Math.hypot(nx - POLE.x, nz - POLE.z) > 0.5){
+        h.x = nx; h.z = nz; moving = true;
+        av.holder.rotation.y = angLerp(av.holder.rotation.y, Math.atan2(_v.x, _v.z), 1 - Math.exp(-10*dt));
+      } else b.target = randomSpot();
+    }
+  }
+  av.moveAmp += ((moving ? 1 : 0) - av.moveAmp)*(1 - Math.exp(-8*dt));
+  av.walkPhase += dt*11*av.moveAmp;
+}
+// with bots on, a small meter shows the frame rate and draw calls (for measuring how many fit on a phone)
+let perfEl = null, perfN = 0, perfT = 0;
+function perfTick(now){
+  perfN++;
+  if (now - perfT < 1000) return;
+  perfEl.textContent = `봇 ${others.length} · ${Math.round(perfN*1000/(now - perfT))}fps · draw ${renderer.info.render.calls}`;
+  perfN = 0; perfT = now;
+}
+// ?bench: raise the bot count step by step, measure the frame rate at each step and show a table (for picking the room size)
+const BENCH_STEPS = [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 30, 40, 49], BENCH_WARM = 2000, BENCH_MEASURE = 4000;
+let bench = null;
+function startBench(){
+  entry.hidden = true; document.body.classList.add('clean');
+  wide = true; botRange = 4; camDist = 13; pitch = 0.55;   // pulled far back so every bot is on screen (worst case)
+  if (!bench) {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;width:min(320px,calc(100vw - 32px));padding:16px 18px;border-radius:18px;background:rgba(255,250,238,.94);color:#5a4237;font:14px/1.6 "IBM Plex Sans KR",sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.18)';
+    document.body.appendChild(el);
+    bench = { el };
+  }
+  Object.assign(bench, { i:0, t0:performance.now(), frames:[], results:[], done:false });
+  setBots(BENCH_STEPS[0]);
+}
+function benchTick(now, ms){
+  const b = bench;
+  if (b.done) return;
+  const t = now - b.t0;
+  if (t > BENCH_WARM && ms > 0) b.frames.push(ms);
+  b.el.innerHTML = `<b>성능 측정 중</b> (${b.i + 1}/${BENCH_STEPS.length})<br>캐릭터 ${BENCH_STEPS[b.i] + 1}명 · 약 ${Math.ceil(((BENCH_STEPS.length - b.i)*(BENCH_WARM + BENCH_MEASURE) - t)/1000)}초 남음<br><small>화면을 끄거나 다른 앱으로 넘어가지 마세요</small>`;
+  if (t < BENCH_WARM + BENCH_MEASURE) return;
+  if (!b.frames.length){ b.t0 = now; return; }   // no frames counted (tab was hidden): measure this step again
+  const f = b.frames.slice().sort((x, y) => x - y), sum = f.reduce((s, x) => s + x, 0);
+  b.results.push({ people:BENCH_STEPS[b.i] + 1, fps:Math.round(1000*f.length/sum), low:Math.round(1000/f[Math.floor(f.length*0.95)]), draw:renderer.info.render.calls });
+  if (++b.i < BENCH_STEPS.length){ botRange = BENCH_STEPS[b.i] > 20 ? 6 : 4; setBots(BENCH_STEPS[b.i]); b.t0 = now; b.frames = []; return; }
+  b.done = true; setBots(0);
+  // room size: the most people that still run smoothly, judged against the rate with nobody else around
+  // (phones in low power mode cap pages at 30fps, so an absolute bar would call every step slow)
+  const base = b.results[0].fps, capped = base < 45;
+  const ok = b.results.filter(r => r.fps >= base*0.9 && r.low >= Math.min(30, base*0.6)).pop();
+  const device = `${screen.width}×${screen.height} · 픽셀 ${devicePixelRatio}배(렌더 ${renderer.getPixelRatio()}배)`;
+  const lines = ['인원  fps(평균/느릴 때)  draw'].concat(b.results.map(r => `${String(r.people).padStart(2)}명  ${String(r.fps).padStart(3)} / ${String(r.low).padStart(3)}        ${r.draw}`));
+  const text = `폴크닉 성능 측정\n${device}\n${navigator.userAgent}\n\n${lines.join('\n')}\n\n부드러운 최대 인원: ${ok ? ok.people + '명' : '1명도 버거움'}${ok && ok === b.results[b.results.length - 1] ? ' 이상' : ''}${capped ? '\n(혼자일 때도 30fps 근처: 저전력 모드 등으로 제한된 상태)' : ''}`;
+  b.el.innerHTML = `<b>측정 끝</b><br><small>${device}</small>
+    <pre style="margin:8px 0;font:12px/1.6 monospace;white-space:pre">${lines.join('\n')}</pre>
+    부드러운 최대 인원: <b>${ok ? ok.people + '명' : '1명도 버거움'}</b>${ok && ok === b.results[b.results.length - 1] ? ' 이상' : ''}
+    ${capped ? '<br><small>혼자일 때도 30fps 근처예요. 저전력 모드나 화면 녹화를 끄고 다시 재 주세요.</small>' : ''}
+    <div style="margin-top:10px;display:flex;gap:8px"><button type="button" data-a="copy">결과 복사</button><button type="button" data-a="again">다시 측정</button></div>`;
+  b.el.querySelectorAll('button').forEach(btn => {
+    btn.style.cssText = 'flex:1;padding:8px;border:0;border-radius:12px;background:#ff8fa8;color:#fff;font:inherit;cursor:pointer';
+    btn.addEventListener('click', () => {
+      if (btn.dataset.a === 'again') return startBench();
+      const done = () => { btn.textContent = '복사됨'; };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => prompt('복사해서 보내 주세요', text));
+      else prompt('복사해서 보내 주세요', text);
+    });
+  });
+}
+{
+  const q = new URLSearchParams(location.search);
+  if (q.has('bench')) startBench();
+  const n = Math.min(30, parseInt(q.get('bots'), 10) || 0);
+  if (n > 0 && !bench){
+    setBots(n);
+    perfEl = document.createElement('div');
+    perfEl.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:50;padding:2px 10px;border-radius:10px;background:rgba(0,0,0,.45);color:#fff;font:12px/1.6 monospace;pointer-events:none';
+    document.body.appendChild(perfEl);
+  }
+}
+
 /* ---------- loop ---------- */
 let viewW = 0, viewH = 0;
 function resize(){
@@ -1804,10 +1979,12 @@ let paused = false;
 function frame(now){
   if (host.clientWidth !== viewW || host.clientHeight !== viewH) resize();   // last-resort size check
   if (paused){ last = now; requestAnimationFrame(frame); return; }
+  if (bench) benchTick(now, now - last);
   const dt = Math.min(0.05, Math.max(0, (now - last)/1000)); last = Math.max(last, now);
   update(reduced ? dt*0.6 : dt);
   renderer.render(scene, camera);
   updateNameTag();
+  if (perfEl) perfTick(now);
   requestAnimationFrame(frame);
 }
 for (let i = 0; i < 30; i++) update(1/30);
@@ -1820,7 +1997,8 @@ window.__poleDebug = {
   face(d){ holder.updateMatrixWorld(true); const h = new V3(); skull.getWorldPosition(h); const f = new V3(0,0,1).applyQuaternion(J.head.getWorldQuaternion(new Q())); camera.position.copy(h).addScaledVector(f, d || 0.5); camera.lookAt(h); renderer.render(scene, camera); },
   state(){ holder.updateMatrixWorld(true); const c = new V3(); char.getWorldPosition(c); return { cam: camera.position.toArray(), tgt: camTarget.toArray(), holder: holder.position.toArray(), char: c.toArray(), q: char.quaternion.toArray(), mode, poseName }; },
   ik(){ holder.updateMatrixWorld(true); const pose = POSES[poseName], out = {}; Object.entries(pose.ik || {}).forEach(([n, s]) => { const hand = J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')], w = new V3(); hand.getWorldPosition(w); out[n] = +w.distanceTo(holder.localToWorld(new V3(...s.t))).toFixed(3); }); const h = new V3(); skull.getWorldPosition(h); out.headGap = +(Math.hypot(h.x - POLE.x, h.z - POLE.z) - HEAD_R*1.06).toFixed(3); return out; },
-  look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); }
+  look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
+  bots(n){ setBots(n); return others.length; }
 };
 })();
 </script>

@@ -14,7 +14,7 @@
 
 ## 현재 상태
 
-- 결과물은 단일 파일 [index.html](index.html) (~1830줄, CSS/JS 인라인, 빌드 없음)
+- 결과물은 단일 파일 [index.html](index.html) (~1950줄, CSS/JS 인라인, 빌드 없음)
   - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
@@ -40,13 +40,14 @@
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
 | 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 스테이지 + 실버 폴(`POLE_H`, `STAGE_H`) |
 | 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 표지판, 울타리, 바위(`OBSTACLES`), 나비 |
-| 591–1003 | 캐릭터: 헬퍼, 리그(`joint()` → `J[name]`), `skull`(머리·얼굴·헤어 셸), `chinify()`, 표정별 `drawFace()`(`EXPRS`), 헤어, 팔다리, 치마 러플, 리본·머리 장식, 이모트 |
-| 1004–1049 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `applyOutfit()` |
-| 1050–1179 | `POSES`(앉기 2종 + 동작 5종), `MOVE_ORDER`, `LIMBS`, `solveIK()` |
-| 1180–1410 | 상태 머신, 앉기(`sitDown`/`standUp`/`toggleSit`), `stepOK`, 카메라, `update(dt)` |
-| 1411–1551 | `hang()`, 입력(포인터·키보드 `DIRS`), UI(동작 바, 표정, 닉네임·이름표) |
-| 1552–1780 | BGM(`MUSIC`, `unmuteIOS`), 메뉴 숨기기, 입장, 옷장 칩 |
-| 1781–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
+| 591–1041 | 캐릭터: 공용 재질(`accM` 등)·헬퍼, `chinify()`, 표정별 `drawFace()`(`EXPRS`), 이모트(`showEmote(av, kind)`), **`createAvatar(look, faceRes)`**(리그 `joint()` → `av.J[name]`, `skull`, 헤어, 팔다리, 치마, 장식), `removeAvatar(av)` |
+| 1042–1097 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `dressAvatar(av)`, 내 아바타 `me`(+ 별칭 `holder`/`char`/`J`/`skull`), `applyOutfit()` |
+| 1098–1227 | `POSES`(앉기 2종 + 동작 5종), `MOVE_ORDER`, `LIMBS`, `solveIK(av, …)` |
+| 1228–1474 | 상태 머신(내 캐릭터 조작), 앉기(`sitDown`/`standUp`/`toggleSit`), `stepOK`, 카메라, `update(dt)`, **`animateAvatar(av, dt)`**, `hang()` |
+| 1475–1607 | 입력(포인터·키보드 `DIRS`), UI(동작 바, 표정, 닉네임·이름표) |
+| 1608–1836 | BGM(`MUSIC`, `unmuteIOS`), 메뉴 숨기기, 입장, 옷장 칩 |
+| 1837–1903 | 다른 아바타 `others`: 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`) |
+| 1904–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
 
 줄 번호는 편집하면서 밀리니 함수명으로 grep 할 것.
 
@@ -56,6 +57,7 @@
 - **`frame()`의 dt 클램프 유지**: `dt = min(0.05, max(0, ...))`, `last = max(last, now)`. rAF 타임스탬프가 `performance.now()`보다 이를 수 있어 음수 dt → 카메라 폭주
 - 머리·얼굴 구에는 **같은 `chinify()`** 적용. 턱을 별도 메시로 붙이지 말 것(툰 이음선)
 - 머리·얼굴·헤어 셸은 모두 `skull` 그룹 안에 둔다(같은 스케일을 공유해야 얼굴/머리가 안 어긋남)
+- 캐릭터는 `createAvatar()`로만 만든다. 아바타별 상태(`pose`, `onPole`, `faceMode`, `moveAmp`, `walkPhase`, `spinVel`, `hopAt`/`landAt`/`emoteAt`, 깜빡임)는 `av`에 두고 `animateAvatar(av, dt)`가 그린다. 내 조작 로직(`mode`, `poseName` 등 전역)은 매 프레임 `me`에 옮겨 적는다. 옷 색이 바뀌는 재질은 아바타마다 따로, 안 바뀌는 재질은 공유(`removeAvatar`가 공유 재질은 지우지 않음)
 - 캐릭터 전체 `receiveShadow = false`(자기 그림자가 툰에서 회색 띠로 보임), 스커트 `castShadow = false`, 나무는 그림자 받기 끔(구 표면 줄무늬)
 - InstancedMesh에 툰 재질(`tcol`이 이미 곱해진 흰색)을 쓸 땐 `setColorAt`에 **원래 색**을 넣는다. `TOON_K`를 또 곱하면 두 번 어두워짐
 - 모래톱/물거품은 `depthWrite:false` + `renderOrder`(1, 2, 물 3)로 겹침. polygonOffset만으로는 먼 거리에서 물이 가려짐
@@ -111,6 +113,8 @@
   - `__poleDebug.pause(true)` + `__poleDebug.face(0.9)` 얼굴 클로즈업
   - `__poleDebug.state()` 카메라/캐릭터/모드 JSON
   - `__poleDebug.ik()` 현재 포즈의 IK 목표까지 남은 거리(팔은 손목 기준이라 0.032가 정상 도달)와 `headGap`
+  - `__poleDebug.bots(n)` 또는 주소에 `?bots=N`(최대 30): 돌아다니는 봇 N명 + 위쪽에 fps·draw call 표시. 폰에서 방 정원 측정용
+  - 주소에 `?bench`: 봇을 0→49명으로 늘리며 단계마다 fps(평균/느릴 때)·draw call을 재고 표로 보여 줌(결과 복사 가능). 카메라를 멀리 빼서 전원이 화면에 보이는 최악의 경우를 잼. 폰에서는 `.claude/launch.json`의 `lan`(0.0.0.0:5174)으로 띄우고 같은 와이파이에서 `http://맥IP:5174/index.html?bench`
   - 프로덕션에선 개발 모드 한정으로 노출하는 방향
 
 ## 알려진 한계
@@ -119,7 +123,7 @@
 
 ## 로드맵 (우선순위 순)
 
-1. 멀티플레이 1단계: 아바타 분리 + 봇 테스트로 폰에서 방 정원 측정 → Cloudflare DO 무료 플랜으로 지인 테스트([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
+1. 멀티플레이 1단계: ~~아바타 분리 + 봇 테스트로 방 정원 측정~~(완료, 방 20명) → Cloudflare DO 무료 플랜으로 지인 테스트([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 2. 폴 4~6개 + 폴·벤치 잠금, 방 나누기
 3. 채팅(머리 위 말풍선, 본문 비저장, 신고된 것만 저장)
 4. 성능: 캐릭터 메쉬 합치기·LOD, 풀/그림자/픽셀비율 자동 하향
