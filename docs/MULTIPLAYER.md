@@ -18,9 +18,18 @@
 6. **방 나누기**: 방이 꽉 차면 "호숫가 2"를 자동으로 연다. 전체 상한에 걸리면 "지금 사람이 많아요" 안내 후 혼자 모드.
 7. **먼저 할 것**: 서버 없이 브라우저 안의 가짜 접속자(봇)로 여러 명을 띄워 폰에서 몇 명까지 부드럽게 그려지는지 측정 → 방 정원 확정. **완료(2026-11-04)**: `?bench`(봇을 늘리며 fps 측정), `?bots=N`
 
-### 서버
+### 서버 ([server/](../server/), 2026-11-04 구현)
 
 방 관리, 메시지 중계, 폴·벤치 잠금, 검증(좌표 범위, 메시지 크기, 초당 전송 수), 닉네임·채팅 금칙어.
+
+- 구조: Worker가 `GET /ws?room=N`(1~`MAX_ROOMS`)을 Durable Object `room-N`으로 넘김. 방 정원 `ROOM_CAP`(20)·방 개수 `MAX_ROOMS`(5)는 `wrangler.toml`의 `[vars]`
+- 접속 출처는 `https://polknic.yujamong.com`과 개발용(localhost·사설 IP)만 허용, 나머지 403
+- Hibernation: 접속자 정보는 소켓마다 `serializeAttachment()`(잠들면 메모리가 사라짐). `ping` → `pong`은 방을 깨우지 않는 자동 응답
+- 폴 잠금: 폴이 하나라 한 명만. 소켓 attachment의 `pole` 표시로 판단(잠들었다 깨도 유지), 퇴장하면 자동 해제
+- 검증: 메시지 2KB·초당 30개 초과 시 연결 끊기, 공원 밖 좌표·모르는 포즈/표정/이모트 무시, 옷은 아는 키·16자 이하 문자열만, 닉네임 12자·중복은 `#2`
+- 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
+- 개발: `cd server && nvm use 24 && npm i && npx wrangler dev --port 8787 --var ROOM_CAP:3` 후 `npm test`(23개 항목 확인)
+- 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. 주소는 처음엔 `polknic-server.<계정>.workers.dev`, 이후 `wrangler.toml`의 `routes` 주석을 풀어 `polknic-ws.yujamong.com`
 
 ### DB
 
@@ -39,6 +48,30 @@
 | `leave` | 퇴장 | 나갈 때(연결 끊김 포함) |
 
 포즈는 이름만 보내고 각 브라우저가 같은 포즈를 재현한다(IK 목표가 폴 기준이라 결정적).
+
+### 서버 프로토콜(JSON 텍스트, `t`가 종류)
+
+클라이언트 → 서버
+
+| `t` | 필드 | 설명 |
+|---|---|---|
+| `join` | `name, look, face, x, z, ry` | 접속 후 첫 메시지. 이 전에는 다른 메시지 무시 |
+| `move` | `x, z, ry` | 위치·바라보는 방향 |
+| `state` | `pose, sit, face, spin, emote` | 바뀐 것만 넣어도 됨. `sit`은 벤치 번호 또는 null |
+| `outfit` | `look` | 옷 변경 |
+| `pole` / `unpole` | | 폴 잡기 요청 / 내려옴 |
+| `ping` (문자열) | | 연결 유지. `pong`이 옴 |
+
+서버 → 클라이언트
+
+| `t` | 필드 | 설명 |
+|---|---|---|
+| `welcome` | `id, name, cap, poleBy, players[]` | 입장 결과(바뀐 이름 포함)와 방 안 사람들 스냅샷 |
+| `full` | | 방이 꽉 참. 바로 닫힘(코드 4001) → 다음 방 번호로 |
+| `join` | `p` | 누가 들어옴(`p`는 스냅샷 한 명 형식) |
+| `move` / `state` / `outfit` | `id` + 위와 같음 | 다른 사람 변화 |
+| `pole` | `ok?, by` | 내 요청 결과(`ok`) 또는 폴 사용자 변경 알림(`by`, 없으면 null) |
+| `leave` | `id` | 퇴장 |
 
 ## 트래픽 계산 기준
 

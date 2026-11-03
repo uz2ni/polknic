@@ -1,0 +1,20 @@
+# 폴크닉 실시간 서버: Worker(입구) + Durable Object(방 하나 = Room 하나)
+name = "polknic-server"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ROOM_CAP = "20"     # 방 정원 (docs/MULTIPLAYER.md)
+MAX_ROOMS = "5"     # 방 개수 상한. 넘으면 클라이언트는 혼자 모드로
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# 무료 플랜은 SQLite 기반 Durable Object만 쓸 수 있다
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+# 배포 후 커스텀 도메인을 붙일 때 주석 해제 (docs/DECISIONS.md: API 주소는 한 단계 서브도메인)
+# routes = [{ pattern = "polknic-ws.yujamong.com", custom_domain = true }]
