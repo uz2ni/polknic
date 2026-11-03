@@ -19,7 +19,7 @@
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
-- 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Supabase Realtime으로 시작해 Spring WebSocket으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
+- 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Cloudflare Workers + Durable Objects(DB는 D1)로 시작해, DO 요금이 월 $25를 넘으면 Spring WebSocket(Lightsail)으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 - 문서·UI 텍스트·커밋 메시지는 한국어
 
 ## 기술 제약
@@ -119,7 +119,7 @@
 
 ## 로드맵 (우선순위 순)
 
-1. 멀티플레이 1단계: 아바타 분리 + 봇 테스트로 폰에서 방 정원 측정 → Supabase로 지인 테스트([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
+1. 멀티플레이 1단계: 아바타 분리 + 봇 테스트로 폰에서 방 정원 측정 → Cloudflare DO 무료 플랜으로 지인 테스트([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 2. 폴 4~6개 + 폴·벤치 잠금, 방 나누기
 3. 채팅(머리 위 말풍선, 본문 비저장, 신고된 것만 저장)
 4. 성능: 캐릭터 메쉬 합치기·LOD, 풀/그림자/픽셀비율 자동 하향
