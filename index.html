@@ -180,7 +180,6 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 
 <aside id="wardrobe" class="glass" aria-label="옷장">
   <div class="w-head"><h2>옷장</h2><button id="wardrobeClose" class="textbtn" type="button">닫기</button></div>
-  <div class="w-sec"><h3>닉네임</h3><form class="name-row" id="renameForm" autocomplete="off"><input id="renameInput" type="text" maxlength="12" aria-label="닉네임 바꾸기"><button class="chip" type="submit">바꾸기</button></form></div>
   <div class="w-sec"><h3>상의</h3><div class="chips" data-key="top"></div><div class="sw" data-key="topColor"></div></div>
   <div class="w-sec"><h3>하의</h3><div class="chips" data-key="bottom"></div><div class="sw" data-key="bottomColor"></div></div>
   <div class="w-sec"><h3>신발</h3><div class="chips" data-key="shoes"></div></div>
@@ -192,6 +191,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 
 <aside id="settings" class="glass" aria-label="설정" hidden>
   <div class="w-head"><h2>설정</h2><button id="settingsClose" class="textbtn" type="button">닫기</button></div>
+  <div class="w-sec"><h3>닉네임</h3><form class="name-row" id="renameForm" autocomplete="off"><input id="renameInput" type="text" maxlength="12" aria-label="닉네임 바꾸기"><button class="chip" type="submit">바꾸기</button></form></div>
   <div class="w-sec"><h3>보기</h3><div class="set-row">
     <button id="nameTog" class="chip" type="button" aria-pressed="true">이름 표시</button>
     <button id="chatTog" class="chip" type="button" aria-pressed="true" hidden>채팅 보기</button>
@@ -1112,7 +1112,11 @@ const BOT_PARTS = {
 };
 const DEFAULT = { top:'lace', topColor:'#f4e9d2', bottom:'laceSkirt', bottomColor:'#f4e9d2', shoes:'bare', hair:'bun', acc:'ribbon', hairColor:'#2b1d16', eyeColor:'#7a4b32', skin:'#ffe2d2' };
 let outfit = Object.assign({}, DEFAULT);
-try { const s = JSON.parse(localStorage.getItem('pole-outfit-v2') || 'null'); if (s) outfit = Object.assign(outfit, s); } catch (e) {}
+// first visit: a random look (saved right away by applyOutfit); coming back keeps the saved one
+let savedLook = null;
+try { savedLook = JSON.parse(localStorage.getItem('pole-outfit-v2') || 'null'); } catch (e) {}
+if (savedLook) outfit = Object.assign(outfit, savedLook);
+else [OPTIONS, COLORS].forEach(set => Object.keys(set).forEach(k => { outfit[k] = set[k][Math.random()*set[k].length | 0][0]; }));
 
 // show the pieces and colors of av.outfit on that avatar
 function dressAvatar(av){
@@ -2041,9 +2045,13 @@ const net = {
   rtt:0.4, pingAt:0, vx:0, vz:0, px:0, pz:0,   // round trip (s) and my own walking velocity, for others to predict where I am
 };
 const netEl = document.getElementById('netText');
+function netPeople(){
+  const n = others.filter(av => av.net).length;
+  return n ? `폴메이트 ${n}명과 함께 있어요!` : '폴메이트를 기다리는 중이에요';
+}
 function netStatus(){
   netEl.hidden = !net.on && !net.badName;
-  netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? `같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '연결 중…' : '혼자 노는 중';
+  netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? netPeople() : net.ws ? '연결 중…' : '혼자 노는 중';
   chatForm.hidden = chatTog.hidden = !net.id;   // chat only while connected
 }
 function netSend(m){
@@ -2082,8 +2090,8 @@ function netClosed(ws, code){
   if (ws !== net.ws) return;
   net.ws = null; net.id = null; net.sent = null;
   clearRemotes();
-  if (code === 4002){   // the server refused my nickname: stop until it's changed in the wardrobe
-    net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 옷장에서 바꿔 주세요');
+  if (code === 4002){   // the server refused my nickname: stop until it's changed in settings
+    net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 설정에서 바꿔 주세요');
   } else if (code === 4001 && ++net.fullRooms < NET_ROOMS){ net.room = net.room % NET_ROOMS + 1; netConnect(); }   // room full: next room
   else { net.fullRooms = 0; netRetry(); }
   netStatus();
