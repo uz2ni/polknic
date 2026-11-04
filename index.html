@@ -583,16 +583,18 @@ const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit
   }
   bench(-3.7, 3.3); bench(3.9, 2.7);
   {
-    // painted in the same Jua face as the page title; drawn again once the web font has loaded
+    // painted in the same Jua face as the page title; drawn again once the web font has loaded.
+    // Google Fonts splits Korean into many small files, so ask for the exact letters or some come from a fallback font
+    const SIGN = '안전 폴링';
     const drawSign = (x, s) => {
       x.fillStyle = '#e6bd88'; x.fillRect(0, 0, s, s);
       x.strokeStyle = 'rgba(120,70,30,.35)'; x.lineWidth = 6; [128, 256, 384].forEach(y => { x.beginPath(); x.moveTo(0, y); x.lineTo(s, y); x.stroke(); });
       x.fillStyle = '#5a4237'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '118px Jua, "Apple SD Gothic Neo", sans-serif'; x.fillText('안전 폴링', 256, 205, 480);
+      x.font = '118px Jua, "Apple SD Gothic Neo", sans-serif'; x.fillText(SIGN, 256, 205, 480);
       x.fillStyle = '#f0789a'; x.font = '100px sans-serif'; x.fillText('♥', 256, 350);
     };
     const sign = canvasTex(512, drawSign);
-    if (document.fonts) document.fonts.load('118px Jua').then(() => { drawSign(sign.image.getContext('2d'), 512); sign.needsUpdate = true; }).catch(() => {});
+    if (document.fonts) document.fonts.load('118px Jua', SIGN).then(() => { drawSign(sign.image.getContext('2d'), 512); sign.needsUpdate = true; }).catch(() => {});
     const g = new T.Group();
     const post = new T.Mesh(new T.CylinderGeometry(0.04, 0.05, 1.1, 8), woodD); post.position.y = 0.55; post.castShadow = true; g.add(post);
     const board = new T.Mesh(new T.BoxGeometry(0.62, 0.46, 0.05), [woodD, woodD, woodD, woodD, toonF('#ffffff', { map:sign }), woodD]);
