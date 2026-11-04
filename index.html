@@ -54,10 +54,15 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.8vw,46px);letter-spacing:.08em;margin:0;text-wrap:balance;display:inline-flex;align-items:center;gap:.3em}
 .brand h1 img{width:1.05em;height:1.05em;border-radius:.25em;box-shadow:0 2px 0 rgba(90,66,55,.25)}
 .brand p{margin:.4em 0 0;font-size:12.5px;font-weight:600;letter-spacing:.12em}
+.brand .now{margin-top:.5em;font-size:12px;letter-spacing:.04em;font-weight:600}
 
 .glass{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:2px solid #fff;box-shadow:0 4px 0 rgba(90,66,55,.12),0 12px 28px rgba(60,110,130,.16);border-radius:22px}
 
-#wardrobe{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));width:284px;max-width:calc(100% - 32px);max-height:calc(100% - 190px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px;z-index:5}
+/* side panels (wardrobe, settings) open under the corner icons */
+#wardrobe,#settings{position:fixed;top:calc(68px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));width:284px;max-width:calc(100% - 32px);max-height:calc(100% - 230px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px;z-index:5;box-sizing:border-box}
+.set-row{display:flex;flex-wrap:wrap;gap:6px}
+#settings .hint{color:var(--muted);text-shadow:none;text-align:left;line-height:1.6}
+#settings .copy{color:var(--muted);text-shadow:none;margin:0}
 .w-head{display:flex;align-items:center;justify-content:space-between}
 .w-head h2{font-family:var(--f-display);font-size:21px;font-weight:400;margin:0;letter-spacing:.04em}
 .w-sec{display:flex;flex-direction:column;gap:8px}
@@ -69,12 +74,16 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
 .swatch[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
 .textbtn{border:0;background:none;color:var(--muted);font:500 13px var(--f-body);cursor:pointer;padding:6px 4px}
-#wardrobeBtn{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));z-index:4;border:0;font:600 13px var(--f-body);color:var(--ink);padding:10px 16px;border-radius:999px;cursor:pointer}
+/* top-right corner: round icon buttons (full view, hide menus, wardrobe, settings) */
+.corner{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));z-index:6;display:flex;gap:8px}
+.iconbtn{width:42px;height:42px;padding:0;display:grid;place-items:center;border-radius:50%;color:var(--ink);cursor:pointer;flex:0 0 auto}
+.iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn[aria-pressed="true"],.iconbtn[aria-expanded="true"]{background:var(--accent);color:#fff}
+.corner .gap{width:4px}
 
 .hud{position:fixed;left:0;right:0;bottom:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:3}
 .hud > *{pointer-events:auto}
-.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;font-size:12.5px;color:#fff;text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 8px rgba(40,90,50,.5)}
-.status b{font-weight:600}
+.talk{position:relative;display:flex;align-items:center;gap:8px;width:min(470px,100%);justify-content:center}
 .tog{border:2px solid #fff;border-radius:999px;font:600 12.5px var(--f-body);padding:6px 12px;cursor:pointer;background:var(--glass);color:var(--ink);text-shadow:none}
 .tog[aria-pressed="true"]{background:var(--accent);color:#fff}
 .moves{display:flex;gap:4px;padding:5px;overflow-x:auto;max-width:100%;scrollbar-width:none}
@@ -84,16 +93,19 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .move[aria-pressed="true"]{background:var(--accent);color:#fff}
 .move[aria-pressed="true"] small{color:rgba(255,255,255,.7)}
 .move.leave{color:#d4567b}
+.move.side small{letter-spacing:.02em}
+.moves .sep{flex:0 0 1.5px;margin:8px 2px;background:var(--line);border-radius:1px}
 .move:disabled{opacity:.45;cursor:default}
+.move[hidden],.moves .sep[hidden]{display:none}
 .copy{margin:-4px 0 0;font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 6px rgba(40,90,50,.5);letter-spacing:.04em}
 .hint{font-size:12px;color:#fff;text-shadow:0 1px 0 rgba(90,66,55,.4),0 1px 8px rgba(40,90,50,.55);margin:0;text-align:center}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.faces{display:flex;align-items:center;gap:2px;padding:4px 6px}
+.faces{position:absolute;bottom:calc(100% + 8px);left:0;display:flex;align-items:center;gap:2px;padding:4px 6px}
 .faces span{font:600 11px var(--f-body);color:var(--muted);letter-spacing:.08em;padding:0 6px 0 4px}
 .face{border:0;background:transparent;font:400 13.5px var(--f-display);color:var(--ink);padding:6px 10px;border-radius:999px;cursor:pointer}
 .face[aria-pressed="true"]{background:var(--accent);color:#fff}
 /* chat: one input row in the HUD, speech bubbles over heads */
-.chat{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;width:min(420px,100%);box-sizing:border-box}
+.chat{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;flex:1;min-width:0;box-sizing:border-box}
 .chat input{flex:1;min-width:0;border:0;background:transparent;font:500 14px var(--f-body);color:var(--ink);outline:none;padding:6px 0}
 .chat input::placeholder{color:var(--muted)}
 .chat button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 14px var(--f-display);padding:7px 14px;cursor:pointer}
@@ -106,7 +118,7 @@ body.clean .bubble{display:none}
 #toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
-body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{display:none!important}
+body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,body.clean .hud{display:none!important}
 #uiShow{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:6;width:30px;height:30px;padding:0;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);border-radius:50%;background:rgba(255,250,238,.55);color:var(--ink);cursor:pointer;transition:opacity .4s}
 #uiShow svg{width:14px;height:14px}
 #uiShow.idle{opacity:0}
@@ -130,8 +142,9 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
   .brand{top:calc(16px + env(safe-area-inset-top,0px));text-align:left;padding-left:max(16px,env(safe-area-inset-left,0px))}
   .brand h1{letter-spacing:.06em;font-size:26px}
   .brand p{letter-spacing:.06em}
-  #wardrobe{max-height:calc(100% - 200px)}
-  .hint{display:none}
+  .corner{gap:6px}
+  .iconbtn{width:38px;height:38px}
+  .move{padding:9px 10px;min-width:56px}
 }
 </style>
 
@@ -142,9 +155,16 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
 <header class="brand">
   <h1><img src="favicon.svg" alt="">폴크닉</h1>
   <p>온라인 폴댄스 놀이터</p>
+  <p class="now" id="netText" hidden></p>
 </header>
 
-<button id="wardrobeBtn" class="glass" type="button" aria-controls="wardrobe" aria-expanded="false">옷장 열기</button>
+<div class="corner">
+  <button id="camTog" class="iconbtn glass" type="button" aria-pressed="false" aria-label="전체 보기" title="전체 보기"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <button id="uiHide" class="iconbtn glass" type="button" aria-label="메뉴 숨기기" title="메뉴 숨기기 (H)"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12 12 0 0 1-2.6 3.6M6.2 6.2C4.3 7.5 3 9.6 2.5 12c1 2.5 4.5 7 9.5 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+  <span class="gap"></span>
+  <button id="wardrobeBtn" class="iconbtn glass" type="button" aria-controls="wardrobe" aria-expanded="false" aria-label="옷장" title="옷장"><svg viewBox="0 0 24 24"><path d="M12 7.5a2 2 0 1 1 2-2M12 7.5v1.2L3.6 15a1.7 1.7 0 0 0 1 3.1h14.8a1.7 1.7 0 0 0 1-3.1L12 8.7"/></svg></button>
+  <button id="settingsBtn" class="iconbtn glass" type="button" aria-controls="settings" aria-expanded="false" aria-label="설정" title="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</div>
 
 <div id="entry">
   <form id="entryForm" class="glass" autocomplete="off">
@@ -172,24 +192,33 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
   <div class="w-sec"><h3>피부 톤</h3><div class="sw" data-key="skin"></div></div>
 </aside>
 
-<div class="hud">
-  <div class="status">
-    <span>지금: <b id="statusText">자유 이동</b></span>
-    <span id="netText" hidden></span>
-    <button id="sitTog" class="tog" type="button" aria-pressed="false">앉기</button>
-    <button id="spinTog" class="tog" type="button" aria-pressed="false">스핀 폴</button>
-    <button id="camTog" class="tog" type="button" aria-pressed="false">전체 보기</button>
-    <button id="nameTog" class="tog" type="button" aria-pressed="true">이름 표시</button>
-    <button id="bgmTog" class="tog" type="button" aria-pressed="true" title="단축키 M">♪ BGM 켜짐</button>
-    <button id="bgmTrack" class="tog" type="button" title="다른 곡으로 바꾸기">오르골 소풍 ›</button>
-    <button id="chatTog" class="tog" type="button" aria-pressed="true" hidden>채팅 보기</button>
-    <button id="uiHide" class="tog" type="button" title="단축키 H">메뉴 숨기기</button>
+<aside id="settings" class="glass" aria-label="설정" hidden>
+  <div class="w-head"><h2>설정</h2><button id="settingsClose" class="textbtn" type="button">닫기</button></div>
+  <div class="w-sec"><h3>보기</h3><div class="set-row">
+    <button id="nameTog" class="chip" type="button" aria-pressed="true">이름 표시</button>
+    <button id="chatTog" class="chip" type="button" aria-pressed="true" hidden>채팅 보기</button>
+  </div></div>
+  <div class="w-sec"><h3>소리</h3><div class="set-row">
+    <button id="bgmTog" class="chip" type="button" aria-pressed="true" title="단축키 M">♪ BGM 켜짐</button>
+    <button id="bgmTrack" class="chip" type="button" title="다른 곡으로 바꾸기">오르골 소풍 ›</button>
+  </div></div>
+  <div class="w-sec"><h3>조작법</h3>
+    <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · Q 내려오기 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
   </div>
-  <form class="chat glass" id="chatForm" autocomplete="off" hidden><input id="chatInput" type="text" maxlength="60" placeholder="Enter로 채팅 (60자)" aria-label="채팅"><button type="submit">보내기</button></form>
-  <div class="faces glass" id="faces" role="group" aria-label="표정"><span>표정</span></div>
-  <nav class="moves glass" id="moves" aria-label="폴 동작"></nav>
-  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
   <p class="copy">© 2026 폴크닉</p>
+</aside>
+
+<div class="hud">
+  <div class="talk">
+    <button id="faceBtn" class="iconbtn glass" type="button" aria-controls="faces" aria-expanded="false" aria-label="표정" title="표정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6"/></svg></button>
+    <div class="faces glass" id="faces" role="group" aria-label="표정" hidden><span>표정</span></div>
+    <form class="chat glass" id="chatForm" autocomplete="off" hidden><input id="chatInput" type="text" maxlength="60" placeholder="Enter로 채팅 (60자)" aria-label="채팅"><button type="submit">보내기</button></form>
+  </div>
+  <nav class="moves glass" id="moves" aria-label="동작">
+    <button id="sitTog" class="move side" type="button" aria-pressed="false"><span>앉기</span><small>E · 바닥/벤치</small></button>
+    <span class="sep" id="sitSep" aria-hidden="true"></span>
+    <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
+  </nav>
 </div>
 <button id="uiShow" type="button" hidden aria-label="메뉴 보기" title="메뉴 보기 (H)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
 
@@ -1566,29 +1595,32 @@ MOVE_ORDER.forEach(n => {
   b.addEventListener('click', () => startMove(n));
   movesEl.appendChild(b);
 });
+// on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
+movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span><small>폴이 돌아요</small></button>');
 const leaveBtn = document.createElement('button');
 leaveBtn.type = 'button'; leaveBtn.className = 'move leave'; leaveBtn.id = 'mv-leave';
 leaveBtn.innerHTML = '<span>내려오기</span><small>Q · 폴에서 떨어지기</small>';
 leaveBtn.addEventListener('click', () => requestLeave(null));
-movesEl.appendChild(leaveBtn);
+leaveBtn.hidden = true;
+movesEl.querySelector('#sitTog').after(leaveBtn);
 
-const statusText = document.getElementById('statusText');
 function updateUI(){
   const active = mode === 'approach' ? queuedMove : (mode === 'pole' ? poseName : null);
   movesEl.querySelectorAll('.move[data-move]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.move === active)));
-  statusText.textContent = mode === 'approach' ? '폴로 이동 중' : (mode === 'pole' ? (pendingLeave ? '내려오는 중' : POSES[poseName].label)
-    : sitAt ? POSES[poseName].label : sitQueued ? '앉으러 가는 중' : '자유 이동');
   const sitting = !!(sitAt || sitQueued);
   const st = document.getElementById('sitTog');
-  st.setAttribute('aria-pressed', String(sitting)); st.textContent = sitting ? '일어나기' : '앉기';
-  leaveBtn.disabled = mode !== 'pole';
+  st.setAttribute('aria-pressed', String(sitting)); st.firstChild.textContent = sitting ? '일어나기' : '앉기';
+  // the bar fits a phone: sitting off the pole, spinning and getting down on it
+  const onPole = mode === 'pole';
+  ['sitTog', 'sitSep'].forEach(id => { document.getElementById(id).hidden = onPole; });
+  ['mv-leave', 'spinTog', 'poleSep'].forEach(id => { document.getElementById(id).hidden = !onPole; });
 }
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
 spinTog.addEventListener('click', () => { spinPole = !spinPole; spinTog.setAttribute('aria-pressed', String(spinPole)); if (!spinPole) poseYaw = holder.rotation.y + (POSES[poseName].view || 0); netState(); }); // stop where it is
 const camTog = document.getElementById('camTog');
-camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.textContent = wide ? '캐릭터 보기' : '전체 보기'; });
+camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.title = wide ? '캐릭터 보기' : '전체 보기'; camTog.setAttribute('aria-label', camTog.title); });
 
 // expressions: auto follows each move, or the player picks one
 const FACES = [['auto','자동'], ['open','방긋'], ['wink','윙크'], ['joy','활짝'], ['wow','깜짝']];
@@ -1609,6 +1641,12 @@ FACES.forEach(([v, label]) => {
   facesEl.appendChild(b);
 });
 function syncFaces(){ facesEl.querySelectorAll('.face').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === faceMode))); }
+// the smile button opens the expressions over the chat row; picking one (or tapping elsewhere) closes them
+const faceBtn = document.getElementById('faceBtn');
+function setFacesOpen(open){ facesEl.hidden = !open; faceBtn.setAttribute('aria-expanded', String(open)); }
+faceBtn.addEventListener('click', () => setFacesOpen(facesEl.hidden));
+facesEl.addEventListener('click', e => { if (e.target.closest('.face')) setFacesOpen(false); });
+window.addEventListener('pointerdown', e => { if (!facesEl.hidden && !e.target.closest('.talk')) setFacesOpen(false); });
 syncFaces();
 
 // nickname: chosen on the entry screen, shown in a small tag over the head (can be hidden)
@@ -1842,9 +1880,14 @@ function placeTag(el, av, r, show){
 
 const wardrobe = document.getElementById('wardrobe');
 const wBtn = document.getElementById('wardrobeBtn');
-function setWardrobe(open){ wardrobe.hidden = !open; wBtn.hidden = open; wBtn.setAttribute('aria-expanded', String(open)); }
-wBtn.addEventListener('click', () => setWardrobe(true));
+// wardrobe and settings share the spot under the corner icons, so opening one closes the other
+const settings = document.getElementById('settings'), sBtn = document.getElementById('settingsBtn');
+function setWardrobe(open){ wardrobe.hidden = !open; wBtn.setAttribute('aria-expanded', String(open)); if (open) setSettings(false); }
+function setSettings(open){ settings.hidden = !open; sBtn.setAttribute('aria-expanded', String(open)); if (open) setWardrobe(false); }
+wBtn.addEventListener('click', () => setWardrobe(wardrobe.hidden));
+sBtn.addEventListener('click', () => setSettings(settings.hidden));
 document.getElementById('wardrobeClose').addEventListener('click', () => setWardrobe(false));
+document.getElementById('settingsClose').addEventListener('click', () => setSettings(false));
 setWardrobe(window.innerWidth > 720);
 
 document.querySelectorAll('.chips').forEach(el => {
@@ -2005,7 +2048,7 @@ const net = {
 const netEl = document.getElementById('netText');
 function netStatus(){
   netEl.hidden = !net.on && !net.badName;
-  netEl.textContent = net.badName ? '· 닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? `· 같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '· 연결 중…' : '· 혼자 노는 중';
+  netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? `같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '연결 중…' : '혼자 노는 중';
   chatForm.hidden = chatTog.hidden = !net.id;   // chat only while connected
 }
 function netSend(m){
