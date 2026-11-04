@@ -93,12 +93,12 @@
 - 포즈 좌표는 폴 프레임(폴 = Y축, 원점), 높이는 데크 윗면 기준(스테이지 위면 `STAGE_H` 0.06이 자동으로 더해짐)
 - 치수(m): 키 약 1.06, 머리 반지름 `HEAD_R` 0.22(중심은 head 관절 위 `HEAD_Y` 0.2), 서 있을 때 루트 `STAND_Y` 0.367, 폴 힐 +0.022, 폴 높이 `POLE_H` 3.0
 - 머리가 커서 포즈마다 머리 중심이 폴 축에서 약 0.24m 이상 떨어져야 안 뚫림. `__poleDebug.ik()`의 `headGap`이 0보다 커야 함
-- 포즈 형식: `{ label, key, sub, view, p:[x,y,z], up/fwd 또는 r, j:{joint:[x,y,z]}, ik:{limb:{t, h}} }`
+- 포즈 형식: `{ label, view, p:[x,y,z], up/fwd 또는 r, j:{joint:[x,y,z]}, ik:{limb:{t, h}} }`
   - IK 걸린 팔다리는 FK 블렌딩에서 제외(`ikSkip`). `LIMBS`: 팔 0.13/0.152(손 중심까지), 다리 0.14/0.135
 - 블렌딩은 `1 - exp(-rate*dt)` (폴 4, 자유이동 10, IK 9)
 - 상태: `roam → approach → pole → (requestLeave) ready 1.3s → doLeave → roam`
 - 포즈 옵션 `face`(open/wink/joy/wow, 눈 깜빡임은 open·wow일 때만)와 `emote`(heart/note/wow/sparkle). 폴 진입 시 폴짝(`hopAt`), 내려올 때 착지 찌그러짐(`landAt`)은 `holder.position.y`와 `char.scale`로 처리
-- 동작 키: 1 체어(스플릿 그립) · 2 P포즈(`ppose`, 피겨헤드를 대체) · 3 헤라 · 4 브라스 · 5 스플릿(`split`, 아이샤를 대체). `ready`/`stand`는 버튼 없음
+- 동작: 체어 · P포즈(`ppose`, 피겨헤드를 대체) · 헤라 · 브라스 · 스플릿(`split`, 아이샤를 대체). 버튼으로만 고름(숫자키 단축키와 버튼 아래 작은 설명은 2026-11-05 사용자 요청으로 없앰). `ready`/`stand`는 버튼 없음
   - P포즈·스플릿은 사용자가 준 사진을 보고 "귀엽게 따라 하기" 수준으로 맞춤. 다리가 짧아 스플릿 폭은 작음
 
 ## 검증 방법

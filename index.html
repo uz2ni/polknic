@@ -89,11 +89,8 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 .moves{display:flex;gap:4px;padding:5px;overflow-x:auto;max-width:100%;scrollbar-width:none}
 .moves::-webkit-scrollbar{display:none}
 .move{flex:0 0 auto;border:0;background:transparent;font:400 15px var(--f-display);color:var(--ink);padding:10px 14px;border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px}
-.move small{font:500 10px var(--f-body);color:var(--muted);letter-spacing:.06em}
 .move[aria-pressed="true"]{background:var(--accent);color:#fff}
-.move[aria-pressed="true"] small{color:rgba(255,255,255,.7)}
 .move.leave{color:#d4567b}
-.move.side small{letter-spacing:.02em}
 .moves .sep{flex:0 0 1.5px;margin:8px 2px;background:var(--line);border-radius:1px}
 .move:disabled{opacity:.45;cursor:default}
 .move[hidden],.moves .sep[hidden]{display:none}
@@ -144,7 +141,8 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
   .brand p{letter-spacing:.06em}
   .corner{gap:6px}
   .iconbtn{width:38px;height:38px}
-  .move{padding:9px 10px;min-width:56px}
+  .moves{gap:0;padding:5px 3px;flex-wrap:wrap;justify-content:center}
+  .move{padding:9px 7px;min-width:0;font-size:14px}
 }
 </style>
 
@@ -203,7 +201,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
     <button id="bgmTrack" class="chip" type="button" title="다른 곡으로 바꾸기">오르골 소풍 ›</button>
   </div></div>
   <div class="w-sec"><h3>조작법</h3>
-    <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · Q 내려오기 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
+    <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · Q 내려오기 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
   </div>
   <p class="copy">© 2026 폴크닉</p>
 </aside>
@@ -215,7 +213,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
     <form class="chat glass" id="chatForm" autocomplete="off" hidden><input id="chatInput" type="text" maxlength="60" placeholder="Enter로 채팅 (60자)" aria-label="채팅"><button type="submit">보내기</button></form>
   </div>
   <nav class="moves glass" id="moves" aria-label="동작">
-    <button id="sitTog" class="move side" type="button" aria-pressed="false"><span>앉기</span><small>E · 바닥/벤치</small></button>
+    <button id="sitTog" class="move side" type="button" aria-pressed="false"><span>앉기</span></button>
     <span class="sep" id="sitSep" aria-hidden="true"></span>
     <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
   </nav>
@@ -1168,7 +1166,7 @@ const POSES = {
     ik:{ rArm:{ t:[0,0.66,-0.02], h:[-0.3,-1,-0.4] } } },
 
   // 1. 스플릿 그립 체어 — sitting in the air beside the pole, both hands on it, knees tucked up
-  chair: { label:'체어', key:'1', sub:'스플릿 그립', view:0.45, face:'wink', emote:'note',
+  chair: { label:'체어', view:0.45, face:'wink', emote:'note',
     p:[0.15,1.15,0.05], up:[0.28,0.96,0], fwd:[-0.7,0,0.71],
     j:{ head:[-0.1,-0.3,0.1],
         lThigh:[-1.8,0,0.15], lShin:[2.0,0,0], rThigh:[-1.6,0,-0.1], rShin:[1.9,0,0] },
@@ -1177,7 +1175,7 @@ const POSES = {
 
   // 2. P포즈 — both hands on the pole, hips against it, back arched away with the head dropped back;
   //    the near leg folds high over the pole (the loop of the P) and its foot hooks the far leg, which reaches long behind the pole
-  ppose: { label:'P포즈', key:'2', sub:'백 아치', view:0, face:'joy', emote:'sparkle',
+  ppose: { label:'P포즈', view:0, face:'joy', emote:'sparkle',
     p:[-0.09,1.35,0], up:[-0.8,0.6,0], fwd:[0.6,0.8,0],
     j:{ spine:[-0.15,0,0], chest:[-0.2,0,0], neck:[-0.25,0,0], head:[-0.45,0,0], rFoot:[0.6,0,0], lFoot:[0.7,0,0] },
     ik:{ rArm:{ t:[0,1.5,0.03], h:[-0.2,-1,0.5] },
@@ -1186,7 +1184,7 @@ const POSES = {
          lLeg:{ t:[0.16,1.13,-0.03], h:[0.3,0.2,1] } } },
 
   // 3. 헤라 — back to the pole, one hand reaching up behind, legs long down the pole
-  hera: { label:'헤라', key:'3', sub:'싯 & 리치', view:PI/2, face:'open', emote:'sparkle',
+  hera: { label:'헤라', view:PI/2, face:'open', emote:'sparkle',
     p:[0,1.2,0.17], up:[0,0.97,0.25], fwd:[0,-0.25,0.97],
     j:{ head:[0.05,0.4,0], lUp:[-0.6,0,0.3], lFore:[-1.8,0,0], lFoot:[0.6,0,0], rFoot:[0.6,0,0] },
     ik:{ rArm:{ t:[0,1.55,0], h:[-1,0,0.3] },
@@ -1194,7 +1192,7 @@ const POSES = {
          rLeg:{ t:[-0.03,1.0,0.05], h:[0,0,1] } } },
 
   // 4. 브라스 몽키 — upside down, knees hooked over the pole, one hand low, the other arm free
-  brass: { label:'브라스', key:'4', sub:'인버트', view:2.2, face:'wow', emote:'wow',
+  brass: { label:'브라스', view:2.2, face:'wow', emote:'wow',
     p:[0.05,1.6,0], up:[0.6,-0.8,0], fwd:[0.8,0.6,0],
     j:{ head:[0.2,0.3,0], lUp:[-2.6,0,0.2], lFore:[-0.3,0,0],
         lThigh:[-0.4,0,0.05], lShin:[1.9,0,0], rThigh:[-0.7,0,-0.05], rShin:[1.6,0,0] },
@@ -1202,7 +1200,7 @@ const POSES = {
 
   // 5. 스플릿 — hips against the pole, one leg straight up the pole and the other straight down,
   //    back arched away with the head dropped back; both hands hold the pole by the hips
-  split: { label:'스플릿', key:'5', sub:'버티컬', view:0.6, face:'joy', emote:'heart',
+  split: { label:'스플릿', view:0.6, face:'joy', emote:'heart',
     p:[-0.09,1.5,0], up:[-0.85,0.53,0], fwd:[0.53,0.85,0],
     j:{ spine:[-0.15,0,0], chest:[-0.2,0,0], neck:[-0.25,0,0], head:[-0.45,0,0],
         lFoot:[0.8,0,0], rFoot:[0.8,0,0] },
@@ -1574,9 +1572,6 @@ window.addEventListener('keydown', e => {
   const dir = DIRS[e.code] || DIRS[e.key];
   if (dir){ keys[dir] = true; e.preventDefault(); return; }   // arrows must not scroll the panels instead
   if (e.repeat) return;
-  const digit = /^(Digit|Numpad)[1-5]$/.test(e.code) ? e.code.slice(-1) : e.key;
-  const m = MOVE_ORDER.find(n => POSES[n].key === digit);
-  if (m) startMove(m);
   if (e.key === 'Escape' || e.code === 'KeyQ') requestLeave(null);
   if (e.code === 'KeyE') toggleSit();
   if (e.code === 'KeyH') setClean(!document.body.classList.contains('clean'));
@@ -1591,15 +1586,15 @@ const movesEl = document.getElementById('moves');
 MOVE_ORDER.forEach(n => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'move'; b.dataset.move = n; b.id = 'mv-' + n;
-  b.innerHTML = `<span>${POSES[n].label}</span><small>${POSES[n].key} · ${POSES[n].sub}</small>`;
+  b.innerHTML = `<span>${POSES[n].label}</span>`;
   b.addEventListener('click', () => startMove(n));
   movesEl.appendChild(b);
 });
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
-movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span><small>폴이 돌아요</small></button>');
+movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span></button>');
 const leaveBtn = document.createElement('button');
 leaveBtn.type = 'button'; leaveBtn.className = 'move leave'; leaveBtn.id = 'mv-leave';
-leaveBtn.innerHTML = '<span>내려오기</span><small>Q · 폴에서 떨어지기</small>';
+leaveBtn.innerHTML = '<span>내려오기</span>';
 leaveBtn.addEventListener('click', () => requestLeave(null));
 leaveBtn.hidden = true;
 movesEl.querySelector('#sitTog').after(leaveBtn);
