@@ -2,6 +2,9 @@
 name = "polknic-server"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
+# 커스텀 도메인 (docs/DECISIONS.md: API 주소는 한 단계 서브도메인). DNS 레코드는 배포 때 Cloudflare가 만든다.
+# [[...]] 표 아래에 두면 그 표의 값이 되어 무시되니 맨 위에 둘 것
+routes = [{ pattern = "polknic-ws.yujamong.com", custom_domain = true }]
 
 [vars]
 ROOM_CAP = "20"     # 방 정원 (docs/MULTIPLAYER.md)
@@ -15,6 +18,3 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
-
-# 배포 후 커스텀 도메인을 붙일 때 주석 해제 (docs/DECISIONS.md: API 주소는 한 단계 서브도메인)
-# routes = [{ pattern = "polknic-ws.yujamong.com", custom_domain = true }]

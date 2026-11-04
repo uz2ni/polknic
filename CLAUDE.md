@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터(같은 방 최대 20명, 멀티플레이는 서버 배포 전이라 아직 혼자), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -19,7 +19,7 @@
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
-- 실시간 서버는 [server/](server/) (Cloudflare Worker + Durable Object, JS, Node 24 필요). 설명·프로토콜은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) "서버"
+- 실시간 서버는 [server/](server/) (Cloudflare Worker + Durable Object, JS, Node 24 필요). `wss://polknic-ws.yujamong.com`에 배포 중(`cd server && npm run deploy`, `main` 푸시와 별개로 직접 배포). 설명·프로토콜은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) "서버"
 - 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Cloudflare Workers + Durable Objects(DB는 D1)로 시작해, DO 요금이 월 $25를 넘으면 Spring WebSocket(Lightsail)으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 - 문서·UI 텍스트·커밋 메시지는 한국어
 

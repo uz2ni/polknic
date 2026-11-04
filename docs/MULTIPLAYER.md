@@ -40,7 +40,8 @@
 - 검증: 메시지 2KB·초당 30개 초과 시 연결 끊기, 공원 밖 좌표·모르는 포즈/표정/이모트 무시, 옷은 아는 키·16자 이하 문자열만, 닉네임 12자·중복은 `#2`
 - 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
 - 개발: `cd server && nvm use 24 && npm i && npx wrangler dev --port 8787 --var ROOM_CAP:3` 후 `npm test`(24개 항목 확인)
-- 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. 주소는 처음엔 `polknic-server.<계정>.workers.dev`, 이후 `wrangler.toml`의 `routes` 주석을 풀어 `polknic-ws.yujamong.com`
+- 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. **2026-11-04 배포**, 주소 `wss://polknic-ws.yujamong.com/ws`(`wrangler.toml`의 `routes`, DNS는 배포 때 자동 생성, workers.dev 주소는 꺼 둠)
+- 지연(2026-11-04, 맥·한국 회선에서 측정): Cloudflare 무료 플랜은 한국 접속도 **LA(LAX)** 엣지로 가서 메시지 왕복이 보통 약 0.4초, 가끔 1~3초. 같이 노는 용도로는 보간으로 버틸 만하나 반응이 느리게 느껴지면 서울 서버(Lightsail 서울 + Spring) 이전을 앞당기는 근거. 폰(LTE·와이파이)에서도 재 볼 것
 
 ### DB
 
