@@ -126,6 +126,13 @@ export class Room extends DurableObject {
         this.broadcast({ t: 'outfit', id: a.id, look: a.look }, ws);
         break;
       }
+      case 'name': {
+        const name = this.uniqueName(cleanName(m.name), ws);
+        if (!name) break;
+        a.name = name;
+        this.broadcast({ t: 'name', id: a.id, name }, ws);
+        break;
+      }
       case 'pole': {
         // 폴은 하나라 한 명만. 먼저 잡은 사람이 내려오거나 나갈 때까지 잠금
         const by = this.poleBy();
@@ -145,12 +152,17 @@ export class Room extends DurableObject {
     ws.serializeAttachment(a);
   }
 
-  join(ws, a, m) {
-    let name = cleanName(m.name);
-    if (!name) return ws.close(4002, 'bad name');
-    // 같은 이름이 있으면 #2, #3 …
+  // 같은 이름이 있으면 #2, #3 …
+  uniqueName(name, ws) {
+    if (!name) return '';
     const taken = new Set(this.others(ws).map(w => w.deserializeAttachment().name));
     if (taken.has(name)) { let i = 2; while (taken.has(`${name}#${i}`)) i++; name = `${name}#${i}`; }
+    return name;
+  }
+
+  join(ws, a, m) {
+    const name = this.uniqueName(cleanName(m.name), ws);
+    if (!name) return ws.close(4002, 'bad name');
     Object.assign(a, {
       joined: true, id: crypto.randomUUID().slice(0, 8), name, look: cleanLook(m.look),
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,

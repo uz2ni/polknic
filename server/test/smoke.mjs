@@ -60,6 +60,10 @@ b.send({ t: 'outfit', look: { hair: 'tail' } });
 const of = await a.next('outfit');
 ok(of && of.look.hair === 'tail', 'A가 B 옷 변경 받음');
 
+b.send({ t: 'name', name: '유자' });
+const nm = await a.next('name');
+ok(nm && nm.id === wb.id && nm.name === '유자#2', `닉네임 변경도 중복이면 #2 (${nm && nm.name})`);
+
 console.log('폴 잠금');
 a.send({ t: 'pole' });
 const pa = await a.next('pole');

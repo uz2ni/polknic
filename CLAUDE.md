@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터 1명(아직 1인 전용, 사람만), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 폴 1개 + 2.5등신 치비 캐릭터(같은 방 최대 20명, 멀티플레이는 서버 배포 전이라 아직 혼자), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -14,7 +14,7 @@
 
 ## 현재 상태
 
-- 결과물은 단일 파일 [index.html](index.html) (~1950줄, CSS/JS 인라인, 빌드 없음)
+- 결과물은 단일 파일 [index.html](index.html) (~2180줄, CSS/JS 인라인, 빌드 없음)
   - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
@@ -47,8 +47,9 @@
 | 1228–1474 | 상태 머신(내 캐릭터 조작), 앉기(`sitDown`/`standUp`/`toggleSit`), `stepOK`, 카메라, `update(dt)`, **`animateAvatar(av, dt)`**, `hang()` |
 | 1475–1607 | 입력(포인터·키보드 `DIRS`), UI(동작 바, 표정, 닉네임·이름표) |
 | 1608–1836 | BGM(`MUSIC`, `unmuteIOS`), 메뉴 숨기기, 입장, 옷장 칩 |
-| 1837–1903 | 다른 아바타 `others`: 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`) |
-| 1904–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
+| 1852–1968 | 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`), `?bench` |
+| 1969–2129 | 멀티플레이: 접속·재접속(`net`, `netStart`, `netConnect`, `netRetry`), 보내기(`netTick`, `netState`, `netSend`), 다른 사람(`addRemote`, `updateRemote`, `safeLook`) |
+| 2130–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
 
 줄 번호는 편집하면서 밀리니 함수명으로 grep 할 것.
 
@@ -69,6 +70,8 @@
 - 카메라 드래그는 캐릭터 방향을 바꾸지 않는다(`poseYaw`는 동작 선택 시에만 카메라 쪽으로 맞춤). 스핀을 끄면 그 자리에서 멈춤
 - 걸어서 피해야 하는 소품은 `OBSTACLES`(`[x, z, r]`)에 넣으면 `walkable()`/`stepOK()`가 막아줌. 이동은 `stepOK()`를 써야 장애물 안(벤치에서 일어난 직후 등)에서 빠져나올 수 있음
 - 입력창에 타이핑 중일 때는 keydown 처리를 건너뜀(닉네임에 WASD·E·Q가 들어가도 캐릭터가 안 움직이게)
+- 내 포즈·표정·스핀이 바뀌는 곳에서는 `netState(emote)`를 부른다(직접 `netSend`로 state를 보내지 말 것: 0.1초 묶음 전송이 서버 도배 제한을 지켜 줌). 다른 사람 아바타는 `others`에 `av.net`이 붙은 것, 봇은 `av.bot`
+- 다른 사람에게 받은 값은 그리기 전에 검사: 옷은 `safeLook()`, 포즈는 `POSES`에 있는 것만, 이름은 `textContent`로만
 
 ## 플레이어 기능
 
@@ -114,6 +117,7 @@
   - `__poleDebug.pause(true)` + `__poleDebug.face(0.9)` 얼굴 클로즈업
   - `__poleDebug.state()` 카메라/캐릭터/모드 JSON
   - `__poleDebug.ik()` 현재 포즈의 IK 목표까지 남은 거리(팔은 손목 기준이라 0.032가 정상 도달)와 `headGap`
+  - `__poleDebug.net()` 접속 상태와 받은 다른 사람 목록(위치·포즈·표정·옷). 로컬 멀티 확인은 launch.json의 `server` + `static`을 띄우고 탭 두 개로 입장
   - `__poleDebug.bots(n)` 또는 주소에 `?bots=N`(최대 30): 돌아다니는 봇 N명 + 위쪽에 fps·draw call 표시. 폰에서 방 정원 측정용
   - 주소에 `?bench`: 봇을 0→49명으로 늘리며 단계마다 fps(평균/느릴 때)·draw call을 재고 표로 보여 줌(결과 복사 가능). 카메라를 멀리 빼서 전원이 화면에 보이는 최악의 경우를 잼. 폰에서는 `.claude/launch.json`의 `lan`(0.0.0.0:5174)으로 띄우고 같은 와이파이에서 `http://맥IP:5174/index.html?bench`
   - 프로덕션에선 개발 모드 한정으로 노출하는 방향

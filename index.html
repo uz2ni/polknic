@@ -98,7 +98,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
 #uiShow{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:6;width:30px;height:30px;padding:0;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);border-radius:50%;background:rgba(255,250,238,.55);color:var(--ink);cursor:pointer;transition:opacity .4s}
 #uiShow svg{width:14px;height:14px}
 #uiShow.idle{opacity:0}
-#nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:600 12px var(--f-body);color:var(--ink);background:rgba(255,250,238,.88);border:1.5px solid #fff;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.12)}
+#nameTag,.nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:600 12px var(--f-body);color:var(--ink);background:rgba(255,250,238,.88);border:1.5px solid #fff;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.12)}
 
 #entry{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(198,235,248,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #entry form{width:min(340px,100%);padding:26px 24px 22px;display:flex;flex-direction:column;gap:12px;text-align:center}
@@ -161,6 +161,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
 <div class="hud">
   <div class="status">
     <span>지금: <b id="statusText">자유 이동</b></span>
+    <span id="netText" hidden></span>
     <button id="sitTog" class="tog" type="button" aria-pressed="false">앉기</button>
     <button id="spinTog" class="tog" type="button" aria-pressed="false">스핀 폴</button>
     <button id="camTog" class="tog" type="button" aria-pressed="false">전체 보기</button>
@@ -1088,11 +1089,13 @@ function dressAvatar(av){
 // the player's own avatar; input, camera and the name tag work on it through these names
 const me = createAvatar(outfit);
 const { holder, char, J, skull } = me;
+const others = [];   // everyone else drawn in the park: test bots and other players
 
 function applyOutfit(){
   dressAvatar(me);
   try { localStorage.setItem('pole-outfit-v2', JSON.stringify(outfit)); } catch (e) {}
   syncWardrobe();
+  netSend({ t:'outfit', look:outfit });
 }
 
 /* =========================================================
@@ -1249,6 +1252,7 @@ function rebase(pos, rotY){
 function setPose(name){
   poseName = name; poseStart = clock; poseYaw = yaw;
   if (POSES[name].emote) showEmote(me, POSES[name].emote);
+  netState(POSES[name].emote);
   if (MOVE_ORDER.includes(name)) polkTrack('pose_start', { pose:name });
   updateUI();
 }
@@ -1264,6 +1268,7 @@ function enterPole(){
   const a = Math.atan2(holder.position.x - POLE.x, holder.position.z - POLE.z);
   rebase(POLE.clone(), a + PI);
   mode = 'pole'; walkTarget = null; me.hopAt = clock;
+  netSend({ t:'pole' });
   setPose(queuedMove || 'ready'); queuedMove = null;
 }
 function requestLeave(target){
@@ -1277,7 +1282,7 @@ function doLeave(){
   const fwd = new V3(0, 0, 1).applyQuaternion(char.getWorldQuaternion(_q));
   rebase(new V3(_v.x, 0, _v.z), Math.atan2(fwd.x, fwd.z));
   mode = 'roam'; walkTarget = pendingLeave && pendingLeave.target; pendingLeave = null;
-  me.spinVel = 0; me.landAt = clock; setPose('stand');
+  me.spinVel = 0; me.landAt = clock; netSend({ t:'unpole' }); setPose('stand');
 }
 function goTo(p){
   sitQueued = null;
@@ -1395,7 +1400,8 @@ function update(dt){
 
   me.pose = poseName; me.onPole = mode === 'pole'; me.faceMode = faceMode;
   animateAvatar(me, dt);
-  others.forEach(av => { if (av.bot) updateBot(av, dt); animateAvatar(av, dt); });
+  others.forEach(av => { if (av.bot) updateBot(av, dt); if (av.net) updateRemote(av, dt); animateAvatar(av, dt); });
+  netTick(dt);
   updateCamera(dt);
 }
 
@@ -1563,7 +1569,7 @@ function updateUI(){
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
-spinTog.addEventListener('click', () => { spinPole = !spinPole; spinTog.setAttribute('aria-pressed', String(spinPole)); if (!spinPole) poseYaw = holder.rotation.y + (POSES[poseName].view || 0); }); // stop where it is
+spinTog.addEventListener('click', () => { spinPole = !spinPole; spinTog.setAttribute('aria-pressed', String(spinPole)); if (!spinPole) poseYaw = holder.rotation.y + (POSES[poseName].view || 0); netState(); }); // stop where it is
 const camTog = document.getElementById('camTog');
 camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.textContent = wide ? '캐릭터 보기' : '전체 보기'; });
 
@@ -1579,6 +1585,7 @@ FACES.forEach(([v, label]) => {
   b.addEventListener('click', () => {
     faceMode = v; me.blinking = 0; polkTrack('face_change', { face:v });
     if (FACE_EMOTE[v]) showEmote(me, FACE_EMOTE[v]);
+    netState(FACE_EMOTE[v]);
     try { localStorage.setItem('pole-face', v); } catch (e) {}
     syncFaces();
   });
@@ -1598,7 +1605,7 @@ function setName(v){
   try { localStorage.setItem('pole-name', v); } catch (e) {}
 }
 function setShowName(v){
-  showName = me.nameShown = v; nameTog.setAttribute('aria-pressed', String(v)); nameTog.textContent = v ? '이름 표시' : '이름 숨김';
+  showName = me.nameShown = v; others.forEach(av => { av.nameShown = v; }); nameTog.setAttribute('aria-pressed', String(v)); nameTog.textContent = v ? '이름 표시' : '이름 숨김';
   try { localStorage.setItem('pole-name-show', v ? '1' : '0'); } catch (e) {}
 }
 nameTog.addEventListener('click', () => setShowName(!showName));
@@ -1780,25 +1787,32 @@ document.getElementById('entryForm').addEventListener('submit', e => {
   polkTrack('enter_game', { returning: !!playerName });
   setName(v); entry.hidden = true; nameInput.blur();
   if (bgmOn) startMusic();
+  netStart();
 });
 document.getElementById('renameForm').addEventListener('submit', e => {
   e.preventDefault();
   const inp = document.getElementById('renameInput'), v = cleanName(inp.value);
-  if (v) setName(v); else inp.value = playerName;
+  if (v){ setName(v); netSend({ t:'name', name:v }); } else inp.value = playerName;
   inp.blur();
 });
 setTimeout(() => { if (!entry.hidden) nameInput.focus(); }, 50);
 const _tag = new V3();
+// my tag and every other player's tag float over their heads
 function updateNameTag(){
-  if (!showName || !playerName || !entry.hidden){ nameTag.hidden = true; return; }
-  skull.getWorldPosition(_tag); _tag.y += HEAD_R + 0.1;
-  char.getWorldPosition(_v); _tag.y = Math.max(_tag.y, _v.y + 0.42);   // upside down: float above the feet instead
-  camera.updateMatrixWorld(); _tag.project(camera);
-  if (_tag.z > 1){ nameTag.hidden = true; return; }
   const r = canvas.getBoundingClientRect();
-  nameTag.hidden = false;
-  nameTag.style.left = (r.left + (_tag.x + 1)/2*r.width) + 'px';
-  nameTag.style.top = (r.top + (1 - _tag.y)/2*r.height) + 'px';
+  camera.updateMatrixWorld();
+  placeTag(nameTag, me, r, showName && playerName && entry.hidden);
+  others.forEach(av => { if (av.net) placeTag(av.net.tag, av, r, showName); });
+}
+function placeTag(el, av, r, show){
+  if (!show){ el.hidden = true; return; }
+  av.skull.getWorldPosition(_tag); _tag.y += HEAD_R + 0.1;
+  av.char.getWorldPosition(_v); _tag.y = Math.max(_tag.y, _v.y + 0.42);   // upside down: float above the feet instead
+  _tag.project(camera);
+  if (_tag.z > 1){ el.hidden = true; return; }
+  el.hidden = false;
+  el.style.left = (r.left + (_tag.x + 1)/2*r.width) + 'px';
+  el.style.top = (r.top + (1 - _tag.y)/2*r.height) + 'px';
 }
 
 const wardrobe = document.getElementById('wardrobe');
@@ -1835,7 +1849,6 @@ function syncWardrobe(){
 }
 
 /* ---------- other avatars: test bots for now (?bots=N), network players later ---------- */
-const others = [];
 const pick = list => list[Math.random()*list.length | 0][0];
 function randomLook(){
   const o = {};
@@ -1953,6 +1966,167 @@ function benchTick(now, ms){
   }
 }
 
+/* ---------- multiplayer: other players in the same room (server/, protocol in docs/MULTIPLAYER.md) ---------- */
+// dev pages (localhost, or the Mac's address on the same Wi-Fi) talk to `wrangler dev` on the same machine
+const NET_DEV = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(location.hostname);
+const NET_URL = NET_DEV ? `ws://${location.hostname}:8787/ws` : 'wss://polknic-ws.yujamong.com/ws';
+const NET_ROOMS = 5, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10;
+const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench']);
+const net = {
+  on:false, ws:null, id:null, room:1, fullRooms:0, tries:0, retryTimer:0,
+  sendT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
+};
+const netEl = document.getElementById('netText');
+function netStatus(){
+  netEl.hidden = !net.on;
+  netEl.textContent = net.id ? `· 같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '· 연결 중…' : '· 혼자 노는 중';
+}
+function netSend(m){
+  if (net.id && net.ws.readyState === 1) net.ws.send(typeof m === 'string' ? m : JSON.stringify(m));
+}
+// pose, sitting, face and spin go out together, at most every NET_SEND (clicking around can't flood the server)
+function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
+
+function netStart(){
+  if (net.on || bench) return;
+  net.on = true; netConnect();
+}
+function netConnect(){
+  clearTimeout(net.retryTimer);
+  if (net.ws || !net.on) return;
+  let ws;
+  try { ws = new WebSocket(`${NET_URL}?room=${net.room}`); } catch (e) { netRetry(); return; }
+  net.ws = ws; netStatus();
+  ws.onopen = () => {
+    const h = holder.position;
+    ws.send(JSON.stringify({ t:'join', name:playerName, look:outfit, face:faceMode, x:h.x, z:h.z, ry:wrapAng(holder.rotation.y) }));
+    net.pingT = 0; net.pongBy = 0;
+  };
+  ws.onmessage = e => netMessage(e.data);
+  ws.onclose = e => netClosed(ws, e.code);
+}
+// lost the connection (closed, timed out or full): drop everyone else and try again
+function netClosed(ws, code){
+  if (ws !== net.ws) return;
+  net.ws = null; net.id = null; net.sent = null;
+  clearRemotes();
+  if (code === 4001 && ++net.fullRooms < NET_ROOMS){ net.room = net.room % NET_ROOMS + 1; netConnect(); }   // room full: next room
+  else { net.fullRooms = 0; netRetry(); }
+  netStatus();
+}
+// back off 1, 2, 4 … 30 s with jitter, so a server restart doesn't bring everyone back in the same instant
+function netRetry(){
+  if (!net.on) return;
+  const s = Math.min(30, 2 ** net.tries++)*(0.5 + Math.random());
+  clearTimeout(net.retryTimer); net.retryTimer = setTimeout(netConnect, s*1000);
+}
+function netNow(){ if (net.on && !net.ws){ net.tries = 0; netConnect(); } else if (net.id){ net.pingT = NET_PING; } }
+window.addEventListener('online', netNow);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) netNow(); });
+
+function netMessage(raw){
+  if (raw === 'pong'){ net.pongBy = 0; return; }
+  let m; try { m = JSON.parse(raw); } catch (e) { return; }
+  const av = m.id && remoteById(m.id);
+  switch (m.t){
+    case 'welcome':
+      net.id = m.id; net.tries = 0; net.fullRooms = 0; net.stateDirty = true;
+      (m.players || []).forEach(addRemote);
+      if (mode === 'pole') netSend({ t:'pole' });
+      break;
+    case 'join': addRemote(m.p); break;
+    case 'leave': if (av) dropRemote(av); break;
+    case 'move': if (av){ remoteMove(av, m); } break;
+    case 'state': if (av){ remoteState(av, m); if (EMOTES_OK.has(m.emote)) showEmote(av, m.emote); } break;
+    case 'outfit': if (av){ av.outfit = safeLook(m.look); dressAvatar(av); } break;
+    case 'name': if (av){ av.net.tag.textContent = String(m.name || '').slice(0, 16); } break;
+    // pole lock (the waiting/occupied UI comes with task 4)
+    case 'pole': break;
+  }
+  netStatus();
+}
+
+// send my position a few times a second (only when it changed), my state when it changed, and a ping now and then
+const wrapAng = a => Math.atan2(Math.sin(a), Math.cos(a));
+function netTick(dt){
+  if (!net.ws) return;
+  net.pingT += dt;
+  if (net.pingT >= NET_PING && net.ws.readyState === 1){ net.pingT = 0; net.ws.send('ping'); net.pongBy = clock + NET_PONG; }
+  if (net.pongBy && clock > net.pongBy){ const ws = net.ws; netClosed(ws, 0); try { ws.close(); } catch (e) {} return; }   // no answer: the line is dead
+  if (!net.id) return;
+  net.sendT += dt;
+  if (net.sendT < NET_SEND) return;
+  net.sendT = 0;
+  const h = holder.position, ry = wrapAng(holder.rotation.y), s = net.sent;
+  if (!s || Math.hypot(h.x - s.x, h.z - s.z) > 0.01 || Math.abs(wrapAng(ry - s.ry)) > 0.03){
+    net.sent = { x:h.x, z:h.z, ry };
+    netSend({ t:'move', x:+h.x.toFixed(3), z:+h.z.toFixed(3), ry:+ry.toFixed(3) });
+  }
+  if (net.stateDirty){
+    const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
+    const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole };
+    if (net.emote) m.emote = net.emote;
+    netSend(m); net.stateDirty = false; net.emote = null;
+  }
+}
+
+/* other players: an avatar each, eased toward the last position and state the server sent */
+const EMOTES_OK = new Set(['heart', 'note', 'wow', 'sparkle']);
+const remoteById = id => others.find(av => av.net && av.net.id === id);
+// only draw outfits the wardrobe actually has (anything else falls back to the default piece)
+function safeLook(l){
+  const o = Object.assign({}, DEFAULT);
+  if (l && typeof l === 'object'){
+    Object.keys(OPTIONS).forEach(k => { if (OPTIONS[k].some(([v]) => v === l[k])) o[k] = l[k]; });
+    Object.keys(COLORS).forEach(k => { if (COLORS[k].some(([v]) => v === l[k])) o[k] = l[k]; });
+  }
+  return o;
+}
+function addRemote(p){
+  if (!p || !p.id || remoteById(p.id)) return;
+  const av = createAvatar(safeLook(p.look), 0.5);
+  const tag = document.createElement('div');
+  tag.className = 'nameTag'; tag.hidden = true; tag.textContent = String(p.name || '').slice(0, 16);
+  document.body.appendChild(tag);
+  av.net = { id:p.id, tag, x:0, z:0, ry:0, movedAt:-9, spin:false };
+  av.nameShown = showName;
+  remoteMove(av, p); av.holder.position.set(av.net.x, 0, av.net.z); av.holder.rotation.y = av.net.ry;
+  remoteState(av, p); av.hopAt = av.landAt = -9;
+  others.push(av);
+}
+function dropRemote(av){
+  av.net.tag.remove(); removeAvatar(av);
+  others.splice(others.indexOf(av), 1);
+}
+function clearRemotes(){ others.filter(av => av.net).forEach(dropRemote); }
+function remoteMove(av, m){
+  const n = av.net;
+  if (typeof m.x !== 'number' || typeof m.z !== 'number') return;
+  if (Math.hypot(m.x - n.x, m.z - n.z) > 0.005) n.movedAt = clock;
+  n.x = m.x; n.z = m.z; n.ry = typeof m.ry === 'number' ? m.ry : n.ry;
+}
+function remoteState(av, m){
+  if (POSES[m.pose] && m.pose !== av.pose){
+    const onPole = !GROUND_POSES.has(m.pose);
+    if (onPole && !av.onPole) av.hopAt = clock;
+    if (!onPole && av.onPole) av.landAt = clock;
+    av.pose = m.pose; av.onPole = onPole;
+  }
+  if (FACES.some(([v]) => v === m.face)) av.faceMode = m.face;
+  av.net.spin = !!m.spin;
+}
+function updateRemote(av, dt){
+  const n = av.net, h = av.holder.position;
+  const dx = n.x - h.x, dz = n.z - h.z;
+  if (Math.hypot(dx, dz) > 3){ h.x = n.x; h.z = n.z; }   // far off (just joined, came back): no sliding across the park
+  else { const k = 1 - Math.exp(-8*dt); h.x += dx*k; h.z += dz*k; }
+  av.holder.rotation.y = angLerp(av.holder.rotation.y, n.ry, 1 - Math.exp(-(av.onPole ? 6 : 10)*dt));
+  const moving = !av.onPole && av.pose === 'stand' && clock - n.movedAt < 0.3;
+  av.moveAmp += ((moving ? 1 : 0) - av.moveAmp)*(1 - Math.exp(-8*dt));
+  av.walkPhase += dt*11*av.moveAmp;
+  av.spinVel += ((n.spin && av.onPole && av.pose !== 'ready' ? -0.65 : 0) - av.spinVel)*(1 - Math.exp(-2.5*dt));   // only for the skirt flare
+}
+
 /* ---------- loop ---------- */
 let viewW = 0, viewH = 0;
 function resize(){
@@ -1998,7 +2172,8 @@ window.__poleDebug = {
   state(){ holder.updateMatrixWorld(true); const c = new V3(); char.getWorldPosition(c); return { cam: camera.position.toArray(), tgt: camTarget.toArray(), holder: holder.position.toArray(), char: c.toArray(), q: char.quaternion.toArray(), mode, poseName }; },
   ik(){ holder.updateMatrixWorld(true); const pose = POSES[poseName], out = {}; Object.entries(pose.ik || {}).forEach(([n, s]) => { const hand = J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')], w = new V3(); hand.getWorldPosition(w); out[n] = +w.distanceTo(holder.localToWorld(new V3(...s.t))).toFixed(3); }); const h = new V3(); skull.getWorldPosition(h); out.headGap = +(Math.hypot(h.x - POLE.x, h.z - POLE.z) - HEAD_R*1.06).toFixed(3); return out; },
   look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
-  bots(n){ setBots(n); return others.length; }
+  bots(n){ setBots(n); return others.length; },
+  net(){ return { id:net.id, room:net.room, open:!!net.ws, players: others.filter(av => av.net).map(av => ({ name:av.net.tag.textContent, x:+av.holder.position.x.toFixed(2), z:+av.holder.position.z.toFixed(2), to:[av.net.x, av.net.z], pose:av.pose, face:av.faceMode, top:av.outfit.top })) }; }
 };
 })();
 </script>
