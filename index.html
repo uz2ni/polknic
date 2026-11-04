@@ -110,7 +110,8 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
 #uiShow{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:6;width:30px;height:30px;padding:0;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);border-radius:50%;background:rgba(255,250,238,.55);color:var(--ink);cursor:pointer;transition:opacity .4s}
 #uiShow svg{width:14px;height:14px}
 #uiShow.idle{opacity:0}
-#nameTag,.nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:600 12px var(--f-body);color:var(--ink);background:rgba(255,250,238,.88);border:1.5px solid #fff;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.12)}
+/* name tags are bare text with a soft outline, so they don't read as speech bubbles */
+#nameTag,.nameTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;font:700 12.5px var(--f-body);color:#fff;padding:3px 4px;white-space:nowrap;text-shadow:0 0 2px rgba(90,66,55,.9),0 0 2px rgba(90,66,55,.9),0 1px 3px rgba(90,66,55,.6)}
 
 #entry{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(198,235,248,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #entry form{width:min(340px,100%);padding:26px 24px 22px;display:flex;flex-direction:column;gap:12px;text-align:center}
