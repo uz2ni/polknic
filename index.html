@@ -83,12 +83,13 @@ body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);o
 
 .hud{position:fixed;left:0;right:0;bottom:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:3}
 .hud > *{pointer-events:auto}
-.talk{position:relative;display:flex;align-items:center;gap:8px;width:min(470px,100%);justify-content:center}
+.talk{position:relative;display:flex;align-items:center;gap:8px;width:100%;justify-content:center}
 .tog{border:2px solid #fff;border-radius:999px;font:600 12.5px var(--f-body);padding:6px 12px;cursor:pointer;background:var(--glass);color:var(--ink);text-shadow:none}
 .tog[aria-pressed="true"]{background:var(--accent);color:#fff}
-.moves{display:flex;gap:4px;padding:5px;overflow-x:auto;max-width:100%;scrollbar-width:none}
+/* the move bar spans the whole width; buttons stretch to fill each row, and wrap onto a second row when they don't fit */
+.moves{display:flex;flex-wrap:wrap;gap:4px;padding:5px;width:100%;box-sizing:border-box}
 .moves::-webkit-scrollbar{display:none}
-.move{flex:0 0 auto;border:0;background:transparent;font:400 15px var(--f-display);color:var(--ink);padding:10px 14px;border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px}
+.move{flex:1 0 auto;border:0;background:transparent;font:400 15px var(--f-display);color:var(--ink);padding:10px 14px;border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px}
 .move[aria-pressed="true"]{background:var(--accent);color:#fff}
 .move.leave{color:#d4567b}
 .moves .sep{flex:0 0 1.5px;margin:8px 2px;background:var(--line);border-radius:1px}
@@ -168,7 +169,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
   .brand p{letter-spacing:.06em}
   .corner{gap:6px}
   .iconbtn{width:38px;height:38px}
-  .moves{gap:0;padding:5px 3px;flex-wrap:wrap;justify-content:center}
+  .moves{gap:0;padding:5px 3px}
   .move{padding:9px 7px;min-width:0;font-size:14px}
 }
 </style>
