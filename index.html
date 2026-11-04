@@ -100,6 +100,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .bubble{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;max-width:180px;padding:6px 11px;border-radius:14px;background:#fff;color:var(--ink);font:500 13px/1.35 var(--f-body);word-break:break-all;box-shadow:0 2px 0 rgba(90,66,55,.12);transition:opacity .3s}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}
 .bubble.fade{opacity:0}
+.bubble b{display:block;font:600 11px/1.3 var(--f-body);color:var(--accent);margin-bottom:1px}
+.bubble b:empty{display:none}
 body.clean .bubble{display:none}
 #toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
@@ -1824,15 +1826,17 @@ function placeTag(el, av, r, show){
   av.char.getWorldPosition(_v); _tag.y = Math.max(_tag.y, _v.y + 0.42);   // upside down: float above the feet instead
   _tag.project(camera);
   const onScreen = _tag.z <= 1, x = r.left + (_tag.x + 1)/2*r.width, y = r.top + (1 - _tag.y)/2*r.height;
-  el.hidden = !show || !onScreen;
-  if (!el.hidden){ el.style.left = x + 'px'; el.style.top = y + 'px'; }
-  const b = av.bubble;
+  // while they're talking the bubble takes the tag's place, with the name as its first line
+  const b = av.bubble, t = clock - av.bubbleAt;
+  const talking = b && onScreen && chatShown && t <= CHAT_SHOW + 0.3;
   if (b){
-    const t = clock - av.bubbleAt;
-    b.hidden = !onScreen || !chatShown || t > CHAT_SHOW + 0.3;
+    b.hidden = !talking;
     b.classList.toggle('fade', t > CHAT_SHOW);
-    if (!b.hidden){ b.style.left = x + 'px'; b.style.top = (y - (show ? 30 : 4)) + 'px'; }
+    b.firstChild.textContent = show ? el.textContent : '';
+    if (talking){ b.style.left = x + 'px'; b.style.top = (y + 2) + 'px'; }
   }
+  el.hidden = !show || !onScreen || (talking && t <= CHAT_SHOW);
+  if (!el.hidden){ el.style.left = x + 'px'; el.style.top = y + 'px'; }
 }
 
 const wardrobe = document.getElementById('wardrobe');
@@ -2218,8 +2222,12 @@ const chatForm = document.getElementById('chatForm'), chatInput = document.getEl
 let chatShown = true, chatLast = 0;
 try { chatShown = localStorage.getItem('pole-chat-show') !== '0'; } catch (e) {}
 function showBubble(av, text){
-  if (!av.bubble){ av.bubble = document.createElement('div'); av.bubble.className = 'bubble'; av.bubble.hidden = true; document.body.appendChild(av.bubble); }
-  av.bubble.textContent = text; av.bubbleAt = clock;
+  if (!av.bubble){
+    av.bubble = document.createElement('div'); av.bubble.className = 'bubble'; av.bubble.hidden = true;
+    av.bubble.append(document.createElement('b'), document.createElement('span'));
+    document.body.appendChild(av.bubble);
+  }
+  av.bubble.lastChild.textContent = text; av.bubbleAt = clock;
 }
 function hideBubble(av){ av.bubbleAt = -99; }
 chatForm.addEventListener('submit', e => {
