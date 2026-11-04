@@ -1245,6 +1245,32 @@ const POSES = {
          lArm:{ t:[-0.01,1.52,-0.05], h:[-0.3,-1,-0.4] },
          rLeg:{ t:[0.02,1.82,0.03], h:[-1,0,0] },
          lLeg:{ t:[-0.03,1.2,-0.04], h:[-1,0,0] } } },
+
+  /* double pole (two on one pole): each move is a pair of poses in the same pole frame, `top` for the one who
+     started it and `base` for the partner; both holders sit on the pole with the same turn so the two line up */
+  // 쌓기 — chibi version (arms can't reach over those big heads): the base stands by the pole with both hands up
+  //   at her ears, the top sits right on her head with legs apart, a foot on each of the base's hands, one hand on the pole
+  duoStackTop: { label:'쌓기', view:0.3, face:'joy', emote:'heart',
+    p:[0.2,1.19,0.03], r:[0,0,0],
+    j:{ head:[0.05,0.15,0], lUp:[-0.2,0,2.3], lFore:[-0.5,0,0],
+        lThigh:[-0.5,0,1.2], rThigh:[-0.5,0,-1.2], lShin:[0.8,0,0], rShin:[0.8,0,0], lFoot:[0.3,0,0], rFoot:[0.3,0,0] },
+    ik:{ rArm:{ t:[0.01,1.5,0.02], h:[0,-1,-0.6] } } },
+  duoStackBase: { label:'쌓기', face:'wow',
+    p:[0.2,STAND_Y,0.03], r:[0,0,0],
+    j:{ head:[-0.12,0,0] },
+    ik:{ lArm:{ t:[0.49,0.88,0.06], h:[1,-0.4,0.3] },
+         rArm:{ t:[-0.09,0.88,0.06], h:[-1,-0.4,0.3] } } },
+  // 손잡고 날기 — the top sits on the pole with both legs together straight out, one hand up the pole, the other down
+  //   to the base, who hangs from the pole and that hand and walks on air
+  duoFlyTop: { label:'손잡고 날기', view:-0.7, face:'wink', emote:'sparkle',
+    p:[0.12,1.16,-0.03], up:[-0.1,0.99,0], fwd:[0,0,1],
+    j:{ head:[0.05,-0.3,0.05], lThigh:[-1.5,0,0.03], rThigh:[-1.5,0,-0.03], lShin:[0,0,0], rShin:[0,0,0], lFoot:[0.6,0,0], rFoot:[0.6,0,0] },
+    ik:{ lArm:{ t:[0.01,1.47,0], h:[0.3,-1,-0.4] },
+         rArm:{ t:[-0.01,1.13,0.04], h:[0,-1,0.6] } } },
+  duoFlyBase: { label:'손잡고 날기', face:'joy', air:true,
+    p:[-0.34,0.64,0], up:[0.22,0.97,0], fwd:[0,0,1],
+    j:{ head:[-0.2,0.3,0], rUp:[0.2,0,-1.5], rFore:[-0.3,0,0] },
+    ik:{ lArm:{ t:[-0.01,1.02,0.04], h:[0.3,-1,0.5] } } },
 };
 const MOVE_ORDER = ['chair','ppose','hera','brass','split'];
 const JOINTS = ['spine','chest','neck','head','lUp','lFore','lHand','rUp','rFore','rHand','lThigh','lShin','lFoot','rThigh','rShin','rFoot'];
@@ -1503,7 +1529,11 @@ function update(dt){
 
   me.pose = poseName; me.onPole = mode === 'pole'; me.faceMode = faceMode;
   animateAvatar(me, dt);
-  others.forEach(av => { if (av.bot) updateBot(av, dt); if (av.net) updateRemote(av, dt); animateAvatar(av, dt); });
+  others.forEach(av => {
+    if (av.bot) updateBot(av, dt); if (av.net) updateRemote(av, dt);
+    if (av.follow){ av.holder.position.x = av.follow.holder.position.x; av.holder.position.z = av.follow.holder.position.z; av.holder.rotation.y = av.follow.holder.rotation.y; }
+    animateAvatar(av, dt);
+  });
   netTick(dt);
   updateCamera(dt);
 }
@@ -1553,6 +1583,11 @@ function animateAvatar(av, dt){
     if (n === 'chest') x += breath;
     if (av.pose === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
+    if (pose.air){   // walking on air: straight legs scissor back and forth
+      const s = Math.sin(clock*3.2);
+      if (n === 'lThigh') x += -0.55*s; if (n === 'rThigh') x += 0.55*s;
+      if (n === 'lShin') x += 0.25 + 0.2*Math.max(0, s); if (n === 'rShin') x += 0.25 + 0.2*Math.max(0, -s);
+    }
     _q.setFromEuler(_e.set(x, y, z));
     J[n].quaternion.slerp(_q, k);
   });
@@ -2503,6 +2538,25 @@ window.__poleDebug = {
   ik(){ holder.updateMatrixWorld(true); const pose = POSES[poseName], out = {}; Object.entries(pose.ik || {}).forEach(([n, s]) => { const hand = J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')], w = new V3(); hand.getWorldPosition(w); out[n] = +w.distanceTo(holder.localToWorld(new V3(...s.t))).toFixed(3); }); const h = new V3(); skull.getWorldPosition(h); out.headGap = +(Math.hypot(h.x - POLES[myPole].x, h.z - POLES[myPole].z) - HEAD_R*1.06).toFixed(3); return out; },
   look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
   bots(n){ setBots(n); return others.length; },
+  // preview a double pole move with a stand-in partner: duo('stack' | 'fly', yaw, pitch, dist), duo(null) removes her
+  duo(kind, y, p, d){
+    let pal = others.find(av => av.follow);
+    if (!kind){ if (pal){ removeAvatar(pal); others.splice(others.indexOf(pal), 1); } return; }
+    if (!pal){ pal = createAvatar(Object.assign({}, DEFAULT, { top:'sport', topColor:'#9ec9e8', bottom:'hiShorts', bottomColor:'#9ec9e8', hair:'tail', hairColor:'#5a3a24' })); pal.follow = me; others.push(pal); }
+    const k = kind[0].toUpperCase() + kind.slice(1);
+    pal.pose = 'duo' + k + 'Base'; pal.onPole = true; pal.nameShown = false;
+    this.pose('duo' + k + 'Top', y, p, d);
+    return this.duoIk();
+  },
+  duoIk(){
+    const pal = others.find(av => av.follow); if (!pal) return null;
+    const out = {};
+    [['me', me], ['pal', pal]].forEach(([who, av]) => {
+      av.holder.updateMatrixWorld(true);
+      Object.entries(POSES[av.pose].ik || {}).forEach(([n, s]) => { const w = new V3(); av.J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')].getWorldPosition(w); out[who + '.' + n] = +w.distanceTo(av.holder.localToWorld(new V3(...s.t))).toFixed(3); });
+    });
+    return out;
+  },
   net(){ return { id:net.id, room:net.room, open:!!net.ws, players: others.filter(av => av.net).map(av => ({ name:av.net.tag.textContent, x:+av.holder.position.x.toFixed(2), z:+av.holder.position.z.toFixed(2), to:[av.net.x, av.net.z], pose:av.pose, face:av.faceMode, top:av.outfit.top })) }; }
 };
 })();
