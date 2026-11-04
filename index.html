@@ -1970,11 +1970,12 @@ function benchTick(now, ms){
 // dev pages (localhost, or the Mac's address on the same Wi-Fi) talk to `wrangler dev` on the same machine
 const NET_DEV = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(location.hostname);
 const NET_URL = NET_DEV ? `ws://${location.hostname}:8787/ws` : 'wss://polknic-ws.yujamong.com/ws';
-const NET_ROOMS = 5, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10;
+const NET_ROOMS = 5, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10, WALK = 1.25;
 const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench']);
 const net = {
   on:false, ws:null, id:null, room:1, fullRooms:0, tries:0, retryTimer:0,
-  sendT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
+  sendT:0, stateT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
+  rtt:0.4, pingAt:0, vx:0, vz:0, px:0, pz:0,   // round trip (s) and my own walking velocity, for others to predict where I am
 };
 const netEl = document.getElementById('netText');
 function netStatus(){
@@ -2000,7 +2001,7 @@ function netConnect(){
   ws.onopen = () => {
     const h = holder.position;
     ws.send(JSON.stringify({ t:'join', name:playerName, look:outfit, face:faceMode, x:h.x, z:h.z, ry:wrapAng(holder.rotation.y) }));
-    net.pingT = 0; net.pongBy = 0;
+    net.pingT = 0; net.pongBy = 0; net.pingAt = performance.now();   // join → welcome is the first round-trip sample
   };
   ws.onmessage = e => netMessage(e.data);
   ws.onclose = e => netClosed(ws, e.code);
@@ -2025,11 +2026,12 @@ window.addEventListener('online', netNow);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) netNow(); });
 
 function netMessage(raw){
-  if (raw === 'pong'){ net.pongBy = 0; return; }
+  if (raw === 'pong'){ net.pongBy = 0; netRtt(); return; }
   let m; try { m = JSON.parse(raw); } catch (e) { return; }
   const av = m.id && remoteById(m.id);
   switch (m.t){
     case 'welcome':
+      netRtt();
       net.id = m.id; net.tries = 0; net.fullRooms = 0; net.stateDirty = true;
       (m.players || []).forEach(addRemote);
       if (mode === 'pole') netSend({ t:'pole' });
@@ -2046,23 +2048,50 @@ function netMessage(raw){
   netStatus();
 }
 
-// send my position a few times a second (only when it changed), my state when it changed, and a ping now and then
+function netRtt(){
+  if (!net.pingAt) return;
+  const s = (performance.now() - net.pingAt)/1000;
+  if (s < 10) net.rtt += (s - net.rtt)*0.3;
+  net.pingAt = 0;
+}
+
+// send my position a few times a second (only when it changed), my state when it changed, and a ping now and then.
+// Along with the position go my velocity and, when walking to a clicked spot, the spot itself,
+// so the others can show me where I already am instead of where I was when the message left.
 const wrapAng = a => Math.atan2(Math.sin(a), Math.cos(a));
+const r3 = v => Math.round(v*1000)/1000;
 function netTick(dt){
   if (!net.ws) return;
   net.pingT += dt;
-  if (net.pingT >= NET_PING && net.ws.readyState === 1){ net.pingT = 0; net.ws.send('ping'); net.pongBy = clock + NET_PONG; }
+  if (net.pingT >= NET_PING && net.ws.readyState === 1){ net.pingT = 0; net.ws.send('ping'); net.pongBy = clock + NET_PONG; net.pingAt = performance.now(); }
   if (net.pongBy && clock > net.pongBy){ const ws = net.ws; netClosed(ws, 0); try { ws.close(); } catch (e) {} return; }   // no answer: the line is dead
-  if (!net.id) return;
-  net.sendT += dt;
-  if (net.sendT < NET_SEND) return;
-  net.sendT = 0;
-  const h = holder.position, ry = wrapAng(holder.rotation.y), s = net.sent;
-  if (!s || Math.hypot(h.x - s.x, h.z - s.z) > 0.01 || Math.abs(wrapAng(ry - s.ry)) > 0.03){
-    net.sent = { x:h.x, z:h.z, ry };
-    netSend({ t:'move', x:+h.x.toFixed(3), z:+h.z.toFixed(3), ry:+ry.toFixed(3) });
+  const h = holder.position;
+  if (dt > 0){   // my walking velocity, smoothed over a few frames
+    const k = 1 - Math.exp(-15*dt);
+    net.vx += ((h.x - net.px)/dt - net.vx)*k; net.vz += ((h.z - net.pz)/dt - net.vz)*k;
   }
-  if (net.stateDirty){
+  net.px = h.x; net.pz = h.z;
+  if (!net.id) return;
+  net.sendT += dt; net.stateT += dt;
+  const ry = wrapAng(holder.rotation.y), s = net.sent;
+  const walking = mode !== 'pole' && Math.hypot(net.vx, net.vz) > 0.3;
+  const vx = walking ? net.vx : 0, vz = walking ? net.vz : 0;
+  const tgt = mode !== 'pole' && walkTarget ? walkTarget : null;
+  // started, stopped, turned or picked a new spot: tell the others right away (moves stay under 15 a second, with state under the server limit of 30)
+  const turned = s && (walking !== s.walking || (tgt ? !s.tgt || tgt.distanceTo(s.tgt) > 0.05 : !!s.tgt)
+    || (walking && Math.abs(wrapAng(Math.atan2(vx, vz) - Math.atan2(s.vx, s.vz))) > 0.35));
+  if (net.sendT >= NET_SEND || (turned && net.sendT >= 0.07)){
+    if (!s || turned || Math.hypot(h.x - s.x, h.z - s.z) > 0.01 || Math.abs(wrapAng(ry - s.ry)) > 0.03){
+      net.sent = { x:h.x, z:h.z, ry, walking, vx, vz, tgt: tgt && tgt.clone() };
+      const m = { t:'move', x:r3(h.x), z:r3(h.z), ry:r3(ry) };
+      if (walking){ m.vx = r3(vx); m.vz = r3(vz); }
+      if (tgt){ m.tx = r3(tgt.x); m.tz = r3(tgt.z); }
+      netSend(m);
+    }
+    net.sendT = 0;
+  }
+  if (net.stateDirty && net.stateT >= NET_SEND){
+    net.stateT = 0;
     const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
     const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole };
     if (net.emote) m.emote = net.emote;
@@ -2088,7 +2117,7 @@ function addRemote(p){
   const tag = document.createElement('div');
   tag.className = 'nameTag'; tag.hidden = true; tag.textContent = String(p.name || '').slice(0, 16);
   document.body.appendChild(tag);
-  av.net = { id:p.id, tag, x:0, z:0, ry:0, movedAt:-9, spin:false };
+  av.net = { id:p.id, tag, x:0, z:0, ry:0, at:0, vx:0, vz:0, tx:null, tz:null, movedAt:-9, spin:false };
   av.nameShown = showName;
   remoteMove(av, p); av.holder.position.set(av.net.x, 0, av.net.z); av.holder.rotation.y = av.net.ry;
   remoteState(av, p); av.hopAt = av.landAt = -9;
@@ -2099,11 +2128,29 @@ function dropRemote(av){
   others.splice(others.indexOf(av), 1);
 }
 function clearRemotes(){ others.filter(av => av.net).forEach(dropRemote); }
+const fin = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
 function remoteMove(av, m){
   const n = av.net;
-  if (typeof m.x !== 'number' || typeof m.z !== 'number') return;
+  if (!fin(m.x, 20) || !fin(m.z, 20)) return;
   if (Math.hypot(m.x - n.x, m.z - n.z) > 0.005) n.movedAt = clock;
-  n.x = m.x; n.z = m.z; n.ry = typeof m.ry === 'number' ? m.ry : n.ry;
+  n.x = m.x; n.z = m.z; n.ry = fin(m.ry, 100) ? m.ry : n.ry; n.at = clock;
+  n.vx = fin(m.vx, 3) ? m.vx : 0; n.vz = fin(m.vz, 3) ? m.vz : 0;
+  n.tx = fin(m.tx, 20) && fin(m.tz, 20) ? m.tx : null; n.tz = m.tz;
+}
+// where they probably are now: the last reported spot, carried forward along their walk for as long as
+// the message took to get here (about half a round trip) plus the time since it arrived
+const _goal = new V3();
+function remoteGoal(n){
+  _goal.set(n.x, 0, n.z);
+  const ahead = Math.min(0.6, clock - n.at + net.rtt/2);
+  if (n.tx != null){
+    const dx = n.tx - n.x, dz = n.tz - n.z, d = Math.hypot(dx, dz);
+    if (d > 0.01){ const s = Math.min(d, WALK*ahead)/d; _goal.x += dx*s; _goal.z += dz*s; }
+  } else if (n.vx || n.vz){
+    _goal.x += n.vx*ahead; _goal.z += n.vz*ahead;
+    if (!walkable(_goal.x, _goal.z)) _goal.set(n.x, 0, n.z);   // don't guess them into the lake or a bench
+  }
+  return _goal;
 }
 function remoteState(av, m){
   if (POSES[m.pose] && m.pose !== av.pose){
@@ -2116,12 +2163,12 @@ function remoteState(av, m){
   av.net.spin = !!m.spin;
 }
 function updateRemote(av, dt){
-  const n = av.net, h = av.holder.position;
-  const dx = n.x - h.x, dz = n.z - h.z;
-  if (Math.hypot(dx, dz) > 3){ h.x = n.x; h.z = n.z; }   // far off (just joined, came back): no sliding across the park
-  else { const k = 1 - Math.exp(-8*dt); h.x += dx*k; h.z += dz*k; }
+  const n = av.net, h = av.holder.position, g = remoteGoal(n);
+  const dx = g.x - h.x, dz = g.z - h.z;
+  if (Math.hypot(dx, dz) > 3){ h.x = g.x; h.z = g.z; }   // far off (just joined, came back): no sliding across the park
+  else { const k = 1 - Math.exp(-12*dt); h.x += dx*k; h.z += dz*k; }
   av.holder.rotation.y = angLerp(av.holder.rotation.y, n.ry, 1 - Math.exp(-(av.onPole ? 6 : 10)*dt));
-  const moving = !av.onPole && av.pose === 'stand' && clock - n.movedAt < 0.3;
+  const moving = !av.onPole && av.pose === 'stand' && (clock - n.movedAt < 0.3 || Math.hypot(dx, dz) > 0.05);
   av.moveAmp += ((moving ? 1 : 0) - av.moveAmp)*(1 - Math.exp(-8*dt));
   av.walkPhase += dt*11*av.moveAmp;
   av.spinVel += ((n.spin && av.onPole && av.pose !== 'ready' ? -0.65 : 0) - av.spinVel)*(1 - Math.exp(-2.5*dt));   // only for the skirt flare

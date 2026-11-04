@@ -108,7 +108,11 @@ export class Room extends DurableObject {
       case 'move': {
         if (!num(m.x, 20) || !num(m.z, 20) || !num(m.ry, 100) || !inPark(m.x, m.z)) break;
         a.x = round(m.x); a.z = round(m.z); a.ry = round(m.ry);
-        this.broadcast({ t: 'move', id: a.id, x: a.x, z: a.z, ry: a.ry }, ws);
+        const out = { t: 'move', id: a.id, x: a.x, z: a.z, ry: a.ry };
+        // 걷는 속도(m/s)와 클릭한 목적지: 받는 쪽이 지연만큼 앞을 예측해서 그린다. 저장하지 않고 전달만
+        if (num(m.vx, 3) && num(m.vz, 3)) { out.vx = round(m.vx); out.vz = round(m.vz); }
+        if (num(m.tx, 20) && num(m.tz, 20) && inPark(m.tx, m.tz)) { out.tx = round(m.tx); out.tz = round(m.tz); }
+        this.broadcast(out, ws);
         break;
       }
       case 'state': {
