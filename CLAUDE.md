@@ -78,7 +78,8 @@
 - 입장 화면: 닉네임(최대 12자) 입력 후 입장. 다시 들어오면 저장된 이름이 미리 채워짐. 설정 서랍 맨 위 "닉네임"에서 변경
 - 닉네임 태그: HTML 요소(`#nameTag`)를 머리 위 월드 좌표를 투영해 매 프레임 배치(`updateNameTag`). 거꾸로 매달린 포즈에서는 가장 높은 쪽 위로. "이름 표시/숨김" 토글
 - 첫 방문엔 옷·헤어·색을 랜덤으로 골라 바로 저장(`pole-outfit-v2`가 없을 때만), 다시 오면 저장된 모습 그대로
-- 접속 인원 문구: "폴메이트 N명과 함께 있어요!"(N은 나를 뺀 인원, 0명이면 "폴메이트를 기다리는 중이에요")
+- 방: 입장 화면과 설정 서랍에서 "1번~5번 호숫가" 중 고름(방별 인원 표시, 꽉 찬 방은 못 누름, 마지막 방 기억 `pole-room`)
+- 접속 인원 문구: "N번 호숫가 · 폴메이트 N명과 함께 있어요!"(N은 나를 뺀 인원, 0명이면 "폴메이트를 기다리는 중이에요")
 - 화면 구성(2026-11-05): 하단은 두 줄만(표정 버튼+채팅, 동작 바). 자주 안 바꾸는 설정은 오른쪽 위 톱니 아이콘의 설정 서랍, 옷장은 옷걸이 아이콘(둘은 같은 자리라 하나를 열면 다른 하나는 닫힘). 아이콘은 외부 에셋 없이 인라인 SVG. "지금: 동작" 상태 글자는 사용자 요청으로 없앰
 - 표정: 하단 웃는 얼굴 버튼을 누르면 펼쳐지는 줄에서 자동(포즈별 `face`)/방긋/윙크/활짝/깜짝 선택(`faceMode`). 고르면 해당 이모트가 뜸
 - 앉기(E 또는 "앉기" 버튼): 벤치 2.2m 안이면 벤치로 걸어가 앉고, 아니면 그 자리 바닥에. 걷는 중에 누르면 도착 지점에서 앉음. 벤치를 클릭해도 앉으러 감. 움직이면 일어남(`sitAt`, `sitQueued`, 포즈 `sitGround`/`sitBench`)
@@ -87,7 +88,7 @@
   - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
 - 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음
 - 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 5초(`showBubble`), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
-- localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`
+- localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`, `pole-room`
 
 ## 좌표·포즈 규약
 

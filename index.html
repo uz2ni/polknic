@@ -131,6 +131,14 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 #entry input,.name-row input{font:500 16px var(--f-body);color:var(--ink);padding:11px 14px;border-radius:14px;border:2px solid var(--line);background:#fff;outline:none;min-width:0}
 #entry input:focus,.name-row input:focus{border-color:var(--accent)}
 #entry .err{color:#d4567b;font-size:12.5px;min-height:1em}
+/* room picker (entry screen and settings): five lakesides with how many are in each */
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.room{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:7px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;font:400 14px var(--f-display)}
+.room small{font:500 11px var(--f-body);color:var(--muted)}
+.room[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.room[aria-pressed="true"] small{color:rgba(255,255,255,.8)}
+.room:disabled{opacity:.45;cursor:default}
+#entry .rooms-label{font:600 11px var(--f-body);letter-spacing:.14em;color:var(--muted);text-align:left;margin-bottom:-4px}
 .go{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 18px var(--f-display);padding:12px;cursor:pointer;box-shadow:0 3px 0 #c95a7c}
 .name-row{display:flex;gap:6px}
 .name-row input{flex:1;font-size:14px;padding:8px 12px}
@@ -172,6 +180,8 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
     <p>폴 타러 소풍 왔어요! 여기서 쓸 닉네임을 정해주세요</p>
     <input id="nameInput" type="text" maxlength="12" placeholder="닉네임 (최대 12자)" aria-label="닉네임" required>
     <div class="err" id="nameErr" role="alert"></div>
+    <div class="rooms-label" id="entryRoomsLabel" hidden>방 고르기</div>
+    <div class="rooms" id="entryRooms" role="group" aria-label="방 고르기" hidden></div>
     <button class="go" type="submit">입장하기</button>
   </form>
 </div>
@@ -192,6 +202,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 <aside id="settings" class="glass" aria-label="설정" hidden>
   <div class="w-head"><h2>설정</h2><button id="settingsClose" class="textbtn" type="button">닫기</button></div>
   <div class="w-sec"><h3>닉네임</h3><form class="name-row" id="renameForm" autocomplete="off"><input id="renameInput" type="text" maxlength="12" aria-label="닉네임 바꾸기"><button class="chip" type="submit">바꾸기</button></form></div>
+  <div class="w-sec" id="setRoomsSec" hidden><h3>방</h3><div class="rooms" id="setRooms" role="group" aria-label="방 옮기기"></div></div>
   <div class="w-sec"><h3>보기</h3><div class="set-row">
     <button id="nameTog" class="chip" type="button" aria-pressed="true">이름 표시</button>
     <button id="chatTog" class="chip" type="button" aria-pressed="true" hidden>채팅 보기</button>
@@ -1882,7 +1893,7 @@ const wBtn = document.getElementById('wardrobeBtn');
 // wardrobe and settings share the spot under the corner icons, so opening one closes the other
 const settings = document.getElementById('settings'), sBtn = document.getElementById('settingsBtn');
 function setWardrobe(open){ wardrobe.hidden = !open; wBtn.setAttribute('aria-expanded', String(open)); if (open) setSettings(false); }
-function setSettings(open){ settings.hidden = !open; sBtn.setAttribute('aria-expanded', String(open)); if (open) setWardrobe(false); }
+function setSettings(open){ settings.hidden = !open; sBtn.setAttribute('aria-expanded', String(open)); if (open){ setWardrobe(false); roomCounts(); } }
 wBtn.addEventListener('click', () => setWardrobe(wardrobe.hidden));
 sBtn.addEventListener('click', () => setSettings(settings.hidden));
 document.getElementById('wardrobeClose').addEventListener('click', () => setWardrobe(false));
@@ -2037,22 +2048,25 @@ function benchTick(now, ms){
 // dev pages (localhost, or the Mac's address on the same Wi-Fi) talk to `wrangler dev` on the same machine
 const NET_DEV = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(location.hostname);
 const NET_URL = NET_DEV ? `ws://${location.hostname}:8787/ws` : 'wss://polknic-ws.yujamong.com/ws';
-const NET_ROOMS = 5, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10, WALK = 1.25;
+const NET_ROOMS = 5, ROOM_NAME = n => `${n}번 호숫가`, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10, WALK = 1.25;
 const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench']);
 const net = {
-  on:false, ws:null, id:null, room:1, fullRooms:0, tries:0, retryTimer:0,
+  on:false, ws:null, id:null, room:1, tries:0, retryTimer:0,
   sendT:0, stateT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
   rtt:0.4, pingAt:0, vx:0, vz:0, px:0, pz:0,   // round trip (s) and my own walking velocity, for others to predict where I am
 };
 const netEl = document.getElementById('netText');
 function netPeople(){
   const n = others.filter(av => av.net).length;
-  return n ? `폴메이트 ${n}명과 함께 있어요!` : '폴메이트를 기다리는 중이에요';
+  return ROOM_NAME(net.room) + ' · ' + (n ? `폴메이트 ${n}명과 함께 있어요!` : '폴메이트를 기다리는 중이에요');
 }
 function netStatus(){
-  netEl.hidden = !net.on && !net.badName;
-  netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? netPeople() : net.ws ? '연결 중…' : '혼자 노는 중';
+  netEl.hidden = !net.on && !net.badName && !net.full;
+  netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.full ? `${ROOM_NAME(net.room)}가 꽉 찼어요` : net.id ? netPeople() : net.ws ? '연결 중…' : '혼자 노는 중';
   chatForm.hidden = chatTog.hidden = !net.id;   // chat only while connected
+  setRoomsSec.hidden = !net.on && !net.full;
+  if (net.id && roomN) roomN[net.room - 1] = others.filter(av => av.net).length + 1;   // my own room's count stays exact between refreshes
+  roomButtons();
 }
 function netSend(m){
   if (net.id && net.ws.readyState === 1) net.ws.send(typeof m === 'string' ? m : JSON.stringify(m));
@@ -2060,8 +2074,56 @@ function netSend(m){
 // pose, sitting, face and spin go out together, at most every NET_SEND (clicking around can't flood the server)
 function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
 
+/* rooms: picked on the entry screen (last one remembered) or switched in settings; counts come from /rooms */
+const ROOMS_URL = NET_URL.replace(/^ws/, 'http').replace(/\/ws$/, '/rooms');
+const entryRooms = document.getElementById('entryRooms'), setRooms = document.getElementById('setRooms'), setRoomsSec = document.getElementById('setRoomsSec');
+let roomN = null, roomCap = 20;   // people per room (null until the server answers)
+try { const r = +localStorage.getItem('pole-room'); if (r >= 1 && r <= NET_ROOMS) net.room = r; } catch (e) {}
+function roomButtons(){
+  [entryRooms, setRooms].forEach(box => {
+    if (!box.children.length) for (let n = 1; n <= NET_ROOMS; n++){
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'room'; b.dataset.room = n;
+      b.innerHTML = `<span>${ROOM_NAME(n)}</span><small></small>`;
+      b.addEventListener('click', () => pickRoom(n));
+      box.appendChild(b);
+    }
+    box.querySelectorAll('.room').forEach(b => {
+      const n = +b.dataset.room, c = roomN && roomN[n - 1];
+      const mine = net.id && n === net.room;
+      b.setAttribute('aria-pressed', String(n === net.room));
+      b.lastChild.textContent = c == null ? '' : `${c}/${roomCap}`;
+      b.disabled = c != null && c >= roomCap && !mine;
+    });
+  });
+}
+function roomCounts(){
+  if (bench) return;
+  fetch(ROOMS_URL, { cache:'no-store' }).then(r => r.json()).then(j => {
+    roomN = j.rooms; roomCap = j.cap || roomCap;
+    entryRooms.hidden = document.getElementById('entryRoomsLabel').hidden = false;
+    // first visit (or the remembered room is full): start in the first room with space
+    if (!net.on && roomN[net.room - 1] >= roomCap){ const free = roomN.findIndex(c => c != null && c < roomCap); if (free >= 0) net.room = free + 1; }
+    roomButtons();
+  }).catch(() => {});   // no server: no picker, solo play as before
+}
+function pickRoom(n){
+  if (n === net.room && net.id) return;   // already here
+  net.room = n; net.full = false;
+  try { localStorage.setItem('pole-room', String(n)); } catch (e) {}
+  if (entry.hidden){   // already playing: hop over
+    const ws = net.ws;
+    if (ws){ net.ws = null; net.id = null; net.sent = null; ws.onclose = null; try { ws.close(); } catch (e) {} clearRemotes(); }
+    net.on = false; net.tries = 0; netStart();
+  }
+  netStatus();
+}
+roomButtons(); roomCounts();
+setInterval(() => { if (!entry.hidden || !settings.hidden) roomCounts(); }, 8000);   // keep the counts fresh while a picker is on screen
+
 function netStart(){
   if (net.on || bench) return;
+  try { localStorage.setItem('pole-room', String(net.room)); } catch (e) {}
   // everyone starts at the same spot; step a little aside so new players don't stand inside each other
   if (mode === 'roam' && !sitAt && !walkTarget && holder.position.distanceTo(new V3(0.9, 0, 1.6)) < 0.01){
     for (let i = 0; i < 20; i++){
@@ -2092,8 +2154,9 @@ function netClosed(ws, code){
   clearRemotes();
   if (code === 4002){   // the server refused my nickname: stop until it's changed in settings
     net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 설정에서 바꿔 주세요');
-  } else if (code === 4001 && ++net.fullRooms < NET_ROOMS){ net.room = net.room % NET_ROOMS + 1; netConnect(); }   // room full: next room
-  else { net.fullRooms = 0; netRetry(); }
+  } else if (code === 4001){   // the room filled up before I got in: stay alone until another room is picked
+    net.on = false; net.full = true; toast(`${ROOM_NAME(net.room)}가 꽉 찼어요. 설정에서 다른 방을 골라 주세요`); roomCounts();
+  } else netRetry();
   netStatus();
 }
 // back off 1, 2, 4 … 30 s with jitter, so a server restart doesn't bring everyone back in the same instant
@@ -2113,7 +2176,7 @@ function netMessage(raw){
   switch (m.t){
     case 'welcome':
       netRtt();
-      net.id = m.id; net.tries = 0; net.fullRooms = 0; net.stateDirty = true;
+      net.id = m.id; net.tries = 0; net.stateDirty = true; roomCounts();
       (m.players || []).forEach(addRemote);
       if (mode === 'pole') netSend({ t:'pole' });
       break;

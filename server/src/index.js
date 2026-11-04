@@ -14,10 +14,18 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname === '/') return new Response('polknic-server ok');
+    const origin = req.headers.get('Origin') || '';
+    const allowed = origin === PROD_ORIGIN || DEV_ORIGIN.test(origin);
+    // 방 고르는 화면용: 방마다 지금 인원. 잠든 방도 잠깐 깨워서 물어본다(요청이 적어 무료 한도 안)
+    if (url.pathname === '/rooms') {
+      if (!allowed) return new Response('forbidden origin', { status: 403 });
+      const rooms = await Promise.all(Array.from({ length: +env.MAX_ROOMS }, (_, i) =>
+        env.ROOMS.get(env.ROOMS.idFromName('room-' + (i + 1))).fetch('https://room/count').then(r => r.json()).then(j => j.n).catch(() => null)));
+      return Response.json({ cap: +env.ROOM_CAP, rooms }, { headers: { 'Access-Control-Allow-Origin': origin, 'Cache-Control': 'no-store' } });
+    }
     if (url.pathname !== '/ws') return new Response('not found', { status: 404 });
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('websocket only', { status: 426 });
-    const origin = req.headers.get('Origin') || '';
-    if (origin !== PROD_ORIGIN && !DEV_ORIGIN.test(origin)) return new Response('forbidden origin', { status: 403 });
+    if (!allowed) return new Response('forbidden origin', { status: 403 });
     const n = parseInt(url.searchParams.get('room'), 10);
     if (!(n >= 1 && n <= +env.MAX_ROOMS)) return new Response('no such room', { status: 404 });
     const room = env.ROOMS.get(env.ROOMS.idFromName('room-' + n));
@@ -57,6 +65,7 @@ export class Room extends DurableObject {
   }
 
   async fetch(req) {
+    if (new URL(req.url).pathname === '/count') return Response.json({ n: this.others(null).length });
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
     if (this.ctx.getWebSockets().length >= this.cap) {
       // 꽉 참: 방에 등록하지 않는 일반 소켓으로 받아 알리고 바로 닫는다(hibernation 소켓으로 받으면 닫힘이 전달되지 않음)

@@ -133,6 +133,10 @@ ok(e.closed === 1009, `2KB 넘는 메시지는 끊김(${e.closed})`);
 let blocked = false;
 try { const f = client(1, 'https://evil.example'); await f.open; } catch (err) { blocked = /403/.test(err.message); }
 ok(blocked, '허용 안 된 출처는 403');
+const rr = await fetch(BASE.replace(/^ws/, 'http') + '/rooms', { headers: { origin: ORIGIN } }).then(r => r.json());
+ok(rr.cap === 3 && rr.rooms.length === 5 && rr.rooms[0] === 1 && rr.rooms[1] === 0, `방별 인원 /rooms (방 1: ${rr.rooms[0]}명)`);
+const rbad = await fetch(BASE.replace(/^ws/, 'http') + '/rooms', { headers: { origin: 'https://evil.example' } });
+ok(rbad.status === 403, '/rooms도 다른 출처는 403');
 let noRoom = false;
 try { const g = client(99); await g.open; } catch (err) { noRoom = /404/.test(err.message); }
 ok(noRoom, '없는 방 번호는 404');
