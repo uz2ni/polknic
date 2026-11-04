@@ -91,6 +91,33 @@ ok((await a.next('chat'))?.text.includes('시바견'), '정상 문장(섹시하�
 b.send({ t: 'name', name: '개새끼' });
 ok((await b.next('name'))?.ok === false, '금칙어 닉네임 변경 거절');
 
+console.log('같이 타기');
+a.send({ t: 'invite', to: wb.id });
+const inv = await b.next('invite');
+ok(inv && inv.from === wa.id && inv.name === '유자', 'B가 A의 같이 타기 요청 받음');
+b.send({ t: 'accept', from: wa.id, i: 1 });
+const da = await a.next('duo'), db = await b.next('duo');
+ok(da && da.ok && da.i === 1 && da.mate === wb.id && da.lead === wa.id && db && db.mate === wa.id, '수락하면 둘 다 1번 폴로 짝 지어짐');
+await sleep(200); b.inbox.length = 0;
+b.send({ t: 'pole', i: 1 });
+ok((await b.next('pole'))?.ok === true, '짝은 같은 폴을 잡을 수 있음');
+a.send({ t: 'duoMove', kind: 'stack' });
+const dm = await b.next('duoMove');
+ok(dm && dm.kind === 'stack' && dm.from === wa.id, 'B가 A의 더블 기술(쌓기) 받음');
+b.send({ t: 'duoSpin', on: true });
+const ds = await a.next('duoSpin');
+ok(ds && ds.on === true && ds.from === wb.id, 'A가 B의 스핀 켜기 받음');
+b.send({ t: 'accept', from: wa.id, i: 2 });
+ok((await b.next('duo'))?.ok === false, '요청 없이 수락은 거절');
+a.send({ t: 'unpole' });
+ok(!!(await b.next('duoEnd')), 'A가 내려오면 B에게 같이 타기 끝 알림');
+await sleep(200);
+b.send({ t: 'unpole' });
+await sleep(200);
+a.inbox.length = 0; b.inbox.length = 0;
+a.send({ t: 'invite', to: wb.id });
+ok(!(await b.next('invite', 400)), '3초 안에 또 요청하면 무시');
+
 console.log('폴 잠금');
 a.send({ t: 'pole', i: 2 });
 const pa = await a.next('pole');

@@ -72,6 +72,9 @@
 | `state` | `pose, sit, face, spin, emote` | 바뀐 것만 넣어도 됨. `sit`은 벤치 번호 또는 null |
 | `outfit` | `look` | 옷 변경 |
 | `name` | `name` | 닉네임 변경(중복이면 `#2`, 금칙어면 `{t:'name', ok:false}`) |
+| `invite` / `accept` / `decline` | `to` / `from, i` / `from` | 같이 타기 요청·수락(수락하는 웹이 고른 빈 폴 `i`를 둘 몫으로)·거절. 요청은 3초에 한 번 |
+| `duoMove` | `kind`(`stack`/`fly`) | 더블 기술. 짝에게만 전달, 받은 쪽이 아래 역할 |
+| `duoSpin` | `on` | 같이 타는 중 스핀 폴 켜기/끄기. 짝에게만 전달 |
 | `chat` | `text` | 채팅 60자. 1초에 1개, 금칙어·링크는 보낸 사람에게만 `{t:'chat', ok:false, why:'fast'|'word'|'link'}` |
 | `pole` / `unpole` | `i`(폴 번호 0~4) | 폴 잡기 요청 / 내려옴. `i`가 없으면 0번(예전 웹 호환) |
 | `ping` (문자열) | | 연결 유지. `pong`이 옴 |
@@ -85,6 +88,11 @@
 | `join` | `p` | 누가 들어옴(`p`는 스냅샷 한 명 형식) |
 | `move` / `state` / `outfit` / `name` / `chat` | `id` + 위와 같음 | 다른 사람 변화. `move`에는 걷는 속도 `vx, vz`와 클릭한 목적지 `tx, tz`가 붙을 수 있음 |
 | `pole` | `ok?, i, by` | 내 요청 결과(`ok`) 또는 `i`번 폴 사용자 변경 알림(`by`, 없으면 null) |
+| `invite` / `decline` | `from, name` / `by, busy?` | 같이 타기 요청이 옴 / 거절됨 |
+| `duo` | `ok, i, mate, lead` | 같이 타기 시작(둘 다 받음), 실패면 `ok:false` |
+| `duoEnd` | | 짝이 내려오거나 나감. 나는 그 폴을 혼자 잡은 상태 |
+| `duoMove` | `kind, from` | 짝이 더블 기술을 시작함 |
+| `duoSpin` | `on, from` | 짝이 스핀 폴을 켜거나 끔 |
 | `leave` | `id` | 퇴장 |
 
 ## 트래픽 계산 기준

@@ -34,7 +34,10 @@ export default {
 };
 
 /* ---------- 검증 ---------- */
-const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split']);
+const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
+  'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase']);
+const DUO = new Set(['stack', 'fly']);   // 더블폴 기술(둘이 한 폴)
+const INVITE_GAP = 3000;
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
@@ -93,6 +96,19 @@ export class Room extends DurableObject {
     const by = Array(POLES).fill(null);
     this.others(null).forEach(w => { const a = w.deserializeAttachment(); if (Number.isInteger(a.pole)) by[a.pole] = a.id; });
     return by;
+  }
+  byId(id) {
+    return id ? this.others(null).find(w => w.deserializeAttachment().id === id) : null;
+  }
+  // 같이 타기 끝: 짝에게 알리고, 짝은 폴을 혼자 잡은 상태로 남는다
+  endDuo(a) {
+    const mw = this.byId(a.mate);
+    a.mate = null;
+    if (!mw) return;
+    const b = mw.deserializeAttachment();
+    b.mate = null; mw.serializeAttachment(b);
+    mw.send(JSON.stringify({ t: 'duoEnd' }));
+    if (Number.isInteger(b.pole)) this.broadcast({ t: 'pole', i: b.pole, by: b.id }, null);
   }
   // 다른 사람에게 보이는 내 상태(snapshot / join 알림용)
   static pub(a) {
@@ -168,7 +184,8 @@ export class Room extends DurableObject {
         const i = m.i === undefined ? 0 : m.i;   // i 없이 보내던 예전 웹은 0번 폴
         if (!Number.isInteger(i) || i < 0 || i >= POLES) break;
         const by = this.poles()[i];
-        if (by && by !== a.id) { ws.send(JSON.stringify({ t: 'pole', ok: false, i, by })); break; }
+        if (by && by !== a.id && by !== a.mate) { ws.send(JSON.stringify({ t: 'pole', ok: false, i, by })); break; }
+        if (a.mate && a.pole !== i) this.endDuo(a);   // 짝과 다른 폴로 가면 같이 타기 끝
         const old = a.pole;
         a.pole = i; ws.serializeAttachment(a);
         ws.send(JSON.stringify({ t: 'pole', ok: true, i, by: a.id }));
@@ -178,10 +195,59 @@ export class Room extends DurableObject {
       }
       case 'unpole': {
         if (!Number.isInteger(a.pole)) break;
-        const i = a.pole;
-        a.pole = null; ws.serializeAttachment(a);
-        this.broadcast({ t: 'pole', i, by: null }, ws);
+        const i = a.pole, mate = a.mate;
+        a.pole = null;
+        if (mate) this.endDuo(a);   // 짝은 그 폴에 혼자 남음(endDuo가 알림)
+        else this.broadcast({ t: 'pole', i, by: null }, ws);
+        ws.serializeAttachment(a);
         return;
+      }
+      /* 같이 타기: invite → (상대가) accept 또는 decline. accept 때 상대 웹이 고른 빈 폴을 둘 몫으로 잡는다 */
+      case 'invite': {
+        const tw = this.byId(m.to), now = Date.now();
+        if (!tw || tw === ws || a.mate || now - (a.invAt || 0) < INVITE_GAP) break;
+        if (tw.deserializeAttachment().mate) { ws.send(JSON.stringify({ t: 'decline', by: m.to, busy: true })); break; }
+        a.invAt = now; a.inviteTo = m.to;
+        tw.send(JSON.stringify({ t: 'invite', from: a.id, name: a.name }));
+        break;
+      }
+      case 'decline': {
+        const fw = this.byId(m.from);
+        if (!fw) break;
+        const f = fw.deserializeAttachment();
+        if (f.inviteTo !== a.id) break;
+        f.inviteTo = null; fw.serializeAttachment(f);
+        fw.send(JSON.stringify({ t: 'decline', by: a.id }));
+        break;
+      }
+      case 'accept': {
+        const fw = this.byId(m.from), i = m.i;
+        const f = fw && fw.deserializeAttachment();
+        const by = Number.isInteger(i) && i >= 0 && i < POLES ? this.poles()[i] : 'x';
+        if (!f || f.inviteTo !== a.id || f.mate || a.mate || (by && by !== a.id && by !== f.id)) {
+          ws.send(JSON.stringify({ t: 'duo', ok: false })); break;
+        }
+        // 둘 다 예전 폴은 놓고 이 폴로
+        [[ws, a], [fw, f]].forEach(([w, p]) => { if (Number.isInteger(p.pole) && p.pole !== i) this.broadcast({ t: 'pole', i: p.pole, by: null }, null); });
+        f.inviteTo = null; f.pole = i; f.mate = a.id; fw.serializeAttachment(f);
+        a.pole = i; a.mate = f.id; ws.serializeAttachment(a);
+        const msg = { t: 'duo', ok: true, i, lead: f.id };
+        fw.send(JSON.stringify({ ...msg, mate: a.id }));
+        ws.send(JSON.stringify({ ...msg, mate: f.id }));
+        this.broadcast({ t: 'pole', i, by: f.id }, null);
+        return;
+      }
+      case 'duoSpin': {
+        // 같이 타는 중엔 한 명이 스핀을 켜고 끄면 짝도 똑같이
+        const mw = this.byId(a.mate);
+        if (mw) mw.send(JSON.stringify({ t: 'duoSpin', on: !!m.on, from: a.id }));
+        break;
+      }
+      case 'duoMove': {
+        // 기술을 누른 사람이 위, 짝이 아래. 짝에게만 전달(다른 사람은 각자의 state로 봄)
+        const mw = this.byId(a.mate);
+        if (mw && DUO.has(m.kind)) mw.send(JSON.stringify({ t: 'duoMove', kind: m.kind, from: a.id }));
+        break;
       }
     }
     ws.serializeAttachment(a);
@@ -203,7 +269,7 @@ export class Room extends DurableObject {
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,
       z: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.z) : 1.6,
       ry: num(m.ry, 100) ? round(m.ry) : 0, pose: 'stand', sit: null,
-      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null,
+      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, mate: null,
     });
     ws.serializeAttachment(a);
     ws.send(JSON.stringify({
@@ -223,8 +289,10 @@ export class Room extends DurableObject {
   leave(ws) {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
-    ws.serializeAttachment({ ...a, joined: false, pole: null });
+    const mate = a.mate;
+    ws.serializeAttachment({ ...a, joined: false, pole: null, mate: null });
     this.broadcast({ t: 'leave', id: a.id }, ws);
-    if (Number.isInteger(a.pole)) this.broadcast({ t: 'pole', i: a.pole, by: null }, ws);
+    if (mate) this.endDuo(a);
+    else if (Number.isInteger(a.pole)) this.broadcast({ t: 'pole', i: a.pole, by: null }, ws);
   }
 }

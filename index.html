@@ -114,6 +114,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 body.clean .bubble{display:none}
 .poleTag{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;padding:2px 9px;border-radius:999px;background:var(--accent);color:#fff;font:600 11px var(--f-body);white-space:nowrap;box-shadow:0 2px 0 rgba(90,66,55,.15)}
 body.clean .poleTag{display:none}
+/* double pole: the small menu over a clicked player, and the invite card */
+#mateMenu{position:fixed;z-index:7;transform:translate(-50%,-110%);display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;font:600 13px var(--f-body);color:var(--ink);border-radius:999px}
+#mateMenu button,#inviteCard button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 14px var(--f-display);padding:7px 12px;cursor:pointer}
+#inviteCard{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 18px;font:500 14px var(--f-body);color:var(--ink);text-align:center;max-width:calc(100% - 32px);box-sizing:border-box}
+#inviteCard .row{display:flex;gap:8px}
+#inviteCard button.no{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
+.move.duo{color:var(--accent)}
+body.clean #mateMenu,body.clean #inviteCard{display:none!important}
 #toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
@@ -199,6 +207,8 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 </div>
 <div id="nameTag" hidden></div>
 <div id="toast" role="status" hidden></div>
+<div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
+<div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
 <aside id="wardrobe" class="glass" aria-label="옷장">
   <div class="w-head"><h2>옷장</h2><button id="wardrobeClose" class="textbtn" type="button">닫기</button></div>
@@ -1260,17 +1270,16 @@ const POSES = {
     j:{ head:[-0.12,0,0] },
     ik:{ lArm:{ t:[0.49,0.88,0.06], h:[1,-0.4,0.3] },
          rArm:{ t:[-0.09,0.88,0.06], h:[-1,-0.4,0.3] } } },
-  // 손잡고 날기 — the top sits on the pole with both legs together straight out, one hand up the pole, the other down
-  //   to the base, who hangs from the pole and that hand and walks on air
-  duoFlyTop: { label:'손잡고 날기', view:-0.7, face:'wink', emote:'sparkle',
-    p:[0.12,1.16,-0.03], up:[-0.1,0.99,0], fwd:[0,0,1],
-    j:{ head:[0.05,-0.3,0.05], lThigh:[-1.5,0,0.03], rThigh:[-1.5,0,-0.03], lShin:[0,0,0], rShin:[0,0,0], lFoot:[0.6,0,0], rFoot:[0.6,0,0] },
-    ik:{ lArm:{ t:[0.01,1.47,0], h:[0.3,-1,-0.4] },
-         rArm:{ t:[-0.01,1.13,0.04], h:[0,-1,0.6] } } },
-  duoFlyBase: { label:'손잡고 날기', face:'joy', air:true,
-    p:[-0.34,0.64,0], up:[0.22,0.97,0], fwd:[0,0,1],
-    j:{ head:[-0.2,0.3,0], rUp:[0.2,0,-1.5], rFore:[-0.3,0,0] },
-    ik:{ lArm:{ t:[-0.01,1.02,0.04], h:[0.3,-1,0.5] } } },
+  // 회전목마 — the top sits by the pole with both legs together straight out, leaning away with the pole hooked
+  //   in her left armpit (arm wrapped round it) and the right arm reaching straight down; the base hangs off the pole on the top's left and walks on air
+  duoFlyTop: { label:'회전목마', view:0.7, face:'wink', emote:'sparkle',
+    p:[-0.13,1.36,-0.02], up:[-0.22,0.97,0], fwd:[0,0,1],
+    j:{ head:[0.05,0.3,0.12], lUp:[0.15,0,0.95], lFore:[-1.9,0.9,0], rUp:[0,0,-0.12], rFore:[0,0,0],
+        lThigh:[-1.5,0,0.03], rThigh:[-1.5,0,-0.03], lShin:[0,0,0], rShin:[0,0,0], lFoot:[0.6,0,0], rFoot:[0.6,0,0] } },
+  duoFlyBase: { label:'회전목마', face:'joy', air:true,
+    p:[0.4,0.9,0], up:[-0.1,0.99,0], fwd:[0,0,1],
+    j:{ head:[-0.2,-0.3,0], lUp:[0.2,0,1.5], lFore:[-0.3,0,0] },
+    ik:{ rArm:{ t:[0.02,1.3,0.03], h:[0,1,1] } } },
 };
 const MOVE_ORDER = ['chair','ppose','hera','brass','split'];
 const JOINTS = ['spine','chest','neck','head','lUp','lFore','lHand','rUp','rFore','rHand','lThigh','lShin','lFoot','rThigh','rShin','rFoot'];
@@ -1342,7 +1351,8 @@ let walkTarget = null, queuedMove = null, pendingLeave = null;
 let spinPole = false, clock = 0;
 let myPole = 0;                                    // the pole I'm on or walking to (index into POLES)
 const polesBy = Array(POLES.length).fill(null);    // who holds each pole (player id from the server, null = free)
-const poleTaken = i => polesBy[i] && polesBy[i] !== net.id;
+let myMate = null;                                 // player id of the one I'm sharing my pole with (double pole)
+const poleTaken = i => polesBy[i] && polesBy[i] !== net.id && polesBy[i] !== myMate;
 // the nearest pole nobody else holds, or -1
 function freePole(){
   const h = holder.position;
@@ -1371,7 +1381,7 @@ function setPose(name){
   updateUI();
 }
 // name = move to strike (null: just get on the pole), at = a clicked pole (otherwise the nearest free one)
-function startMove(name, at){
+function startMove(name, at, side){
   if (mode === 'pole'){
     if (at != null && at !== myPole) return;   // already on another pole: get down first
     pendingLeave = null; if (name) setPose(name); return;
@@ -1382,7 +1392,7 @@ function startMove(name, at){
   standUp(); sitQueued = null;
   myPole = i;
   const P = POLES[i], wp = holder.position;
-  const a = Math.atan2(wp.x - P.x, wp.z - P.z);
+  const a = side != null ? side : Math.atan2(wp.x - P.x, wp.z - P.z);
   walkTarget = new V3(P.x + Math.sin(a)*0.34, 0, P.z + Math.cos(a)*0.34);
   queuedMove = name; mode = 'approach'; updateUI();
 }
@@ -1527,11 +1537,20 @@ function update(dt){
     }
   }
 
+  duoTick();
   me.pose = poseName; me.onPole = mode === 'pole'; me.faceMode = faceMode;
   animateAvatar(me, dt);
+  for (let i = others.length - 1; i >= 0; i--) if (others[i].gone){ removeAvatar(others[i]); others.splice(i, 1); }
   others.forEach(av => {
     if (av.bot) updateBot(av, dt); if (av.net) updateRemote(av, dt);
     if (av.follow){ av.holder.position.x = av.follow.holder.position.x; av.holder.position.z = av.follow.holder.position.z; av.holder.rotation.y = av.follow.holder.rotation.y; }
+    if (av.follow && mode !== 'pole') av.gone = true;   // the preview stand-in leaves when I get off the pole
+    if (av.net && av.pose.startsWith('duo') && av.pose.endsWith('Base')){
+      // someone's base in a double move: turn with their top as drawn on this screen, so the two always line up
+      const topPose = av.pose.replace('Base', 'Top');
+      const top = [me, ...others].find(o => o !== av && o.pose === topPose && Math.hypot(o.holder.position.x - av.holder.position.x, o.holder.position.z - av.holder.position.z) < 0.3);
+      if (top) av.holder.rotation.y = top.holder.rotation.y;
+    }
     animateAvatar(av, dt);
   });
   netTick(dt);
@@ -1585,8 +1604,8 @@ function animateAvatar(av, dt){
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
     if (pose.air){   // walking on air: straight legs scissor back and forth
       const s = Math.sin(clock*3.2);
-      if (n === 'lThigh') x += -0.55*s; if (n === 'rThigh') x += 0.55*s;
-      if (n === 'lShin') x += 0.25 + 0.2*Math.max(0, s); if (n === 'rShin') x += 0.25 + 0.2*Math.max(0, -s);
+      if (n === 'lThigh') x += -0.9*s; if (n === 'rThigh') x += 0.9*s;
+      if (n === 'lShin') x += 0.15 + 0.25*Math.max(0, s); if (n === 'rShin') x += 0.15 + 0.25*Math.max(0, -s);
     }
     _q.setFromEuler(_e.set(x, y, z));
     J[n].quaternion.slerp(_q, k);
@@ -1650,6 +1669,9 @@ const ray = new T.Raycaster(), groundPlane = new T.Plane(new V3(0, 1, 0), 0);
 function clickGround(e){
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera({ x:((e.clientX - r.left)/r.width)*2 - 1, y:-((e.clientY - r.top)/r.height)*2 + 1 }, camera);
+  const who = net.id && ray.intersectObjects(others.filter(av => av.net).map(av => av.holder), true)[0];
+  if (who){ let o = who.object; while (o.parent && o.parent !== scene) o = o.parent; const av = others.find(a => a.holder === o); if (av){ openMateMenu(av, e); return; } }
+  closeMateMenu();
   const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
   if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
   const hit = new V3();
@@ -1688,6 +1710,15 @@ MOVE_ORDER.forEach(n => {
 });
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
 movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span></button>');
+// double pole moves: only while my pole-mate and I are both on our pole
+const DUO_MOVES = [['stack', '쌓기'], ['fly', '회전목마']];
+DUO_MOVES.forEach(([k, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'move duo'; b.id = 'mv-duo-' + k; b.hidden = true;
+  b.innerHTML = `<span>${label}</span>`;
+  b.addEventListener('click', () => startDuoMove(k));
+  movesEl.appendChild(b);
+});
 const leaveBtn = document.createElement('button');
 leaveBtn.type = 'button'; leaveBtn.className = 'move leave'; leaveBtn.id = 'mv-leave';
 leaveBtn.innerHTML = '<span>내려오기</span>';
@@ -1709,7 +1740,14 @@ function updateUI(){
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
-spinTog.addEventListener('click', () => { spinPole = !spinPole; spinTog.setAttribute('aria-pressed', String(spinPole)); if (!spinPole) poseYaw = holder.rotation.y + (POSES[poseName].view || 0); netState(); }); // stop where it is
+// spin the pole (stops where it is); while sharing a pole the mate's spin goes on and off with mine
+function setSpin(on, fromMate){
+  spinPole = on; spinTog.setAttribute('aria-pressed', String(on));
+  if (!on) poseYaw = holder.rotation.y + (POSES[poseName].view || 0);
+  netState();
+  if (!fromMate && myMate) netSend({ t:'duoSpin', on });
+}
+spinTog.addEventListener('click', () => setSpin(!spinPole));
 const camTog = document.getElementById('camTog');
 camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.title = wide ? '캐릭터 보기' : '전체 보기'; camTog.setAttribute('aria-label', camTog.title); });
 
@@ -2246,7 +2284,7 @@ function netClosed(ws, code){
   if (ws !== net.ws) return;
   if (code === 4001 || code === 4002) hideLoading();   // refused: lift the curtain so the notice can be read
   net.ws = null; net.id = null; net.sent = null;
-  clearRemotes(); polesBy.fill(null);
+  clearRemotes(); polesBy.fill(null); myMate = null; inviteCard.hidden = true;
   if (code === 4002){   // the server refused my nickname: stop until it's changed in settings
     net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 설정에서 바꿔 주세요');
   } else if (code === 4001){   // the room filled up before I got in: stay alone until another room is picked
@@ -2289,6 +2327,15 @@ function netMessage(raw){
       if (m.ok === false){ hideBubble(me); toast(CHAT_WHY[m.why] || '보내지 못했어요'); }
       else if (av && typeof m.text === 'string') showBubble(av, m.text);
       break;
+    case 'invite': showInvite(m.from, String(m.name || '').slice(0, 16)); break;
+    case 'decline': toast(m.busy ? '이미 다른 폴메이트와 타고 있어요' : `${mateLabel(m.by)}님이 다음에 타재요`); break;
+    case 'duo':
+      if (m.ok === false){ toast('같이 타기를 시작하지 못했어요'); break; }
+      beginDuo(m.i, m.mate, m.lead);
+      break;
+    case 'duoEnd': endDuo('같이 타기가 끝났어요'); break;
+    case 'duoSpin': if (m.from === myMate) setSpin(!!m.on, true); break;
+    case 'duoMove': if (m.from === myMate && DUO_MOVES.some(([k]) => k === m.kind)) takeDuoMove(m.kind); break;
     // pole locks: answers to my requests (ok) and changes by others
     case 'pole':
       if (Number.isInteger(m.i) && m.i >= 0 && m.i < polesBy.length){
@@ -2326,7 +2373,10 @@ function netTick(dt){
   if (!net.id) return;
   // hold the pole I'm walking to or on, let go when I leave it (one place for every way of stopping)
   const wantPole = mode === 'approach' || mode === 'pole' ? myPole : null;
-  if (wantPole !== net.poleSent){ netSend(wantPole == null ? { t:'unpole' } : { t:'pole', i:wantPole }); net.poleSent = wantPole; }
+  if (wantPole !== net.poleSent){
+    netSend(wantPole == null ? { t:'unpole' } : { t:'pole', i:wantPole }); net.poleSent = wantPole;
+    if (myMate && wantPole !== duoPole) endDuo('같이 타기를 끝냈어요');   // I left our pole (the server tells my mate)
+  }
   net.sendT += dt; net.stateT += dt;
   const ry = wrapAng(holder.rotation.y), s = net.sent;
   const walking = mode !== 'pole' && Math.hypot(net.vx, net.vz) > 0.3;
@@ -2427,6 +2477,96 @@ function updateRemote(av, dt){
   av.moveAmp += ((moving ? 1 : 0) - av.moveAmp)*(1 - Math.exp(-8*dt));
   av.walkPhase += dt*11*av.moveAmp;
   av.spinVel += ((n.spin && av.onPole && av.pose !== 'ready' ? -0.65 : 0) - av.spinVel)*(1 - Math.exp(-2.5*dt));   // only for the skirt flare
+}
+
+/* double pole: tap a player → invite → they accept → both walk to the free pole nearest the two of them,
+   stand at its sides, and either one can strike a double move (whoever presses it is the top, the other the base) */
+const mateMenu = document.getElementById('mateMenu'), inviteCard = document.getElementById('inviteCard');
+let menuFor = null, inviteFrom = null, inviteTimer = 0;
+const mateAv = () => myMate ? remoteById(myMate) : null;
+const mateLabel = id => { const av = remoteById(id); return av ? av.net.tag.textContent : '폴메이트'; };
+function openMateMenu(av, e){
+  menuFor = av.net.id;
+  document.getElementById('mateName').textContent = av.net.tag.textContent;
+  const go = document.getElementById('mateGo');
+  go.textContent = myMate === menuFor ? '같이 타는 중' : '같이 타기'; go.disabled = myMate === menuFor;
+  mateMenu.style.left = e.clientX + 'px'; mateMenu.style.top = e.clientY + 'px'; mateMenu.hidden = false;
+}
+function closeMateMenu(){ mateMenu.hidden = true; menuFor = null; }
+document.getElementById('mateGo').addEventListener('click', () => {
+  if (!menuFor) return;
+  netSend({ t:'invite', to:menuFor });
+  toast(`${mateLabel(menuFor)}님에게 같이 타자고 했어요`);
+  closeMateMenu();
+});
+function showInvite(from, name){
+  if (myMate || !inviteCard.hidden) return;   // busy: ignore (they'll see no answer)
+  inviteFrom = from;
+  document.getElementById('inviteText').innerHTML = '';
+  const b = document.createElement('b'); b.textContent = name;
+  document.getElementById('inviteText').append(b, '님이 같이 타자고 해요!');
+  inviteCard.hidden = false;
+  clearTimeout(inviteTimer); inviteTimer = setTimeout(() => answerInvite(false), 10000);
+}
+function answerInvite(yes){
+  clearTimeout(inviteTimer); inviteCard.hidden = true;
+  const from = inviteFrom; inviteFrom = null;
+  if (!from) return;
+  if (!yes){ netSend({ t:'decline', from }); return; }
+  // the free pole nearest the middle of the two of us (a pole one of us already holds counts as free)
+  const other = remoteById(from), h = holder.position;
+  const mx = other ? (h.x + other.holder.position.x)/2 : h.x, mz = other ? (h.z + other.holder.position.z)/2 : h.z;
+  const free = i => !polesBy[i] || polesBy[i] === net.id || polesBy[i] === from;
+  const i = POLES.map((p, i) => [i, Math.hypot(p.x - mx, p.z - mz)]).filter(([i]) => free(i)).sort((a, b) => a[1] - b[1]).map(([i]) => i)[0];
+  if (i == null){ toast('빈 폴이 없어서 같이 탈 수 없어요'); netSend({ t:'decline', from }); return; }
+  netSend({ t:'accept', from, i });
+}
+document.getElementById('inviteYes').addEventListener('click', () => answerInvite(true));
+document.getElementById('inviteNo').addEventListener('click', () => answerInvite(false));
+let duoPole = null;
+function beginDuo(i, mate, lead){
+  myMate = mate; duoPole = i; polesBy[i] = lead;
+  // the two stand on either side of the pole, both on the side facing the middle between them
+  const other = mateAv(), P = POLES[i], h = holder.position;
+  const mx = other ? (h.x + other.holder.position.x)/2 : h.x, mz = other ? (h.z + other.holder.position.z)/2 : h.z;
+  const side = Math.atan2(mx - P.x, mz - P.z) + (lead === net.id ? 0.8 : -0.8);
+  if (mode === 'pole') doLeave();
+  myPole = i; startMove(null, i, side);
+  toast(`${mateLabel(mate)}님과 같이 타요! 폴에 올라가면 더블 기술을 골라요`);
+}
+function endDuo(msg){
+  if (!myMate) return;
+  myMate = null; net.poleSent = null;   // still on the pole: hold it again on my own
+  if (poseName.startsWith('duo') && mode === 'pole') setPose('ready');
+  if (msg) toast(msg);
+}
+const duoReady = () => {
+  const m = mateAv();
+  return !!(m && mode === 'pole' && m.onPole && Math.hypot(m.holder.position.x - POLES[myPole].x, m.holder.position.z - POLES[myPole].z) < 0.15);
+};
+function startDuoMove(kind){
+  if (!duoReady()) return;
+  const K = kind[0].toUpperCase() + kind.slice(1);
+  pendingLeave = null; setPose('duo' + K + 'Top');
+  netSend({ t:'duoMove', kind });
+  polkTrack('duo_start', { kind });
+}
+function takeDuoMove(kind){
+  const K = kind[0].toUpperCase() + kind.slice(1);
+  if (mode === 'pole'){ pendingLeave = null; setPose('duo' + K + 'Base'); }
+  else if (mode === 'approach') queuedMove = 'duo' + K + 'Base';
+}
+let duoShown = false;
+function duoTick(){
+  const ready = duoReady();
+  if (ready !== duoShown){ duoShown = ready; DUO_MOVES.forEach(([k]) => { document.getElementById('mv-duo-' + k).hidden = !ready; }); }
+  if (!myMate || mode !== 'pole' || !poseName.startsWith('duo')) return;   // (endDuo already put me back to ready)
+  const m = mateAv();
+  if (poseName.endsWith('Base')){
+    // the base turns with the top so the two poses line up; back to ready if the top moved on
+    if (m) holder.rotation.y = m.holder.rotation.y;
+    if (!m || (clock - poseStart > 1.5 && m.pose !== poseName.replace('Base', 'Top'))) setPose('ready');
+  } else if (!m || !ready) setPose('ready');
 }
 
 /* chat: a line typed under the HUD shows as a bubble over the head for a few seconds; the server only relays it */
@@ -2557,6 +2697,9 @@ window.__poleDebug = {
     });
     return out;
   },
+  screenOf(name){ const av = others.find(a => a.net && a.net.tag.textContent === name); if (!av) return null; const v = new V3(); av.skull.getWorldPosition(v); v.project(camera); const r = canvas.getBoundingClientRect(); return [Math.round(r.left + (v.x + 1)/2*r.width), Math.round(r.top + (1 - v.y)/2*r.height)]; },
+  invite(name){ const av = others.find(a => a.net && a.net.tag.textContent === name); if (av) netSend({ t:'invite', to:av.net.id }); return !!av; },
+  duoState(){ const m = mateAv(); return { mate: myMate, myPole, mode, pose: poseName, spin: spinPole, ready: duoReady(), myRy: +wrapAng(holder.rotation.y).toFixed(2), matePose: m && m.pose, mateRy: m && +wrapAng(m.holder.rotation.y).toFixed(2), polesBy: polesBy.slice() }; },
   net(){ return { id:net.id, room:net.room, open:!!net.ws, players: others.filter(av => av.net).map(av => ({ name:av.net.tag.textContent, x:+av.holder.position.x.toFixed(2), z:+av.holder.position.z.toFixed(2), to:[av.net.x, av.net.z], pose:av.pose, face:av.faceMode, top:av.outfit.top })) }; }
 };
 })();
