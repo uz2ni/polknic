@@ -92,6 +92,16 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .faces span{font:600 11px var(--f-body);color:var(--muted);letter-spacing:.08em;padding:0 6px 0 4px}
 .face{border:0;background:transparent;font:400 13.5px var(--f-display);color:var(--ink);padding:6px 10px;border-radius:999px;cursor:pointer}
 .face[aria-pressed="true"]{background:var(--accent);color:#fff}
+/* chat: one input row in the HUD, speech bubbles over heads */
+.chat{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;width:min(420px,100%);box-sizing:border-box}
+.chat input{flex:1;min-width:0;border:0;background:transparent;font:500 14px var(--f-body);color:var(--ink);outline:none;padding:6px 0}
+.chat input::placeholder{color:var(--muted)}
+.chat button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 14px var(--f-display);padding:7px 14px;cursor:pointer}
+.bubble{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;max-width:180px;padding:6px 11px;border-radius:14px;background:#fff;color:var(--ink);font:500 13px/1.35 var(--f-body);word-break:break-all;box-shadow:0 2px 0 rgba(90,66,55,.12);transition:opacity .3s}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}
+.bubble.fade{opacity:0}
+body.clean .bubble{display:none}
+#toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
 body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{display:none!important}
@@ -145,6 +155,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
   </form>
 </div>
 <div id="nameTag" hidden></div>
+<div id="toast" role="status" hidden></div>
 
 <aside id="wardrobe" class="glass" aria-label="옷장">
   <div class="w-head"><h2>옷장</h2><button id="wardrobeClose" class="textbtn" type="button">닫기</button></div>
@@ -168,11 +179,13 @@ body.clean .brand,body.clean #wardrobe,body.clean #wardrobeBtn,body.clean .hud{d
     <button id="nameTog" class="tog" type="button" aria-pressed="true">이름 표시</button>
     <button id="bgmTog" class="tog" type="button" aria-pressed="true" title="단축키 M">♪ BGM 켜짐</button>
     <button id="bgmTrack" class="tog" type="button" title="다른 곡으로 바꾸기">오르골 소풍 ›</button>
+    <button id="chatTog" class="tog" type="button" aria-pressed="true" hidden>채팅 보기</button>
     <button id="uiHide" class="tog" type="button" title="단축키 H">메뉴 숨기기</button>
   </div>
+  <form class="chat glass" id="chatForm" autocomplete="off" hidden><input id="chatInput" type="text" maxlength="60" placeholder="Enter로 채팅 (60자)" aria-label="채팅"><button type="submit">보내기</button></form>
   <div class="faces glass" id="faces" role="group" aria-label="표정"><span>표정</span></div>
   <nav class="moves glass" id="moves" aria-label="폴 동작"></nav>
-  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · M 음악 · H 메뉴 숨기기</p>
+  <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · 숫자키 1–5 동작 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
   <p class="copy">© 2026 폴크닉</p>
 </div>
 <button id="uiShow" type="button" hidden aria-label="메뉴 보기" title="메뉴 보기 (H)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
@@ -1536,6 +1549,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyE') toggleSit();
   if (e.code === 'KeyH') setClean(!document.body.classList.contains('clean'));
   if (e.code === 'KeyM') setBgm(!bgmOn);
+  if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !chatForm.hidden){ e.preventDefault(); chatInput.focus(); }
 });
 window.addEventListener('keyup', e => { const dir = DIRS[e.code] || DIRS[e.key]; if (dir) keys[dir] = false; });
 window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
@@ -1792,12 +1806,13 @@ document.getElementById('entryForm').addEventListener('submit', e => {
 document.getElementById('renameForm').addEventListener('submit', e => {
   e.preventDefault();
   const inp = document.getElementById('renameInput'), v = cleanName(inp.value);
-  if (v){ setName(v); netSend({ t:'name', name:v }); } else inp.value = playerName;
+  if (v){ setName(v); if (net.badName){ net.badName = false; netStart(); } else netSend({ t:'name', name:v }); } else inp.value = playerName;
   inp.blur();
 });
 setTimeout(() => { if (!entry.hidden) nameInput.focus(); }, 50);
 const _tag = new V3();
 // my tag and every other player's tag float over their heads
+// (speech bubbles sit just above the tag, or where the tag would be when names are hidden)
 function updateNameTag(){
   const r = canvas.getBoundingClientRect();
   camera.updateMatrixWorld();
@@ -1805,14 +1820,19 @@ function updateNameTag(){
   others.forEach(av => { if (av.net) placeTag(av.net.tag, av, r, showName); });
 }
 function placeTag(el, av, r, show){
-  if (!show){ el.hidden = true; return; }
   av.skull.getWorldPosition(_tag); _tag.y += HEAD_R + 0.1;
   av.char.getWorldPosition(_v); _tag.y = Math.max(_tag.y, _v.y + 0.42);   // upside down: float above the feet instead
   _tag.project(camera);
-  if (_tag.z > 1){ el.hidden = true; return; }
-  el.hidden = false;
-  el.style.left = (r.left + (_tag.x + 1)/2*r.width) + 'px';
-  el.style.top = (r.top + (1 - _tag.y)/2*r.height) + 'px';
+  const onScreen = _tag.z <= 1, x = r.left + (_tag.x + 1)/2*r.width, y = r.top + (1 - _tag.y)/2*r.height;
+  el.hidden = !show || !onScreen;
+  if (!el.hidden){ el.style.left = x + 'px'; el.style.top = y + 'px'; }
+  const b = av.bubble;
+  if (b){
+    const t = clock - av.bubbleAt;
+    b.hidden = !onScreen || !chatShown || t > CHAT_SHOW + 0.3;
+    b.classList.toggle('fade', t > CHAT_SHOW);
+    if (!b.hidden){ b.style.left = x + 'px'; b.style.top = (y - (show ? 30 : 4)) + 'px'; }
+  }
 }
 
 const wardrobe = document.getElementById('wardrobe');
@@ -1979,8 +1999,9 @@ const net = {
 };
 const netEl = document.getElementById('netText');
 function netStatus(){
-  netEl.hidden = !net.on;
-  netEl.textContent = net.id ? `· 같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '· 연결 중…' : '· 혼자 노는 중';
+  netEl.hidden = !net.on && !net.badName;
+  netEl.textContent = net.badName ? '· 닉네임을 바꾸면 같이 놀 수 있어요' : net.id ? `· 같이 노는 중 ${others.filter(av => av.net).length + 1}명` : net.ws ? '· 연결 중…' : '· 혼자 노는 중';
+  chatForm.hidden = chatTog.hidden = !net.id;   // chat only while connected
 }
 function netSend(m){
   if (net.id && net.ws.readyState === 1) net.ws.send(typeof m === 'string' ? m : JSON.stringify(m));
@@ -1990,6 +2011,13 @@ function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
 
 function netStart(){
   if (net.on || bench) return;
+  // everyone starts at the same spot; step a little aside so new players don't stand inside each other
+  if (mode === 'roam' && !sitAt && !walkTarget && holder.position.distanceTo(new V3(0.9, 0, 1.6)) < 0.01){
+    for (let i = 0; i < 20; i++){
+      const a = Math.random()*PI*2, r = 0.6 + Math.random()*1.4, x = 0.9 + Math.sin(a)*r, z = 1.9 + Math.cos(a)*r;
+      if (walkable(x, z) && Math.hypot(x - POLE.x, z - POLE.z) > 1.5){ holder.position.set(x, 0, z); break; }
+    }
+  }
   net.on = true; netConnect();
 }
 function netConnect(){
@@ -2011,7 +2039,9 @@ function netClosed(ws, code){
   if (ws !== net.ws) return;
   net.ws = null; net.id = null; net.sent = null;
   clearRemotes();
-  if (code === 4001 && ++net.fullRooms < NET_ROOMS){ net.room = net.room % NET_ROOMS + 1; netConnect(); }   // room full: next room
+  if (code === 4002){   // the server refused my nickname: stop until it's changed in the wardrobe
+    net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 옷장에서 바꿔 주세요');
+  } else if (code === 4001 && ++net.fullRooms < NET_ROOMS){ net.room = net.room % NET_ROOMS + 1; netConnect(); }   // room full: next room
   else { net.fullRooms = 0; netRetry(); }
   netStatus();
 }
@@ -2041,7 +2071,14 @@ function netMessage(raw){
     case 'move': if (av){ remoteMove(av, m); } break;
     case 'state': if (av){ remoteState(av, m); if (EMOTES_OK.has(m.emote)) showEmote(av, m.emote); } break;
     case 'outfit': if (av){ av.outfit = safeLook(m.look); dressAvatar(av); } break;
-    case 'name': if (av){ av.net.tag.textContent = String(m.name || '').slice(0, 16); } break;
+    case 'name':
+      if (m.ok === false) toast('닉네임에 쓸 수 없는 말이 있어서 다른 사람에겐 예전 이름으로 보여요');
+      else if (av) av.net.tag.textContent = String(m.name || '').slice(0, 16);
+      break;
+    case 'chat':
+      if (m.ok === false){ hideBubble(me); toast(CHAT_WHY[m.why] || '보내지 못했어요'); }
+      else if (av && typeof m.text === 'string') showBubble(av, m.text);
+      break;
     // pole lock (the waiting/occupied UI comes with task 4)
     case 'pole': break;
   }
@@ -2124,7 +2161,7 @@ function addRemote(p){
   others.push(av);
 }
 function dropRemote(av){
-  av.net.tag.remove(); removeAvatar(av);
+  av.net.tag.remove(); if (av.bubble) av.bubble.remove(); removeAvatar(av);
   others.splice(others.indexOf(av), 1);
 }
 function clearRemotes(){ others.filter(av => av.net).forEach(dropRemote); }
@@ -2173,6 +2210,39 @@ function updateRemote(av, dt){
   av.walkPhase += dt*11*av.moveAmp;
   av.spinVel += ((n.spin && av.onPole && av.pose !== 'ready' ? -0.65 : 0) - av.spinVel)*(1 - Math.exp(-2.5*dt));   // only for the skirt flare
 }
+
+/* chat: a line typed under the HUD shows as a bubble over the head for a few seconds; the server only relays it */
+const CHAT_SHOW = 5;
+const CHAT_WHY = { fast:'조금 천천히 보내 주세요 (1초에 한 번)', word:'쓸 수 없는 말이 있어서 보내지 않았어요', link:'링크는 보낼 수 없어요' };
+const chatForm = document.getElementById('chatForm'), chatInput = document.getElementById('chatInput'), chatTog = document.getElementById('chatTog');
+let chatShown = true, chatLast = 0;
+try { chatShown = localStorage.getItem('pole-chat-show') !== '0'; } catch (e) {}
+function showBubble(av, text){
+  if (!av.bubble){ av.bubble = document.createElement('div'); av.bubble.className = 'bubble'; av.bubble.hidden = true; document.body.appendChild(av.bubble); }
+  av.bubble.textContent = text; av.bubbleAt = clock;
+}
+function hideBubble(av){ av.bubbleAt = -99; }
+chatForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const text = chatInput.value.replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!text){ chatInput.blur(); return; }
+  if (performance.now() - chatLast < 1000){ toast(CHAT_WHY.fast); return; }
+  chatLast = performance.now();
+  showBubble(me, text);   // mine shows at once; taken back if the server refuses it
+  netSend({ t:'chat', text });
+  polkTrack('chat_send', {});
+  chatInput.value = '';
+});
+chatInput.addEventListener('keydown', e => { if (e.key === 'Escape') chatInput.blur(); });
+function setChatShown(v){
+  chatShown = v; chatTog.setAttribute('aria-pressed', String(v)); chatTog.textContent = v ? '채팅 보기' : '채팅 숨김';
+  try { localStorage.setItem('pole-chat-show', v ? '1' : '0'); } catch (e) {}
+}
+chatTog.addEventListener('click', () => setChatShown(!chatShown));
+setChatShown(chatShown);
+let toastTimer = 0;
+const toastEl = document.getElementById('toast');
+function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2800); }
 
 /* ---------- loop ---------- */
 let viewW = 0, viewH = 0;

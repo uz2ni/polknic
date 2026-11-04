@@ -4,6 +4,7 @@
 //   잠들면 메모리가 사라지므로 접속자 정보는 소켓마다 serializeAttachment()에 둔다(최대 2KB).
 // 메시지 형식은 docs/MULTIPLAYER.md "서버 프로토콜" 참고.
 import { DurableObject } from 'cloudflare:workers';
+import { badText } from './words.js';
 
 const PROD_ORIGIN = 'https://polknic.yujamong.com';
 // 개발 중 맥(localhost)과 같은 와이파이의 폰(사설 IP)에서 여는 페이지도 허용
@@ -29,12 +30,14 @@ const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppos
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
-const MAX_MSG = 2048, MAX_PER_SEC = 30;
+const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
 const round = v => Math.round(v*1000)/1000;
-// 닉네임: 공백 정리, 12자. 금칙어 검사는 채팅 작업(5번) 때 추가
-const cleanName = v => typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 12) : '';
+// 닉네임: 공백 정리, 12자, 금칙어면 빈 값
+const cleanName = v => { const s = typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 12) : ''; return s && !badText(s) ? s : ''; };
+// 채팅: 공백 정리, 60자. 본문은 저장하지 않고 전달만
+const cleanChat = v => typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, CHAT_LEN) : '';
 // 옷: 아는 키만, 짧은 문자열만. 값이 실제 옵션인지는 클라이언트가 그릴 때 다시 확인한다
 function cleanLook(v) {
   const o = {};
@@ -132,9 +135,20 @@ export class Room extends DurableObject {
       }
       case 'name': {
         const name = this.uniqueName(cleanName(m.name), ws);
-        if (!name) break;
+        if (!name) { ws.send(JSON.stringify({ t: 'name', ok: false })); break; }
         a.name = name;
         this.broadcast({ t: 'name', id: a.id, name }, ws);
+        break;
+      }
+      case 'chat': {
+        const text = cleanChat(m.text);
+        if (!text) break;
+        const now = Date.now();
+        // 1초에 1개, 금칙어·링크는 보낸 사람에게만 거절을 알리고 다른 사람에겐 안 보냄
+        const why = now - (a.chatAt || 0) < CHAT_GAP ? 'fast' : badText(text);
+        if (why) { ws.send(JSON.stringify({ t: 'chat', ok: false, why })); break; }
+        a.chatAt = now;
+        this.broadcast({ t: 'chat', id: a.id, text }, ws);
         break;
       }
       case 'pole': {

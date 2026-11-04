@@ -14,7 +14,7 @@
 
 ## 현재 상태
 
-- 결과물은 단일 파일 [index.html](index.html) (~2180줄, CSS/JS 인라인, 빌드 없음)
+- 결과물은 단일 파일 [index.html](index.html) (~2300줄, CSS/JS 인라인, 빌드 없음)
   - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
@@ -47,9 +47,9 @@
 | 1228–1474 | 상태 머신(내 캐릭터 조작), 앉기(`sitDown`/`standUp`/`toggleSit`), `stepOK`, 카메라, `update(dt)`, **`animateAvatar(av, dt)`**, `hang()` |
 | 1475–1607 | 입력(포인터·키보드 `DIRS`), UI(동작 바, 표정, 닉네임·이름표) |
 | 1608–1836 | BGM(`MUSIC`, `unmuteIOS`), 메뉴 숨기기, 입장, 옷장 칩 |
-| 1852–1968 | 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`), `?bench` |
-| 1969–2129 | 멀티플레이: 접속·재접속(`net`, `netStart`, `netConnect`, `netRetry`), 보내기(`netTick`, `netState`, `netSend`), 다른 사람(`addRemote`, `updateRemote`, `safeLook`) |
-| 2130–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
+| 1872–1988 | 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`), `?bench` |
+| 1989–2246 | 멀티플레이: 접속·재접속(`net`, `netStart`, `netConnect`, `netRetry`), 보내기(`netTick`, `netState`, `netSend`), 다른 사람(`addRemote`, `remoteGoal` 지연 예측, `updateRemote`, `safeLook`), 채팅(`showBubble`, `chatForm`, `toast`) |
+| 2247–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
 
 줄 번호는 편집하면서 밀리니 함수명으로 grep 할 것.
 
@@ -71,7 +71,7 @@
 - 걸어서 피해야 하는 소품은 `OBSTACLES`(`[x, z, r]`)에 넣으면 `walkable()`/`stepOK()`가 막아줌. 이동은 `stepOK()`를 써야 장애물 안(벤치에서 일어난 직후 등)에서 빠져나올 수 있음
 - 입력창에 타이핑 중일 때는 keydown 처리를 건너뜀(닉네임에 WASD·E·Q가 들어가도 캐릭터가 안 움직이게)
 - 내 포즈·표정·스핀이 바뀌는 곳에서는 `netState(emote)`를 부른다(직접 `netSend`로 state를 보내지 말 것: 0.1초 묶음 전송이 서버 도배 제한을 지켜 줌). 다른 사람 아바타는 `others`에 `av.net`이 붙은 것, 봇은 `av.bot`
-- 다른 사람에게 받은 값은 그리기 전에 검사: 옷은 `safeLook()`, 포즈는 `POSES`에 있는 것만, 이름은 `textContent`로만
+- 다른 사람에게 받은 값은 그리기 전에 검사: 옷은 `safeLook()`, 포즈는 `POSES`에 있는 것만, 이름·채팅은 `textContent`로만(innerHTML 금지)
 
 ## 플레이어 기능
 
@@ -82,8 +82,9 @@
 - 메뉴 숨기기(사진·영상용): "메뉴 숨기기" 버튼 또는 H. `body.clean`이 상·하단 UI를 숨기고, 오른쪽 위 "메뉴 보기" 버튼만 2.5초 뒤 투명해짐(마우스·터치·키 입력 시 다시 보임). 이름표는 별도 토글 그대로
 - BGM: 코드로 합성하는 2곡(`MUSIC.TRACKS`: 오르골 소풍 / 노을 로파이. 우쿨렐레 왈츠는 사용자 선호로 뺌). 입장 시 시작(브라우저 자동재생 정책 때문에 클릭 후에만 소리 가능), "♪ BGM 켜짐/꺼짐" 버튼·M 키로 토글, 곡 이름 버튼으로 다음 곡. 탭이 숨겨지면 일시정지
   - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
-- 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`. 닉네임은 보내지 않음
-- localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`
+- 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음
+- 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 5초(`showBubble`), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
+- localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`
 
 ## 좌표·포즈 규약
 

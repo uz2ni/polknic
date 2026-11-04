@@ -70,6 +70,27 @@ b.send({ t: 'name', name: '유자' });
 const nm = await a.next('name');
 ok(nm && nm.id === wb.id && nm.name === '유자#2', `닉네임 변경도 중복이면 #2 (${nm && nm.name})`);
 
+console.log('채팅');
+b.send({ t: 'chat', text: '  안녕   하세요  ' + 'ㅋ'.repeat(80) });
+const ch = await a.next('chat');
+ok(ch && ch.id === wb.id && ch.text.startsWith('안녕 하세요') && ch.text.length === 60, `A가 B 채팅 받음(공백 정리, 60자: ${ch && ch.text.length})`);
+b.send({ t: 'chat', text: '또 보내기' });
+const fast = await b.next('chat');
+ok(fast && fast.ok === false && fast.why === 'fast', '1초 안에 또 보내면 거절');
+ok(!(await a.next('chat', 300)), '거절된 채팅은 안 감');
+await sleep(1000);
+b.send({ t: 'chat', text: '시 1 발' });
+const bad = await b.next('chat');
+ok(bad && bad.why === 'word' && !(await a.next('chat', 300)), '띄어쓰기·숫자 끼운 욕설도 거절');
+await sleep(1000);
+b.send({ t: 'chat', text: '여기로 와 open.kakao.com/xx' });
+ok((await b.next('chat'))?.why === 'link', '링크 거절');
+await sleep(1000);
+b.send({ t: 'chat', text: '오늘 폴 웨어 섹시하다 sexy 시바견 귀여워 해보지 뭐' });
+ok((await a.next('chat'))?.text.includes('시바견'), '정상 문장(섹시하다, 시바견)은 통과');
+b.send({ t: 'name', name: '개새끼' });
+ok((await b.next('name'))?.ok === false, '금칙어 닉네임 변경 거절');
+
 console.log('폴 잠금');
 a.send({ t: 'pole' });
 const pa = await a.next('pole');
