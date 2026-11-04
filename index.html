@@ -2432,7 +2432,9 @@ function frame(now){
 }
 for (let i = 0; i < 30; i++) update(1/30);
 requestAnimationFrame(frame);
-// lift the loading curtain once the first frames are on screen and the fonts are in (or after 2.5 s without them)
+// lift the loading curtain once the first frames are on screen and the fonts are in (or after 2.5 s without them),
+// but keep it up at least 2 s after the page opened so the welcome screen doesn't just flash past
+loadingUntil = 2000;
 requestAnimationFrame(() => requestAnimationFrame(() => {
   Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 2500))]).then(() => hideLoading());
 }));
