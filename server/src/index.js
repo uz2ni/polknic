@@ -38,6 +38,7 @@ const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppos
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
+const POLES = 5;   // 호숫가마다 폴 5개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
@@ -87,9 +88,11 @@ export class Room extends DurableObject {
     const s = JSON.stringify(msg);
     this.others(except).forEach(ws => { try { ws.send(s); } catch (e) {} });
   }
-  poleBy() {
-    const ws = this.ctx.getWebSockets().find(w => w.deserializeAttachment()?.pole);
-    return ws ? ws.deserializeAttachment().id : null;
+  // 폴마다 잡은 사람 id(없으면 null). 잡은 폴 번호는 각자 소켓 attachment의 pole에 있어서 잠들었다 깨도 유지
+  poles() {
+    const by = Array(POLES).fill(null);
+    this.others(null).forEach(w => { const a = w.deserializeAttachment(); if (Number.isInteger(a.pole)) by[a.pole] = a.id; });
+    return by;
   }
   // 다른 사람에게 보이는 내 상태(snapshot / join 알림용)
   static pub(a) {
@@ -161,18 +164,23 @@ export class Room extends DurableObject {
         break;
       }
       case 'pole': {
-        // 폴은 하나라 한 명만. 먼저 잡은 사람이 내려오거나 나갈 때까지 잠금
-        const by = this.poleBy();
-        if (by && by !== a.id) { ws.send(JSON.stringify({ t: 'pole', ok: false, by })); break; }
-        a.pole = true; ws.serializeAttachment(a);
-        ws.send(JSON.stringify({ t: 'pole', ok: true, by: a.id }));
-        if (!by) this.broadcast({ t: 'pole', by: a.id }, ws);
+        // 폴 하나에 한 명. 먼저 잡은 사람이 내려오거나 나갈 때까지 잠금. 한 사람은 폴 하나만(다른 폴을 잡으면 앞의 건 풀림)
+        const i = m.i === undefined ? 0 : m.i;   // i 없이 보내던 예전 웹은 0번 폴
+        if (!Number.isInteger(i) || i < 0 || i >= POLES) break;
+        const by = this.poles()[i];
+        if (by && by !== a.id) { ws.send(JSON.stringify({ t: 'pole', ok: false, i, by })); break; }
+        const old = a.pole;
+        a.pole = i; ws.serializeAttachment(a);
+        ws.send(JSON.stringify({ t: 'pole', ok: true, i, by: a.id }));
+        if (Number.isInteger(old) && old !== i) this.broadcast({ t: 'pole', i: old, by: null }, ws);
+        if (!by) this.broadcast({ t: 'pole', i, by: a.id }, ws);
         return;
       }
       case 'unpole': {
-        if (!a.pole) break;
-        a.pole = false; ws.serializeAttachment(a);
-        this.broadcast({ t: 'pole', by: null }, ws);
+        if (!Number.isInteger(a.pole)) break;
+        const i = a.pole;
+        a.pole = null; ws.serializeAttachment(a);
+        this.broadcast({ t: 'pole', i, by: null }, ws);
         return;
       }
     }
@@ -195,11 +203,11 @@ export class Room extends DurableObject {
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,
       z: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.z) : 1.6,
       ry: num(m.ry, 100) ? round(m.ry) : 0, pose: 'stand', sit: null,
-      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: false,
+      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null,
     });
     ws.serializeAttachment(a);
     ws.send(JSON.stringify({
-      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poleBy: this.poleBy(),
+      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poles: this.poles(),
       players: this.others(ws).map(w => Room.pub(w.deserializeAttachment())),
     }));
     this.broadcast({ t: 'join', p: Room.pub(a) }, ws);
@@ -215,8 +223,8 @@ export class Room extends DurableObject {
   leave(ws) {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
-    ws.serializeAttachment({ ...a, joined: false, pole: false });
+    ws.serializeAttachment({ ...a, joined: false, pole: null });
     this.broadcast({ t: 'leave', id: a.id }, ws);
-    if (a.pole) this.broadcast({ t: 'pole', by: null }, ws);
+    if (Number.isInteger(a.pole)) this.broadcast({ t: 'pole', i: a.pole, by: null }, ws);
   }
 }
