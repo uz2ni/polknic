@@ -1343,14 +1343,14 @@ const POSES = {
     p:[0.4,0.9,0], up:[-0.1,0.99,0], fwd:[0,0,1],
     j:{ head:[-0.2,-0.3,0], lUp:[0.2,0,1.5], lFore:[-0.3,0,0] },
     ik:{ rArm:{ t:[0.02,1.3,0.03], h:[0,1,1] } } },
-  // 콩벌레 — curled into a ball on the pole, tilted on a slant: the pole squeezed between the knees, both arms hugging the legs.
+  // 탕후루 (was 콩벌레) — round balls on a stick: each curled into a ball and rolled over almost flat, lying sideways across the pole with the knees round it,
+  //   both hands holding the shins.
   //   Up to four share one pole at different heights (av.ballLift moves each up or down from p[1])
-  duoBall: { label:'콩벌레', view:-1.1, face:'joy', emote:'heart', ball:true,
-    p:[0,1.2,-0.13], up:[0.45,0.89,0.05], fwd:[0,-0.05,1],
+  duoBall: { label:'탕후루', view:-1.3, face:'joy', emote:'heart', ball:true,
+    p:[0,1.2,-0.13], up:[0.95,0.3,0.05], fwd:[0,-0.05,1],
     j:{ spine:[0.3,0,0], chest:[0.3,0,0], neck:[0.35,0,0], head:[0.45,0,-0.1],   // (+x curls the trunk forward; −x arches it back)
-        lThigh:[-2.2,0,0.16], rThigh:[-2.2,0,-0.16], lShin:[2.35,0,0], rShin:[2.35,0,0], lFoot:[0.5,0,0], rFoot:[0.5,0,0],
-      },
-    ik:{ lArm:{ t:[0.12,1.28,-0.01], h:[1,0.3,0.3] }, rArm:{ t:[-0.09,1.34,-0.02], h:[-1,0.3,0.3] } } },
+        lThigh:[-2.2,0,0.16], rThigh:[-2.2,0,-0.16], lShin:[2.35,0,0], rShin:[2.35,0,0], lFoot:[0.5,0,0], rFoot:[0.5,0,0] },
+    ik:{ lArm:{ t:[0.0,1.18,0.03], h:[0,-1,0.4] }, rArm:{ t:[-0.04,1.31,0.03], h:[0.3,1,0.4] } } },
 };
 const MOVE_ORDER = ['chair','ppose','hera','brass','split'];
 const JOINTS = ['spine','chest','neck','head','lUp','lFore','lHand','rUp','rFore','rHand','lThigh','lShin','lFoot','rThigh','rShin','rFoot'];
@@ -1425,7 +1425,7 @@ const polesBy = Array(POLES.length).fill(null);    // who holds each pole (playe
 let myGroup = null;                                // ids of everyone sharing my pole, in the order they joined (me included), or null
 const inMyGroup = id => !!(myGroup && myGroup.includes(id));
 const poleTaken = i => polesBy[i] && polesBy[i] !== net.id && !inMyGroup(polesBy[i]);
-// 콩벌레 heights: everyone in the group gets a slot down the pole, closer together the more there are
+// 탕후루 heights: everyone in the group gets a slot down the pole, closer together the more there are
 const BALL_GAP = { 1:0, 2:1.0, 3:0.85, 4:0.68 };   // 4 people: 2.47 / 1.79 / 1.11 / 0.43 (top head still under the pole cap)
 const ballHeight = (slot, n) => 1.45 + BALL_GAP[n]*(n - 1)/2 - BALL_GAP[n]*slot;
 // the nearest pole nobody else holds, or -1
@@ -1627,7 +1627,7 @@ function update(dt){
       if (top) av.holder.rotation.y = top.holder.rotation.y;
     }
     if (av.net && av.pose === 'duoBall' && av.net.ball){
-      // someone in a 콩벌레: their height slot, and turned 90° per slot from the first of their group as drawn here
+      // someone in a 탕후루: their height slot, and turned 90° per slot from the first of their group as drawn here
       const [slot, n] = av.net.ball;
       av.ballLift = ballHeight(slot, n) - POSES.duoBall.p[1];
       const first = [me, ...others].find(o => o !== av && o.pose === 'duoBall' && (o === me ? myGroup && myGroup[0] === net.id : o.net && o.net.ball && o.net.ball[0] === 0)
@@ -1800,7 +1800,7 @@ MOVE_ORDER.forEach(n => {
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
 movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>고정폴</span></button>');
 // double pole moves: only while my pole-mate and I are both on our pole
-const DUO_MOVES = [['stack', '눈사람'], ['fly', '회전목마'], ['ball', '콩벌레']];   // stack/fly: exactly two; ball: two to four
+const DUO_MOVES = [['stack', '눈사람'], ['fly', '회전목마'], ['ball', '탕후루']];   // stack/fly: exactly two; ball: two to four
 DUO_MOVES.forEach(([k, label]) => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'move duo'; b.id = 'mv-duo-' + k; b.hidden = true;
@@ -2573,7 +2573,7 @@ function updateRemote(av, dt){
 
 /* riding together (2–4 on one pole): tap a player → invite → they accept. Two on their own make a new group at the free
    pole nearest them; someone on their own joining a group (either side may ask) walks to the group's pole. Two-person
-   moves (눈사람, 회전목마): whoever presses is the top, the other the base. 콩벌레: everyone curls up, one height slot each
+   moves (눈사람, 회전목마): whoever presses is the top, the other the base. 탕후루: everyone curls up, one height slot each
    in joining order, turned 90° apart */
 const mateMenu = document.getElementById('mateMenu'), inviteCard = document.getElementById('inviteCard');
 let menuFor = null, inviteFrom = null, inviteTimer = 0;
@@ -2600,7 +2600,7 @@ function showInvite(from, name, size){
   const t = document.getElementById('inviteText'); t.textContent = '';
   const b = document.createElement('b'); b.textContent = name;
   t.append(b, size > 2 ? '님이 같이 타고 싶어 해요!' : '님이 같이 타자고 해요!');
-  if (size > 2){ const n = document.createElement('div'); n.className = 'note'; n.textContent = `${size}명이 되면 콩벌레만 할 수 있어요`; t.append(n); }
+  if (size > 2){ const n = document.createElement('div'); n.className = 'note'; n.textContent = `${size}명이 되면 탕후루만 할 수 있어요`; t.append(n); }
   inviteCard.hidden = false;
   clearTimeout(inviteTimer); inviteTimer = setTimeout(() => answerInvite(false), 10000);
 }
@@ -2676,7 +2676,7 @@ function takeDuoMove(kind){
 }
 let duoShown = '';
 function duoTick(){
-  // buttons: 콩벌레 for 2–4 on the pole, 눈사람/회전목마 only for exactly two
+  // buttons: 탕후루 for 2–4 on the pole, 눈사람/회전목마 only for exactly two
   const ready = duoReady(), n = myGroup ? myGroup.length : 0;
   const key = ready ? (n === 2 ? 'all' : 'ball') : '';
   if (key !== duoShown){ duoShown = key; DUO_MOVES.forEach(([k]) => { document.getElementById('mv-duo-' + k).hidden = !key || (k !== 'ball' && key !== 'all'); }); }
@@ -2962,8 +2962,8 @@ window.__poleDebug = {
   look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
   bots(n){ setBots(n); return others.length; },
   // preview a double pole move with a stand-in partner: duo('stack' | 'fly', yaw, pitch, dist), duo(null) removes her
-  // preview 콩벌레 with n on the pole (stand-ins included): ball(n, turn per person, yaw, pitch, dist)
-  ball(n = 4, turn = PI/2, y, pp, d, extra = {}){   // extra: look keys for every stand-in, e.g. { bottom:'longSkirt' }
+  // preview 탕후루 with n on the pole (stand-ins included): ball(n, turn per person, yaw, pitch, dist)
+  ball(n = 4, turn = PI/2, y, pp, d, extra = {}, pose = 'duoBall'){   // extra: look keys for every stand-in, e.g. { bottom:'longSkirt' }
     others.filter(av => av.follow).forEach(av => { removeAvatar(av); others.splice(others.indexOf(av), 1); });
     const hs = Array.from({ length:n }, (_, i) => ballHeight(i, n));   // the same heights the game uses
     const looks = [{ top:'sport', topColor:'#9ec9e8', bottom:'hiShorts', bottomColor:'#9ec9e8', hair:'tail', hairColor:'#5a3a24' },
@@ -2971,11 +2971,11 @@ window.__poleDebug = {
                    { top:'leotard', topColor:'#e47b92', bottom:'brief', bottomColor:'#e47b92', hair:'bun', hairColor:'#141418' }];
     for (let i = 1; i < n; i++){
       const pal = createAvatar(Object.assign({}, DEFAULT, looks[i - 1], extra));
-      pal.follow = me; pal.followTurn = turn*i; pal.pose = 'duoBall'; pal.onPole = true; pal.nameShown = false; pal.ballLift = hs[i] - POSES.duoBall.p[1];
+      pal.follow = me; pal.followTurn = turn*i; pal.pose = pose; pal.onPole = true; pal.nameShown = false; pal.ballLift = hs[i] - POSES[pose].p[1];
       others.push(pal);
     }
-    me.ballLift = hs[0] - POSES.duoBall.p[1];
-    this.pose('duoBall', y, pp, d);
+    me.ballLift = hs[0] - POSES[pose].p[1];
+    this.pose(pose, y, pp, d);
     const h = new V3(); skull.getWorldPosition(h);
     return { heights: hs.map(v => +v.toFixed(2)), headGap: +(Math.hypot(h.x - POLES[myPole].x, h.z - POLES[myPole].z) - HEAD_R*1.06).toFixed(3) };
   },
