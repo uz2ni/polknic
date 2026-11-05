@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>폴크닉 로고 시안 2</title>
+<link rel="stylesheet" href="../instagram/tokens.css">
+<style>
+body{margin:0;background:#f6efe4;font-family:var(--f-b);color:var(--ink);padding:48px;display:flex;flex-direction:column;gap:28px;width:1100px}
+h1{font-family:var(--f-d);font-weight:400;font-size:40px;margin:0}
+.group{background:#fff;border-radius:28px;padding:30px 34px;box-shadow:0 4px 0 rgba(90,66,55,.08);display:flex;flex-direction:column;gap:22px}
+.group h2{font-family:var(--f-d);font-weight:400;font-size:30px;margin:0}
+.group > p{margin:-12px 0 0;font-size:15px;line-height:1.6;color:var(--ink-soft);max-width:70ch}
+.items{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end}
+figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:13px;color:var(--ink-soft)}
+figure b{font-family:var(--f-d);font-weight:400;font-size:17px;color:var(--ink)}
+.dark{background:var(--ink);border-radius:20px;padding:22px 30px}
+.cream{background:var(--cream);border-radius:20px;padding:22px 30px}
+.circle{width:120px;height:120px;border-radius:50%;overflow:hidden}
+
+/* 1. 3D 마스코트 */
+.badge{width:220px;height:220px;border-radius:50%;background:var(--blush);position:relative;overflow:hidden}
+.badge img{position:absolute;width:112%;left:-2%;top:10%}
+.badge .pole{position:absolute;left:44px;top:50px;width:16px;height:240px;border-radius:8px;background:var(--ink)}
+.badge .pole::before{content:"";position:absolute;left:-6px;top:-14px;width:28px;height:28px;border-radius:50%;background:var(--pink)}
+.sticker{width:220px;height:220px;display:grid;place-items:center}
+.sticker img{width:100%;filter:drop-shadow(5px 0 0 #fff) drop-shadow(-5px 0 0 #fff) drop-shadow(0 5px 0 #fff) drop-shadow(0 -5px 0 #fff) drop-shadow(0 6px 6px rgba(90,66,55,.25));clip-path:inset(0 0 22% 0);margin-bottom:-40px}
+.app{width:220px;height:220px;border-radius:52px;background:linear-gradient(#c6ebf8,#e9f7fc);position:relative;overflow:hidden}
+.app img{position:absolute;width:108%;left:-4%;top:14%}
+.combo{display:flex;align-items:center;gap:6px}
+.combo img.m{width:96px;margin:-10px -6px -10px -14px}
+</style>
+</head>
+<body>
+<h1>폴크닉 로고 시안 2</h1>
+
+<section class="group">
+  <h2>1. 게임 3D 캐릭터 그대로</h2>
+  <p>게임에서 캐릭터를 배경 없이 렌더해 그대로 썼어요(첨부해 주신 아이보리 착장, 별 핀). 그림을 따로 그리지 않아서 게임 화면과 질감이 같아요. 다른 표정·각도는 render-mascot.js에서 바로 다시 뽑을 수 있어요.</p>
+  <div class="items">
+    <figure><div class="badge"><span class="pole"></span><img src="mascot/joy-34.png" alt=""></div><b>원형 배지</b>인스타 프로필용</figure>
+    <figure><div class="sticker"><img src="mascot/wink-34.png" alt=""></div><b>스티커</b>흰 테두리 다이컷</figure>
+    <figure><div class="app"><img src="mascot/open-front.png" alt=""></div><b>앱 아이콘</b>하늘 배경</figure>
+    <figure><div class="circle" style="background:var(--blush);position:relative"><img src="mascot/joy-34.png" style="position:absolute;width:112%;left:-2%;top:10%" alt=""></div>프로필 원 크기</figure>
+  </div>
+</section>
+
+<section class="group">
+  <h2>2. 글자 로고</h2>
+  <p>Jua 글자 모양을 그대로 가져와서 '닉'의 세로획만 폴로 바꿨어요. 꼭대기의 핑크 점이 게임 속 폴 캡이에요. 폰트 없이도 깨지지 않는 SVG예요.</p>
+  <div class="items">
+    <figure><div class="cream"><img src="v2/wordmark.svg" style="height:110px" alt="폴크닉"></div><b>기본</b>잉크 + 핑크</figure>
+    <figure><div class="dark"><img src="v2/wordmark-white.svg" style="height:110px" alt="폴크닉"></div><b>어두운 배경</b></figure>
+  </div>
+  <div class="items">
+    <figure><div class="cream combo"><img src="v2/wordmark.svg" style="height:84px" alt="폴크닉"><img class="m" src="mascot/joy-34.png" alt=""></div><b>캐릭터 조합</b>1번 마스코트와 같이</figure>
+    <figure><div class="cream"><img src="v2/wordmark.svg" style="height:36px" alt="폴크닉"></div><b>작게</b>36px</figure>
+  </div>
+</section>
+
+<section class="group">
+  <h2>3. 미니멀 심볼</h2>
+  <p>글자 로고의 폴을 그대로 떼어 낸 기호예요. 글자 로고와 한 세트라 따로 써도 같은 브랜드로 보여요.</p>
+  <div class="items">
+    <figure><img src="v2/symbol-pole.svg" width="180" alt=""><b>폴</b>가장 단순</figure>
+    <figure><img src="v2/symbol-spin.svg" width="180" alt=""><b>스핀</b>폴을 감싸 도는 링</figure>
+    <figure><img src="v2/symbol-p.svg" width="180" alt=""><b>P</b>폴 + 동그라미</figure>
+    <figure><div style="display:flex;gap:14px;align-items:center"><img src="v2/symbol-pole.svg" width="32" alt=""><img src="v2/symbol-spin.svg" width="32" alt=""><img src="v2/symbol-p.svg" width="32" alt=""><img src="v2/symbol-pole.svg" width="16" alt=""><img src="v2/symbol-spin.svg" width="16" alt=""><img src="v2/symbol-p.svg" width="16" alt=""></div>32px · 16px(파비콘)</figure>
+  </div>
+</section>
+</body>
+</html>

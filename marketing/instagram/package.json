@@ -1,0 +1,13 @@
+{
+  "name": "polknic-instagram",
+  "private": true,
+  "description": "폴크닉 인스타 게시물: 게임 렌더 + HTML 템플릿 → PNG",
+  "scripts": {
+    "render": "node scripts/render.js",
+    "export": "node scripts/export.js",
+    "build": "node scripts/render.js && node scripts/export.js"
+  },
+  "devDependencies": {
+    "playwright-core": "1.47.0"
+  }
+}

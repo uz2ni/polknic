@@ -1,0 +1,23 @@
+{
+  "_": "게임 렌더 목록. look은 옷장 값(index.html OPTIONS/COLORS), js는 __poleDebug 호출. 결과는 renders/<name>.png",
+  "looks": {
+    "ivory": { "top":"lace",    "topColor":"#f4e9d2", "bottom":"laceSkirt", "bottomColor":"#f4e9d2", "shoes":"bare",  "hair":"bun",  "acc":"star",   "hairColor":"#5a3a24", "eyeColor":"#7a4b32", "skin":"#fff0e6" },
+    "rose":  { "top":"lace",    "topColor":"#e47b92", "bottom":"laceSkirt", "bottomColor":"#e47b92", "shoes":"heels", "hair":"bun",  "acc":"ribbon", "hairColor":"#2b1d16", "eyeColor":"#7a4b32", "skin":"#ffe2d2" },
+    "sky":   { "top":"sport",   "topColor":"#9ec9e8", "bottom":"hiShorts",  "bottomColor":"#9ec9e8", "shoes":"heels", "hair":"tail", "acc":"star",   "hairColor":"#5a3a24", "eyeColor":"#7a4b32", "skin":"#ffe2d2" },
+    "lilac": { "top":"leotard", "topColor":"#c7b4e3", "bottom":"brief",     "bottomColor":"#c7b4e3", "shoes":"heels", "hair":"long", "acc":"flower", "hairColor":"#e8c98e", "eyeColor":"#7a4b32", "skin":"#ffe2d2" },
+    "sage":  { "top":"halter",  "topColor":"#a7c19e", "bottom":"longSkirt", "bottomColor":"#f4e9d2", "shoes":"bare",  "hair":"bun",  "acc":"flower", "hairColor":"#a7774a", "eyeColor":"#7a4b32", "skin":"#ffe2d2" },
+    "coral": { "top":"sport",   "topColor":"#e47b92", "bottom":"hiShorts",  "bottomColor":"#1f1f24", "shoes":"heels", "hair":"tail", "acc":"ribbon", "hairColor":"#d98a6a", "eyeColor":"#7a4b32", "skin":"#ffe2d2" }
+  },
+  "shots": [
+    { "name":"hello-ppose", "look":"ivory", "w":1080, "h":1440, "js":"__poleDebug.pose('ppose', null, null, 3.0)" },
+    { "name":"og",          "look":"ivory", "w":1200, "h":630,  "js":"__poleDebug.pose('chair', null, null, 2.6)" },
+    { "name":"og-duo",      "look":"rose",  "w":1440, "h":756,  "js":"__poleDebug.duo('fly', null, null, 3.2)" },
+    { "name":"og-ppose",    "look":"ivory", "w":1200, "h":630,  "js":"__poleDebug.pose('ppose', null, null, 2.8)" },
+    { "name":"duo-fly",     "look":"rose",  "w":1080, "h":1440, "js":"__poleDebug.duo('fly', null, null, 3.4)" },
+    { "name":"tile-chair",  "look":"sky",   "w":640,  "h":640,  "js":"__poleDebug.pose('chair', null, null, 1.9)" },
+    { "name":"tile-hera",   "look":"lilac", "w":640,  "h":640,  "js":"__poleDebug.pose('hera', null, null, 1.9)" },
+    { "name":"tile-brass",  "look":"sage",  "w":640,  "h":640,  "js":"__poleDebug.pose('brass', null, null, 1.9)" },
+    { "name":"tile-ppose",  "look":"coral", "w":640,  "h":640,  "js":"__poleDebug.pose('ppose', null, null, 1.9)" },
+    { "name":"tile-split",  "look":"rose",  "w":640,  "h":640,  "js":"__poleDebug.pose('split', null, null, 1.9)" }
+  ]
+}

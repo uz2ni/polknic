@@ -1,27 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- pink tile -->
-  <rect width="64" height="64" rx="14" fill="#ffc6d6"/>
-  <g fill="#3a2a25" stroke="#3a2a25" stroke-linecap="round" stroke-linejoin="round">
-    <!-- pole -->
-    <rect x="20" y="3" width="3.2" height="58" rx="1.6" stroke="none"/>
-    <!-- top arm: straight up to a high grip -->
-    <path d="M33.5 24 L22.5 9" stroke-width="3" fill="none"/>
-    <!-- bottom arm: bent, gripping at hip height -->
-    <path d="M33 27 Q27 31 22.6 37" stroke-width="2.8" fill="none"/>
-    <!-- head looking up, with a low bun -->
-    <circle cx="36.6" cy="18.4" r="4.4" stroke="none"/>
-    <circle cx="40.6" cy="19.6" r="2.3" stroke="none"/>
-    <path d="M35.5 21.5 L35 24.5" stroke-width="2.6" fill="none"/>
-    <!-- torso -->
-    <path d="M31.5 24.2 Q35.8 22.8 38.4 25 Q38.8 29.5 37.3 32.5 Q38.6 35.5 38.8 38.5 L33 39.5 Q32.8 35.5 33.6 32.6 Q31 28.5 31.5 24.2Z" stroke-width="1"/>
-    <!-- little flared skirt -->
-    <path d="M32.4 36.6 L39.2 36 L42.2 41.6 L30.6 42.6Z" stroke-width="1.2"/>
-    <!-- ballerina legs reaching diagonally back: one long and pointed, one bent at the knee (attitude) -->
-    <path d="M35 41.4 L38.6 49.2" stroke-width="3.8" fill="none"/>
-    <path d="M38.6 49.2 L42.6 56.2" stroke-width="2.8" fill="none"/>
-    <path d="M42.6 56.2 L45 59.6" stroke-width="1.8" fill="none"/>
-    <path d="M38 41 L44 46.4" stroke-width="3.8" fill="none"/>
-    <path d="M44 46.4 L50.6 44.2" stroke-width="2.8" fill="none"/>
-    <path d="M50.6 44.2 L54.2 41.6" stroke-width="1.8" fill="none"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 폴크닉 심볼: 글자 로고 '닉'의 폴과 같은 비율(폴 폭 : 높이 : 캡 반지름 = 125 : 464 : 80) -->
+  <rect width="100" height="100" rx="24" fill="#fffaee"/>
+  <rect x="43" y="32.5" width="14" height="52" rx="7" fill="#5a4237"/>
+  <circle cx="50" cy="24" r="9" fill="#f0789a"/>
 </svg>

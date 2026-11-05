@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>폴크닉 OG 이미지</title>
+<link rel="stylesheet" href="../instagram/tokens.css">
+<style>
+/* 링크 미리보기 이미지 1200×630. 시안마다 section 하나, 배경 렌더와 위치(--x, --y)·폭(--w)만 다름
+   node export-og.js → og-duo를 루트 og-image.png로 / 다른 id → out/<id>.png */
+body{margin:0;display:flex;flex-direction:column;gap:30px;background:#2f2a28}
+.og{width:1200px;height:630px;position:relative;overflow:hidden;background:var(--cream);flex:none}
+.og .bg{position:absolute;top:var(--y,0px);left:var(--x,200px);width:var(--w,1200px);height:auto}
+.og .fade{position:absolute;inset:0;background:linear-gradient(90deg,var(--cream) 0 36%,rgba(255,250,238,.85) 44%,rgba(255,250,238,0) 60%)}
+.og .brand{position:absolute;left:84px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:30px}
+.og .brand img{width:360px;display:block}
+.og .brand p{margin:0;font-family:var(--f-d);font-size:40px;color:var(--pink)}
+.og .brand small{font:700 24px var(--f-b);color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<template id="brand">
+  <div class="fade"></div>
+  <div class="brand">
+    <img src="v2/wordmark.svg" alt="폴크닉">
+    <p>온라인 폴댄스 놀이터</p>
+    <small>polknic.yujamong.com</small>
+  </div>
+</template>
+
+<!-- 이전 og-image.png: 체어 -->
+<section class="og" id="og-chair"><img class="bg" src="../instagram/renders/og.png" alt=""></section>
+<!-- 지금 og-image.png: 회전목마(더블폴) -->
+<section class="og" id="og-duo" style="--x:92px;--y:-45px;--w:1300px"><img class="bg" src="../instagram/renders/og-duo.png" alt=""></section>
+<!-- 시안: P포즈 -->
+<section class="og" id="og-ppose" style="--x:230px"><img class="bg" src="../instagram/renders/og-ppose.png" alt=""></section>
+
+<script>
+const tpl = document.getElementById('brand');
+document.querySelectorAll('.og').forEach(s => s.append(tpl.content.cloneNode(true)));
+</script>
+</body>
+</html>
