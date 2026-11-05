@@ -1426,7 +1426,7 @@ let myGroup = null;                                // ids of everyone sharing my
 const inMyGroup = id => !!(myGroup && myGroup.includes(id));
 const poleTaken = i => polesBy[i] && polesBy[i] !== net.id && !inMyGroup(polesBy[i]);
 // 콩벌레 heights: everyone in the group gets a slot down the pole, closer together the more there are
-const BALL_GAP = { 1:0, 2:1.0, 3:0.8, 4:0.6 };
+const BALL_GAP = { 1:0, 2:1.0, 3:0.85, 4:0.68 };   // 4 people: 2.47 / 1.79 / 1.11 / 0.43 (top head still under the pole cap)
 const ballHeight = (slot, n) => 1.45 + BALL_GAP[n]*(n - 1)/2 - BALL_GAP[n]*slot;
 // the nearest pole nobody else holds, or -1
 function freePole(){
@@ -1704,12 +1704,13 @@ function animateAvatar(av, dt){
 
   // hair and skirts hang with gravity; skirts flare while spinning
   holder.updateMatrixWorld(true);
-  hang(av.skirtPivot, char, 0.82, dt, 7);
+  hang(av.skirtPivot, char, pose.ball ? 0.1 : 0.82, dt, 7);   // curled up: the skirt stays with the body, not hanging over the one below
   hang(av.tailPivot, J.head, 0.85, dt, 9);
   hang(av.longPivot, J.head, 0.7, dt, 9);
   const flare = Math.min(1, Math.abs(av.spinVel)/2.5);
   av.skirtShort.scale.set(1 + 0.3*flare, 1, 0.9 + 0.3*flare);
-  av.skirtLong.scale.set(1 + 0.4*flare, 1 - 0.1*flare, 0.9 + 0.4*flare);
+  if (pose.ball) av.skirtLong.scale.set(1.05, 0.45, 1.05);   // long skirt bunched up round the tucked legs
+  else av.skirtLong.scale.set(1 + 0.4*flare, 1 - 0.1*flare, 0.9 + 0.4*flare);
 
   updateEmote(av);
 }
@@ -2292,6 +2293,13 @@ function netSend(m){
 }
 // pose, sitting, face and spin go out together, at most every NET_SEND (clicking around can't flood the server)
 function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
+function netFlushState(){
+  net.stateT = 0;
+  const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
+  const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null };
+  if (net.emote) m.emote = net.emote;
+  netSend(m); net.stateDirty = false; net.emote = null;
+}
 
 /* rooms: picked on the entry screen (last one remembered) or switched in settings; counts come from /rooms */
 const ROOMS_URL = NET_URL.replace(/^ws/, 'http').replace(/\/ws$/, '/rooms');
@@ -2484,13 +2492,7 @@ function netTick(dt){
     }
     net.sendT = 0;
   }
-  if (net.stateDirty && net.stateT >= NET_SEND){
-    net.stateT = 0;
-    const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
-    const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null };
-    if (net.emote) m.emote = net.emote;
-    netSend(m); net.stateDirty = false; net.emote = null;
-  }
+  if (net.stateDirty && net.stateT >= NET_SEND) netFlushState();
 }
 
 /* other players: an avatar each, eased toward the last position and state the server sent */
@@ -2642,7 +2644,7 @@ function groupChanged(i, members){
     else if (gone.length) toast(`${gone.map(mateLabel).join(', ')}님이 내려갔어요`);
     // two-person moves stop once there are more than two
     if (members.length > 2 && /^duo(Stack|Fly)/.test(poseName) && mode === 'pole') setPose('ready');
-    if (poseName === 'duoBall') netState();   // my slot may have moved
+    if (poseName === 'duoBall') netFlushState();   // my slot may have moved (sent now, even from a hidden tab)
   }
 }
 function endDuo(msg){
@@ -2669,7 +2671,7 @@ function takeDuoMove(kind){
   const pose = kind === 'ball' ? 'duoBall' : 'duo' + kind[0].toUpperCase() + kind.slice(1) + 'Base';
   if (kind !== 'ball' && (!myGroup || myGroup.length !== 2)) return;
   if (kind === 'ball') camDist = Math.max(camDist, 2.6 + 0.6*myGroup.length);
-  if (mode === 'pole'){ pendingLeave = null; setPose(pose); }
+  if (mode === 'pole'){ pendingLeave = null; setPose(pose); netFlushState(); }   // sent now: a hidden tab or locked phone doesn't run frames
   else if (mode === 'approach') queuedMove = pose;
 }
 let duoShown = '';
@@ -2961,14 +2963,14 @@ window.__poleDebug = {
   bots(n){ setBots(n); return others.length; },
   // preview a double pole move with a stand-in partner: duo('stack' | 'fly', yaw, pitch, dist), duo(null) removes her
   // preview 콩벌레 with n on the pole (stand-ins included): ball(n, turn per person, yaw, pitch, dist)
-  ball(n = 4, turn = PI/2, y, pp, d){
+  ball(n = 4, turn = PI/2, y, pp, d, extra = {}){   // extra: look keys for every stand-in, e.g. { bottom:'longSkirt' }
     others.filter(av => av.follow).forEach(av => { removeAvatar(av); others.splice(others.indexOf(av), 1); });
-    const gap = { 1:0, 2:1.0, 3:0.8, 4:0.6 }[n], hs = Array.from({ length:n }, (_, i) => 1.45 + gap*(n - 1)/2 - gap*i);
+    const hs = Array.from({ length:n }, (_, i) => ballHeight(i, n));   // the same heights the game uses
     const looks = [{ top:'sport', topColor:'#9ec9e8', bottom:'hiShorts', bottomColor:'#9ec9e8', hair:'tail', hairColor:'#5a3a24' },
                    { top:'halter', topColor:'#c7b4e3', bottom:'brief', bottomColor:'#c7b4e3', hair:'long', hairColor:'#e8c98e' },
                    { top:'leotard', topColor:'#e47b92', bottom:'brief', bottomColor:'#e47b92', hair:'bun', hairColor:'#141418' }];
     for (let i = 1; i < n; i++){
-      const pal = createAvatar(Object.assign({}, DEFAULT, looks[i - 1]));
+      const pal = createAvatar(Object.assign({}, DEFAULT, looks[i - 1], extra));
       pal.follow = me; pal.followTurn = turn*i; pal.pose = 'duoBall'; pal.onPole = true; pal.nameShown = false; pal.ballLift = hs[i] - POSES.duoBall.p[1];
       others.push(pal);
     }
