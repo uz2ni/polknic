@@ -35,7 +35,9 @@ export default {
 
 /* ---------- 검증 ---------- */
 const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
-  'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase', 'duoBall']);
+  'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase', 'duoBall',
+  'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
+const MATS = 6;   // 요가 매트 6개(index.html MATS와 같은 수), 한 매트에 한 명
 const DUO = new Set(['stack', 'fly', 'ball']);   // 같이 타기 기술(stack·fly는 2명, ball은 2~4명)
 const GROUP_MAX = 4;
 const INVITE_GAP = 3000;
@@ -96,6 +98,11 @@ export class Room extends DurableObject {
   poles() {
     const by = Array(POLES).fill(null);
     this.others(null).forEach(w => { const a = w.deserializeAttachment(); if (Number.isInteger(a.pole)) by[a.pole] = a.id; });
+    return by;
+  }
+  mats() {
+    const by = Array(MATS).fill(null);
+    this.others(null).forEach(w => { const a = w.deserializeAttachment(); if (Number.isInteger(a.mat)) by[a.mat] = a.id; });
     return by;
   }
   byId(id) {
@@ -217,6 +224,26 @@ export class Room extends DurableObject {
         ws.serializeAttachment(a);
         return;
       }
+      case 'mat': {
+        // 요가 매트: 한 명씩. 다른 매트에 앉으면 앞의 건 풀림
+        const i = m.i;
+        if (!Number.isInteger(i) || i < 0 || i >= MATS) break;
+        const by = this.mats()[i];
+        if (by && by !== a.id) { ws.send(JSON.stringify({ t: 'mat', ok: false, i, by })); break; }
+        const old = a.mat;
+        a.mat = i; ws.serializeAttachment(a);
+        ws.send(JSON.stringify({ t: 'mat', ok: true, i, by: a.id }));
+        if (Number.isInteger(old) && old !== i) this.broadcast({ t: 'mat', i: old, by: null }, ws);
+        if (!by) this.broadcast({ t: 'mat', i, by: a.id }, ws);
+        return;
+      }
+      case 'unmat': {
+        if (!Number.isInteger(a.mat)) break;
+        const i = a.mat;
+        a.mat = null; ws.serializeAttachment(a);
+        this.broadcast({ t: 'mat', i, by: null }, ws);
+        return;
+      }
       /* 같이 타기: invite → (받은 사람이) accept 또는 decline
          둘 다 혼자면 새 그룹(accept 때 받은 쪽 웹이 고른 빈 폴), 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류(최대 4명) */
       case 'invite': {
@@ -290,11 +317,11 @@ export class Room extends DurableObject {
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,
       z: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.z) : 1.6,
       ry: num(m.ry, 100) ? round(m.ry) : 0, pose: 'stand', sit: null,
-      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, grp: null, ball: null,
+      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, mat: null, grp: null, ball: null,
     });
     ws.serializeAttachment(a);
     ws.send(JSON.stringify({
-      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poles: this.poles(),
+      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poles: this.poles(), mats: this.mats(),
       players: this.others(ws).map(w => Room.pub(w.deserializeAttachment())),
     }));
     this.broadcast({ t: 'join', p: Room.pub(a) }, ws);
@@ -311,7 +338,8 @@ export class Room extends DurableObject {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
     const pole = a.pole, rest = a.grp ? this.leaveGroup(a) : [];
-    ws.serializeAttachment({ ...a, joined: false, pole: null, grp: null });
+    ws.serializeAttachment({ ...a, joined: false, pole: null, mat: null, grp: null });
+    if (Number.isInteger(a.mat)) this.broadcast({ t: 'mat', i: a.mat, by: null }, ws);
     this.broadcast({ t: 'leave', id: a.id }, ws);
     if (Number.isInteger(pole)) this.broadcast({ t: 'pole', i: pole, by: rest[0] || null }, ws);
   }

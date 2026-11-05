@@ -373,10 +373,13 @@ scene.add(sun); scene.add(sun.target);
 const LAKE = { x:0, z:-21, rx:38, rz:13 };
 // five round stages with a pole each, spread over the meadow (the server locks them by this index: server/src/index.js POLES)
 const POLES = [[0, 0], [-4.5, -1.5], [4.5, -1.5]].map(([x, z]) => new V3(x, 0, z));
-// stretching corner: three yoga mats side by side at the front right, long side towards the lake ([x, z, colour])
-const MATS = [[4.25, 5.6, '#f9b4c6'], [5.0, 5.6, '#a9e3cf'], [5.75, 5.6, '#cdbbf0']];
+// stretching corner at the front right: two rows of three yoga mats, long side towards the lake ([x, z, colour])
+const MAT_COLS = ['#f9b4c6', '#a9e3cf', '#cdbbf0', '#a8d4f2', '#ffc9a8', '#fbe39a'];
+const MATS = [4.25, 6.1].flatMap((z, row) => [-1, 0, 1].map((dx, i) => [4.6 + dx, z, MAT_COLS[row*3 + i]]));
 const MAT_W = 0.62, MAT_L = 1.3;
 const onMat = (x, z, m = 0) => MATS.some(([mx, mz]) => Math.abs(x - mx) < MAT_W/2 + m && Math.abs(z - mz) < MAT_L/2 + m);
+// each mat is a spot to sit on, facing the lake (−z), like a bench; `mat` is its index (the server locks them by it)
+const MAT_SPOTS = MATS.map(([x, z], i) => ({ x, z, rot:Math.PI, mat:i, mesh:null }));
 const STAGE_R = 1.4;
 const onStage = (x, z, m = 0) => POLES.some(p => Math.hypot(x - p.x, z - p.z) < STAGE_R + m);
 const nearestPole = (x, z) => POLES.reduce((b, p, i) => Math.hypot(x - p.x, z - p.z) < Math.hypot(x - POLES[b].x, z - POLES[b].z) ? i : b, 0);
@@ -635,6 +638,7 @@ const POLE_MESHES = [];   // clicking a pole walks to it
   geo.rotateX(-PI/2);
   MATS.forEach(([x, z, hex]) => {
     const m = new T.Mesh(geo, toonF(hex)); m.position.set(x, 0.006, z); m.receiveShadow = true; scene.add(m);
+    MAT_SPOTS.find(sp => sp.x === x && sp.z === z).mesh = m;
     // a lighter inset border so it reads as a mat, not a plank
     const edge = new T.Mesh(new T.PlaneGeometry(MAT_W - 0.1, MAT_L - 0.1), toonF(mixHex(hex, '#ffffff', 0.45)));
     edge.rotation.x = -PI/2; edge.position.set(x, 0.027, z); scene.add(edge);
@@ -1269,6 +1273,38 @@ const POSES = {
   sitBench: { label:'벤치에서 쉬는 중', p:[0,0.52,0.03], r:[0,0,0],
     j:{ head:[0.06,0,-0.08], lUp:[-0.45,0,0.12], rUp:[-0.45,0,-0.12], lFore:[-0.7,0,0], rFore:[-0.7,0,0],
         lThigh:[-1.5,0,0.08], rThigh:[-1.5,0,-0.08], lShin:[1.15,0,0], rShin:[1.15,0,0], lFoot:[0.2,0,0], rFoot:[0.2,0,0] } },
+  // on a yoga mat: sitting cross-legged, then the four stretches
+  matSit: { label:'매트에서 쉬는 중', mat:true, p:[0,0.08,0], r:[0,0,0],
+    j:{ head:[0.05,0,0.08], lUp:[-0.35,0,0.25], rUp:[-0.35,0,-0.25], lFore:[-0.6,0,0], rFore:[-0.6,0,0],
+        lThigh:[-1.45,0,0.6], rThigh:[-1.45,0,-0.6], lShin:[2.2,0,0], rShin:[2.2,0,0], lFoot:[0.3,0,0], rFoot:[0.3,0,0] } },
+  // 아기자세 — kneeling, sitting back on the heels, chest down on the thighs and both arms stretched out on the mat
+  matChild: { label:'아기자세', face:'joy', mat:true, p:[0,0.2,-0.32], r:[1.25,0,0],
+    j:{ spine:[0.2,0,0], chest:[0.15,0,0], head:[0.2,0,0], lUp:[-2.6,0,0.12], rUp:[-2.6,0,-0.12], lFore:[0,0,0], rFore:[0,0,0],
+        lThigh:[-2.75,0,0.12], rThigh:[-2.75,0,-0.12], lShin:[2.6,0,0], rShin:[2.6,0,0], lFoot:[0.8,0,0], rFoot:[0.8,0,0] } },
+  // 다리 찢기 — turned sideways on the mat so the legs reach along its length
+  matSplit: { label:'다리 찢기', face:'joy', mat:true, p:[0,0.07,0], r:[0,PI/2,0],
+    j:{ head:[0.05,0,0.1], lUp:[0,0,1.25], rUp:[0,0,-1.25], lFore:[0,0,0.2], rFore:[0,0,-0.2],
+        lThigh:[-0.15,0,1.45], rThigh:[-0.15,0,-1.45], lShin:[0,0,0], rShin:[0,0,0], lFoot:[-0.5,0,0], rFoot:[-0.5,0,0] } },
+  matSquat: { label:'스쿼트', face:'open', mat:true, squat:true, p:[0,0.2,0.04], r:[0.3,0,0],
+    j:{ spine:[0.1,0,0], head:[-0.25,0,0], lUp:[-1.35,0,0.12], rUp:[-1.35,0,-0.12], lFore:[-0.1,0,0], rFore:[-0.1,0,0],
+        lThigh:[-1.55,0,0.25], rThigh:[-1.55,0,-0.25], lShin:[1.75,0,0], rShin:[1.75,0,0], lFoot:[-0.5,0,0], rFoot:[-0.5,0,0] } },
+  matPlank: { label:'플랭크', face:'wow', mat:true, p:[0,0.2,-0.14], r:[1.45,0,0],
+    j:{ head:[-0.7,0,0], neck:[-0.2,0,0], lUp:[-1.4,0,0.1], rUp:[-1.4,0,-0.1], lFore:[-1.5,0,0], rFore:[-1.5,0,0],
+        lFoot:[0.9,0,0], rFoot:[0.9,0,0] } },
+  // 다운독 — hips high in an upside-down V, hands and feet flat on the mat, head tucked between the arms
+  matDog: { label:'다운독', face:'open', mat:true, p:[0,0.36,-0.12], r:[2.0,0,0],
+    j:{ neck:[-0.2,0,0], head:[-0.3,0,0], lUp:[-2.6,0,0.15], rUp:[-2.6,0,-0.15], lFore:[0,0,0], rFore:[0,0,0],
+        lThigh:[-1.65,0,0.08], rThigh:[-1.65,0,-0.08], lShin:[0,0,0], rShin:[0,0,0], lFoot:[-0.35,0,0], rFoot:[-0.35,0,0] },
+    ik:{ lArm:{ t:[0.11,0.03,0.21], h:[1,0,0] }, rArm:{ t:[-0.11,0.03,0.21], h:[-1,0,0] } } },
+  // 코브라 — lying face down with the legs long behind, chest lifted on straight arms, looking up at the sky
+  matCobra: { label:'코브라', face:'joy', mat:true, cobra:true, p:[0,0.08,-0.05], r:[PI/2,0,0],
+    j:{ spine:[-0.5,0,0], chest:[-0.4,0,0], neck:[-0.3,0,0], head:[-0.4,0,0],
+        lThigh:[0,0,0.05], rThigh:[0,0,-0.05], lShin:[0,0,0], rShin:[0,0,0], lFoot:[1.4,0,0], rFoot:[1.4,0,0] },
+    ik:{ lArm:{ t:[0.12,0.03,0.13], h:[0,0,-1] }, rArm:{ t:[-0.12,0.03,0.13], h:[0,0,-1] } } },
+  // 레그레이즈 — lying on the back, arms by the sides, both straight legs lifting up and lowering again
+  matLegRaise: { label:'레그레이즈', face:'open', mat:true, legRaise:true, p:[0,0.09,0.25], r:[-1.5,0,0],
+    j:{ head:[0.35,0,0], lUp:[0.1,0,0.15], rUp:[0.1,0,-0.15], lFore:[0,0,0], rFore:[0,0,0],
+        lThigh:[0,0,0.04], rThigh:[0,0,-0.04], lShin:[0,0,0], rShin:[0,0,0], lFoot:[-0.6,0,0], rFoot:[-0.6,0,0] } },
   stand: { label:'자유 이동', p:[0,STAND_Y,0], r:[0,0,0],
     j:{ lUp:[0,0,0.3], rUp:[0,0,-0.3], lFore:[-0.25,0,0], rFore:[-0.25,0,0], head:[0.04,0,0.06] } },
   ready: { label:'레디', face:'open', p:[0.17,STAND_Y,-0.21], r:[0,0,0],
@@ -1425,6 +1461,8 @@ const polesBy = Array(POLES.length).fill(null);    // who holds each pole (playe
 let myGroup = null;                                // ids of everyone sharing my pole, in the order they joined (me included), or null
 const inMyGroup = id => !!(myGroup && myGroup.includes(id));
 const poleTaken = i => polesBy[i] && polesBy[i] !== net.id && !inMyGroup(polesBy[i]);
+const matsBy = Array(MATS.length).fill(null);      // who sits on each yoga mat
+const matTaken = i => matsBy[i] && matsBy[i] !== net.id;
 // 탕후루 heights: everyone in the group gets a slot down the pole, closer together the more there are
 const BALL_GAP = { 1:0, 2:1.0, 3:0.85, 4:0.68 };   // 4 people: 2.47 / 1.79 / 1.11 / 0.43 (top head still under the pole cap)
 const ballHeight = (slot, n) => 1.45 + BALL_GAP[n]*(n - 1)/2 - BALL_GAP[n]*slot;
@@ -1511,17 +1549,29 @@ const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z
 /* ---------- sitting: on the grass wherever she is, or on a bench ---------- */
 let sitAt = null, sitQueued = null;   // null | 'ground' | a bench
 const benchFront = b => new V3(b.x + Math.sin(b.rot)*0.95, 0, b.z + Math.cos(b.rot)*0.95);
+const isMat = t => !!t && t !== 'ground' && t.mat !== undefined;
 function sitDown(target){
-  polkTrack('sit', { spot: target === 'ground' ? 'ground' : 'bench' });
+  polkTrack('sit', { spot: target === 'ground' ? 'ground' : isMat(target) ? 'mat' : 'bench' });
   walkTarget = null; sitQueued = null;
   if (target === 'ground'){ sitAt = 'ground'; setPose('sitGround'); return; }
   rebase(new V3(target.x, 0, target.z), target.rot);
-  sitAt = target; setPose('sitBench');
+  sitAt = target; setPose(isMat(target) ? 'matSit' : 'sitBench');
 }
 function standUp(){
   if (!sitAt) return;
-  if (sitAt !== 'ground') rebase(benchFront(sitAt), sitAt.rot);
-  sitAt = null; setPose('stand');
+  if (isMat(sitAt)) rebase(new V3(sitAt.x, 0, sitAt.z), sitAt.rot);   // get up where the mat is
+  else if (sitAt !== 'ground') rebase(benchFront(sitAt), sitAt.rot);
+  sitAt = null; setPose('stand'); updateUI();
+}
+// walk onto a yoga mat and sit on it; the move bar turns into stretches there
+function goSitMat(m){
+  if (matTaken(m.mat)){ toast('다른 폴메이트가 쓰고 있는 매트예요'); return; }
+  if (mode === 'pole'){ requestLeave(new V3(m.x, 0, m.z)); sitQueued = m; return; }
+  standUp(); mode = 'roam'; queuedMove = null; walkTarget = new V3(m.x, 0, m.z); sitQueued = m; updateUI();
+}
+function startStretch(name){
+  if (!isMat(sitAt)) return;
+  setPose(name); polkTrack('stretch', { pose:name });
 }
 function goSitBench(b){
   if (mode === 'pole'){ requestLeave(benchFront(b)); sitQueued = b; return; }
@@ -1532,6 +1582,8 @@ function toggleSit(){
   if (sitQueued){ sitQueued = null; updateUI(); return; }
   if (mode === 'pole'){ requestLeave(null); sitQueued = 'ground'; updateUI(); return; }
   if (mode === 'roam' && walkTarget){ sitQueued = 'ground'; updateUI(); return; }   // sit down where she is headed
+  const mat = MAT_SPOTS.find(m => onMat(holder.position.x, holder.position.z) && Math.abs(holder.position.x - m.x) < MAT_W/2 + 0.2 && Math.abs(holder.position.z - m.z) < MAT_L/2 + 0.2);
+  if (mat){ goSitMat(mat); return; }
   const near = BENCHES.find(b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z) < 2.2);
   if (near) goSitBench(near); else sitDown('ground');
 }
@@ -1659,11 +1711,13 @@ function animateAvatar(av, dt){
   // blend root toward the pose
   const heels = av.outfit.shoes === 'heels' && (av.pose === 'stand' || av.pose === 'ready');
   const lift = (heels ? 0.022 : 0)
-    + (onStage(holder.position.x, holder.position.z, -0.02) ? STAGE_H : 0);
+    + (onStage(holder.position.x, holder.position.z, -0.02) ? STAGE_H : 0)
+    + (pose.mat ? 0.032 : 0);   // on top of the yoga mat, not sunk into it
   const walkBob = Math.abs(Math.sin(av.walkPhase))*0.03*av.moveAmp;
   const sway = av.onPole && av.pose !== 'ready' ? Math.sin(clock*1.3)*0.012 : 0;
   const k = 1 - Math.exp(-(av.onPole ? 4 : 10)*dt);
-  _v.set(pose.p[0], pose.p[1] + lift + walkBob + sway + (pose.ball ? av.ballLift || 0 : 0), pose.p[2]);
+  const squatUp = pose.squat ? (1 - Math.cos(clock*2.4))/2*0.13 : 0;
+  _v.set(pose.p[0], pose.p[1] + lift + walkBob + sway + squatUp + (pose.ball ? av.ballLift || 0 : 0), pose.p[2]);
   char.position.lerp(_v, k);
   char.quaternion.slerp(pose.q, k);
 
@@ -1685,6 +1739,21 @@ function animateAvatar(av, dt){
     if (n === 'chest') x += breath;
     if (av.pose === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
+    if (pose.legRaise){   // leg raises: straight legs up to the sky and slowly down
+      const u = (1 - Math.cos(clock*1.8))/2;
+      if (n === 'lThigh' || n === 'rThigh') x -= 1.45*u;
+    }
+    if (pose.cobra){   // cobra: lower the chest toward the mat and push back up (the hands stay put, so the elbows bend)
+      const u = (1 - Math.cos(clock*1.6))/2;
+      if (n === 'spine') x += 0.6*u; if (n === 'chest') x += 0.4*u;
+      if (n === 'neck' || n === 'head') x -= 0.2*u;   // still looking forward, and the big head stays above the mat
+    }
+    if (pose.squat){   // squats: rise and sink again
+      const u = (1 - Math.cos(clock*2.4))/2;
+      if (n === 'lThigh' || n === 'rThigh') x += 1.1*u;
+      if (n === 'lShin' || n === 'rShin') x -= 1.3*u;
+      if (n === 'lFoot' || n === 'rFoot') x += 0.3*u;
+    }
     if (pose.air){   // walking on air: straight legs scissor back and forth
       const s = Math.sin(clock*3.2);
       if (n === 'lThigh') x += -0.9*s; if (n === 'rThigh') x += 0.9*s;
@@ -1760,6 +1829,8 @@ function clickGround(e){
   const who = net.id && ray.intersectObjects(others.filter(av => av.net).map(av => av.holder), true)[0];
   if (who){ let o = who.object; while (o.parent && o.parent !== scene) o = o.parent; const av = others.find(a => a.holder === o); if (av){ openMateMenu(av, e); return; } }
   closeMateMenu();
+  const matHit = ray.intersectObjects(MAT_SPOTS.map(m => m.mesh), false)[0];
+  if (matHit){ const m = MAT_SPOTS.find(sp => sp.mesh === matHit.object); if (m){ goSitMat(m); return; } }
   const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
   if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
   const hit = new V3();
@@ -1808,6 +1879,15 @@ DUO_MOVES.forEach(([k, label]) => {
   b.addEventListener('click', () => startDuoMove(k));
   movesEl.appendChild(b);
 });
+// stretches: only while sitting on a yoga mat (the pole moves hide then)
+const STRETCHES = [['matSplit', '다리 찢기'], ['matSquat', '스쿼트'], ['matPlank', '플랭크'], ['matLegRaise', '레그레이즈'], ['matDog', '다운독'], ['matCobra', '코브라'], ['matChild', '아기자세']];
+STRETCHES.forEach(([n, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'move stretch'; b.dataset.stretch = n; b.id = 'mv-' + n; b.hidden = true;
+  b.innerHTML = `<span>${label}</span>`;
+  b.addEventListener('click', () => startStretch(n));
+  movesEl.appendChild(b);
+});
 const leaveBtn = document.createElement('button');
 leaveBtn.type = 'button'; leaveBtn.className = 'move leave'; leaveBtn.id = 'mv-leave';
 leaveBtn.innerHTML = '<span>내려오기</span>';
@@ -1825,6 +1905,10 @@ function updateUI(){
   const onPole = mode === 'pole';
   ['sitTog', 'sitSep'].forEach(id => { document.getElementById(id).hidden = onPole; });
   ['mv-leave', 'spinTog', 'poleSep'].forEach(id => { document.getElementById(id).hidden = !onPole; });
+  // on a mat: stretches instead of pole moves
+  const mat = isMat(sitAt);
+  movesEl.querySelectorAll('.move[data-move]').forEach(b => { b.hidden = mat; });
+  movesEl.querySelectorAll('.move[data-stretch]').forEach(b => { b.hidden = !mat; b.setAttribute('aria-pressed', String(b.dataset.stretch === poseName)); });
 }
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
@@ -2268,11 +2352,11 @@ function benchTick(now, ms){
 const NET_DEV = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(location.hostname);
 const NET_URL = NET_DEV ? `ws://${location.hostname}:8787/ws` : 'wss://polknic-ws.yujamong.com/ws';
 const NET_ROOMS = 5, ROOM_NAME = n => `${n}번 호숫가`, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10, WALK = 1.25;
-const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench']);
+const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench', 'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
 const net = {
   on:false, ws:null, id:null, room:1, tries:0, retryTimer:0,
   sendT:0, stateT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
-  poleSent:null, rtt:0.4, pingAt:0, vx:0, vz:0, px:0, pz:0,   // round trip (s) and my own walking velocity, for others to predict where I am
+  poleSent:null, matSent:null, rtt:0.4, pingAt:0, vx:0, vz:0, px:0, pz:0,   // round trip (s) and my own walking velocity, for others to predict where I am
 };
 const netEl = document.getElementById('netText');
 function netPeople(){
@@ -2381,7 +2465,7 @@ function netClosed(ws, code){
   if (ws !== net.ws) return;
   if (code === 4001 || code === 4002) hideLoading();   // refused: lift the curtain so the notice can be read
   net.ws = null; net.id = null; net.sent = null;
-  clearRemotes(); polesBy.fill(null); myGroup = null; inviteCard.hidden = true;
+  clearRemotes(); polesBy.fill(null); matsBy.fill(null); myGroup = null; inviteCard.hidden = true;
   if (code === 4002){   // the server refused my nickname: stop until it's changed in settings
     net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 설정에서 바꿔 주세요');
   } else if (code === 4001){   // the room filled up before I got in: stay alone until another room is picked
@@ -2408,6 +2492,7 @@ function netMessage(raw){
       netRtt();
       net.id = m.id; net.tries = 0; net.stateDirty = true; roomCounts();
       net.poleSent = null; polesBy.fill(null); (m.poles || []).forEach((by, i) => { if (i < polesBy.length) polesBy[i] = by || null; });
+      net.matSent = null; matsBy.fill(null); (m.mats || []).forEach((by, i) => { if (i < matsBy.length) matsBy[i] = by || null; });
       if (!loadingEl.hidden) hideLoading();
       (m.players || []).forEach(addRemote);
       break;
@@ -2433,6 +2518,12 @@ function netMessage(raw){
     case 'duoEnd': endDuo('같이 타기가 끝났어요'); break;
     case 'duoSpin': if (inMyGroup(m.from)) setSpin(!!m.on, true); break;
     case 'duoMove': if (inMyGroup(m.from) && DUO_MOVES.some(([k]) => k === m.kind)) takeDuoMove(m.kind); break;
+    case 'mat':
+      if (Number.isInteger(m.i) && m.i >= 0 && m.i < matsBy.length){
+        matsBy[m.i] = m.by || null;
+        if (m.ok === false && isMat(sitAt) && sitAt.mat === m.i){ net.matSent = null; standUp(); toast('앗, 다른 폴메이트가 먼저 앉았어요'); }
+      }
+      break;
     // pole locks: answers to my requests (ok) and changes by others
     case 'pole':
       if (Number.isInteger(m.i) && m.i >= 0 && m.i < polesBy.length){
@@ -2470,6 +2561,8 @@ function netTick(dt){
   if (!net.id) return;
   // hold the pole I'm walking to or on, let go when I leave it (one place for every way of stopping)
   const wantPole = mode === 'approach' || mode === 'pole' ? myPole : null;
+  const wantMat = isMat(sitAt) ? sitAt.mat : null;   // the mat I'm sitting on
+  if (wantMat !== net.matSent){ netSend(wantMat == null ? { t:'unmat' } : { t:'mat', i:wantMat }); net.matSent = wantMat; }
   if (wantPole !== net.poleSent){
     netSend(wantPole == null ? { t:'unpole' } : { t:'pole', i:wantPole }); net.poleSent = wantPole;
     if (myGroup && wantPole !== duoPole) endDuo('같이 타기를 끝냈어요');   // I left our pole (the server tells the others)
@@ -2948,6 +3041,13 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
 window.__poleDebug = {
   pose(name, y, p, d){ myPole = 0; queuedMove = name; holder.position.set(0, 0, 0.34); mode = 'approach'; enterPole(); if (y != null){ yaw = y; poseYaw = y; } if (p != null) pitch = p; if (d != null) camDist = d; for (let i = 0; i < 240; i++) update(1/60); renderer.render(scene, camera); },
   pause(v){ paused = v; },
+  // sit on yoga mat i and strike a stretch (matSit / matChild / matSplit / matSquat / matPlank / matLegRaise), then look
+  mat(i = 1, pose = 'matSit', y, p, d){
+    mode = 'roam'; sitAt = null; sitDown(MAT_SPOTS[i]); if (pose !== 'matSit') startStretch(pose);
+    if (y != null) yaw = y; if (p != null) pitch = p; if (d != null) camDist = d;
+    for (let k = 0; k < 120; k++) update(1/60); renderer.render(scene, camera); updateNameTag();
+    return { pose:poseName, sitAt:isMat(sitAt) ? sitAt.mat : sitAt };
+  },
   // advance the game by `sec` without waiting for frames (same result on a slow machine), then draw once
   step(sec = 1, dt = 1/30){
     for (let t = 0; t < sec - 1e-9; t += dt) update(dt);

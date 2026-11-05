@@ -118,6 +118,20 @@ a.inbox.length = 0; b.inbox.length = 0;
 a.send({ t: 'invite', to: wb.id });
 ok(!(await b.next('invite', 400)), '3초 안에 또 요청하면 무시');
 
+console.log('요가 매트');
+a.send({ t: 'mat', i: 3 });
+ok((await a.next('mat'))?.ok === true, 'A 3번 매트에 앉기');
+const mb = await b.next('mat');
+ok(mb && mb.i === 3 && mb.by === wa.id, 'B가 "3번 매트 A 사용 중" 알림 받음');
+b.send({ t: 'mat', i: 3 });
+ok((await b.next('mat'))?.ok === false, 'B 3번 매트는 거절');
+b.send({ t: 'state', pose: 'matPlank' });
+ok((await a.next('state'))?.pose === 'matPlank', '스트레칭 자세(플랭크) 전달');
+a.send({ t: 'unmat' });
+ok((await b.next('mat'))?.by === null, 'A가 일어나면 3번 매트 풀림');
+b.send({ t: 'state', pose: 'stand' }); await a.next('state');
+await sleep(200); a.inbox.length = 0; b.inbox.length = 0;
+
 console.log('폴 잠금');
 a.send({ t: 'pole', i: 2 });
 const pa = await a.next('pole');

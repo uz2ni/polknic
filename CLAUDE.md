@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630, [marketing/logo/og.html](marketing/logo/og.html) → `node export-og.js`). 로고는 글자 로고 [marketing/logo/v2/wordmark.svg](marketing/logo/v2/wordmark.svg)('닉'의 ㅣ를 핑크 캡 폴로 바꾼 Jua 글자)와 P 심볼 `favicon.svg`(= `v2/symbol-p.svg`, 폴 굵기 14의 P 위에 핑크 캡. PNG 아이콘도 같은 모양). 인스타 게시물은 [marketing/instagram/](marketing/instagram/README.md). 로고·아이콘·OG 이미지를 바꾸면 `index.html`의 주소 뒤 `?v=N`(현재 3)을 올릴 것(안 올리면 브라우저·카톡 캐시에 예전 그림이 남음). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 3개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 6개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -39,7 +39,7 @@
 | 34–126 | `<style>`: 크림색 둥근 패널 UI, 입장 화면, 이름표, 메뉴 숨기기(`body.clean`), 640px 이하 모바일 |
 | 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·옷장·설정), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
-| 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 3개(`POLES`, 앞쪽 오른편 요가 매트 3개 `MATS`·`onMat()`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
+| 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 3개(`POLES`, 앞쪽 오른편 요가 매트 6개 `MATS`·`onMat()`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
 | 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 표지판, 울타리, 바위(`OBSTACLES`), 나비 |
 | 591–1041 | 캐릭터: 공용 재질(`accM` 등)·헬퍼, `chinify()`, 표정별 `drawFace()`(`EXPRS`), 이모트(`showEmote(av, kind)`), **`createAvatar(look, faceRes)`**(리그 `joint()` → `av.J[name]`, `skull`, 헤어, 팔다리, 치마, 장식), `removeAvatar(av)` |
 | 1042–1097 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `dressAvatar(av)`, 내 아바타 `me`(+ 별칭 `holder`/`char`/`J`/`skull`), `applyOutfit()` |
@@ -80,6 +80,7 @@
 - 닉네임 태그: HTML 요소(`#nameTag`)를 머리 위 월드 좌표를 투영해 매 프레임 배치(`updateNameTag`). 거꾸로 매달린 포즈에서는 가장 높은 쪽 위로. "이름 표시/숨김" 토글
 - 첫 방문엔 옷·헤어·색을 랜덤으로 골라 바로 저장(`pole-outfit-v2`가 없을 때만), 다시 오면 저장된 모습 그대로
 - 같이 타기(최대 4명 그룹, `myGroup`=들어온 순서의 id 목록): 다른 캐릭터를 누르면 "같이 타기" → 받은 사람 수락 카드(10초, 3명 이상이 되면 "탕후루만 할 수 있어요" 안내). 둘 다 혼자면 둘 중간에서 가까운 빈 폴로 새 그룹, 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류(그룹 밖에서 그룹 사람에게 보내도 됨). 둘이면 동작 바에 눈사람·회전목마·탕후루, 3~4명이면 탕후루만. 눈사람·회전목마: 누른 사람이 위(`duo…Top`), 짝이 아래(`duo…Base`, 위 회전을 따라감). 탕후루(`duoBall`): 모두 웅크림, 들어온 순서대로 위에서부터 높이(`ballHeight`, 2명 1.0m·3명 0.8m·4명 0.6m 간격), 첫 사람 기준 90°씩 회전(내 화면 `duoTick`, 남의 화면은 state의 `ball:[자리, 인원]`으로). 스핀은 누가 켜든 모두. 한 명이 내려가면 그 사람만 빠지고 1명 남으면 끝. 미리보기 `__poleDebug.duo('stack'|'fly')`, `__poleDebug.ball(n, 회전)`
+- 스트레칭: 매트를 누르거나(또는 매트 위에서 E) 그 매트로 걸어가 앉음(`goSitMat`, `sitAt`이 매트, 자세 `matSit`). 매트 위에선 동작 바가 [일어나기] 다리 찢기·스쿼트·플랭크·레그레이즈·다운독·코브라·아기자세로 바뀜(`STRETCHES`, `startStretch`, 포즈 `matSplit`(매트 길이 방향)/`matSquat`(위아래로 움직임)/`matPlank`/`matLegRaise`(다리 올렸다 내림)/`matDog`/`matCobra`(손은 IK로 매트에, 가슴을 내렸다 올림)/`matChild`). 매트 포즈는 몸 가운데가 매트 가운데에 오게 `p`의 z로 맞춤(위에서 `__poleDebug.mat(1, 자세, 0, 1.45)`로 확인). 매트 포즈는 `mat:true`로 매트 두께만큼 올려 그림. 매트는 한 명씩(`matsBy`, 서버 `mat`/`unmat`). 미리보기 `__poleDebug.mat(매트, 자세)`
 - 방: 입장 화면과 설정 서랍에서 "1번~5번 호숫가" 중 고름(방별 인원 표시, 꽉 찬 방은 못 누름, 마지막 방 기억 `pole-room`)
 - 접속 인원 문구: "N번 호숫가 · 폴메이트 N명과 함께 있어요!"(N은 나를 뺀 인원, 0명이면 "폴메이트를 기다리는 중이에요")
 - 로딩 화면 `#loading`: 처음엔 첫 프레임이 그려지고 폰트가 올 때까지(최대 2.5초, 최소 페이지 연 뒤 1.5초) 하늘색 화면, three.js를 못 받으면 새로고침 안내. 방 입장·이동 중엔 흐린 화면에 "N번 호숫가로 이동하는 중…"(최소 0.7초, welcome·거절이 오면 닫힘, 7초 넘으면 닫고 혼자 놀기 안내)
@@ -97,7 +98,7 @@
 ## 좌표·포즈 규약
 
 - 캐릭터 정면 +Z, 왼쪽 +X. 팔다리는 -Y로 뻗음. 관절 **x 회전 음수 = 앞**, 양수 = 뒤
-- 폴은 `POLES`(호숫가 잔디에 무대 3개, 개수는 서버 `POLES`와 맞출 것). 앞쪽 오른편엔 요가 매트 3개(`MATS`, 아직 장식만). 내가 탄/가는 폴은 `myPole`. 동작 버튼은 가장 가까운 빈 폴(`freePole`), 폴(바닥 근처)을 클릭하면 그 폴로. 잠금은 `netTick`이 `mode`를 보고 `pole{i}`/`unpole`을 한곳에서 보냄(서버가 거절하면 `losePole`). 남이 잡은 폴 위에 "사용 중" 표시
+- 폴은 `POLES`(호숫가 잔디에 무대 3개, 개수는 서버 `POLES`와 맞출 것). 앞쪽 오른편엔 요가 매트 6개(앞뒤 두 줄 × 3, `MATS`, `MAT_SPOTS`). 내가 탄/가는 폴은 `myPole`. 동작 버튼은 가장 가까운 빈 폴(`freePole`), 폴(바닥 근처)을 클릭하면 그 폴로. 잠금은 `netTick`이 `mode`를 보고 `pole{i}`/`unpole`을 한곳에서 보냄(서버가 거절하면 `losePole`). 남이 잡은 폴 위에 "사용 중" 표시
 - 포즈 좌표는 폴 프레임(내가 탄 폴 = Y축, 원점), 높이는 데크 윗면 기준(스테이지 위면 `STAGE_H` 0.06이 자동으로 더해짐)
 - 치수(m): 키 약 1.06, 머리 반지름 `HEAD_R` 0.22(중심은 head 관절 위 `HEAD_Y` 0.2), 서 있을 때 루트 `STAND_Y` 0.367, 폴 힐 +0.022, 폴 높이 `POLE_H` 3.0
 - 머리가 커서 포즈마다 머리 중심이 폴 축에서 약 0.24m 이상 떨어져야 안 뚫림. `__poleDebug.ik()`의 `headGap`이 0보다 커야 함
