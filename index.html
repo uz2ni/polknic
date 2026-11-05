@@ -149,10 +149,12 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 #flash.on{animation:flash .45s ease-out}
 @keyframes flash{0%{opacity:.95}100%{opacity:0}}
 #photoView{position:fixed;inset:0;z-index:13;display:grid;place-items:center;padding:16px;background:rgba(40,52,60,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#photoView .card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;max-width:min(520px,100%);box-sizing:border-box}
+#photoView .card{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;max-width:min(520px,100%);box-sizing:border-box}
 #photoView img{display:block;max-width:100%;max-height:62vh;border-radius:14px;box-shadow:0 2px 0 rgba(90,66,55,.12)}
 #photoView .row{display:flex;gap:8px}
 #photoView button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 16px var(--f-display);padding:10px 20px;cursor:pointer}
+#photoView button.x{position:absolute;top:-12px;right:-12px;width:36px;height:36px;padding:0;display:grid;place-items:center;background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:0 2px 6px rgba(40,70,90,.25)}
+#photoView button.x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 #photoView button.no{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
 #photoView p{margin:0;font:500 12.5px var(--f-body);color:var(--muted);text-align:center}
 #uiShow{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:6;width:30px;height:30px;padding:0;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);border-radius:50%;background:rgba(255,250,238,.55);color:var(--ink);cursor:pointer;transition:opacity .4s}
@@ -243,7 +245,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <button id="shutter" type="button" aria-label="찰칵"></button>
 </div>
 <div id="flash"></div>
-<div id="photoView" hidden><div class="card glass"><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
+<div id="photoView" hidden><div class="card glass"><button type="button" class="x" id="photoViewClose" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
 <div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
@@ -2734,25 +2736,31 @@ function roundRect(x, X, Y, w, h, r){
 // the HTML name tags and speech bubbles, painted where they sit on screen (k = canvas pixels per CSS pixel)
 function paintTags(x, r, k){
   const at = el => { const b = el.getBoundingClientRect(); return { X:(b.left - r.left)*k, Y:(b.top - r.top)*k, W:b.width*k, H:b.height*k }; };
-  x.textBaseline = 'middle'; x.lineJoin = 'round';
+  // fonts exactly as the page shows them (family, weight, size from the computed style)
+  const font = el => { const c = getComputedStyle(el); return `${c.fontWeight} ${parseFloat(c.fontSize)*k}px ${c.fontFamily}`; };
+  x.textBaseline = 'middle';
   [nameTag, ...document.querySelectorAll('.nameTag')].filter(shown).forEach(el => {
     const { X, Y, W, H } = at(el);
-    x.font = `700 ${12.5*k}px "IBM Plex Sans KR", sans-serif`; x.textAlign = 'center';
-    x.lineWidth = 3.5*k; x.strokeStyle = 'rgba(90,66,55,.85)'; x.strokeText(el.textContent, X + W/2, Y + H/2);
-    x.fillStyle = '#fff'; x.fillText(el.textContent, X + W/2, Y + H/2);
+    x.font = font(el); x.textAlign = 'center'; x.fillStyle = '#fff';
+    // the same soft text-shadow as the CSS (two tight brown glows and one soft drop), one pass per shadow
+    [[0, 2, 'rgba(90,66,55,.9)'], [0, 2, 'rgba(90,66,55,.9)'], [1, 3, 'rgba(90,66,55,.6)']].forEach(([dy, blur, c]) => {
+      x.save(); x.shadowColor = c; x.shadowBlur = blur*k; x.shadowOffsetY = dy*k;
+      x.fillText(el.textContent, X + W/2, Y + H/2); x.restore();
+    });
+    x.fillText(el.textContent, X + W/2, Y + H/2);
   });
   document.querySelectorAll('.bubble').forEach(el => {
     if (!shown(el) || el.classList.contains('fade')) return;
     const { X, Y, W, H } = at(el);
-    x.save(); x.shadowColor = 'rgba(90,66,55,.18)'; x.shadowOffsetY = 2*k;
+    x.save(); x.shadowColor = 'rgba(90,66,55,.12)'; x.shadowOffsetY = 2*k;   // box-shadow: 0 2px 0
     x.fillStyle = '#fff'; roundRect(x, X, Y, W, H, 14*k); x.fill();
     x.beginPath(); x.moveTo(X + W/2 - 6*k, Y + H - 1); x.lineTo(X + W/2 + 6*k, Y + H - 1); x.lineTo(X + W/2, Y + H + 6*k); x.closePath(); x.fill();
     x.restore();
     x.textAlign = 'left';
     const name = el.firstChild, text = el.lastChild;
-    if (name.textContent){ const n = at(name); x.font = `600 ${11*k}px "IBM Plex Sans KR", sans-serif`; x.fillStyle = '#f0789a'; x.fillText(name.textContent, n.X, n.Y + n.H/2); }
-    const t = at(text), lh = 13*1.35*k;
-    x.font = `500 ${13*k}px "IBM Plex Sans KR", sans-serif`; x.fillStyle = '#5a4237';
+    if (name.textContent){ const n = at(name); x.font = font(name); x.fillStyle = getComputedStyle(name).color; x.fillText(name.textContent, n.X, n.Y + n.H/2); }
+    const t = at(text), lh = parseFloat(getComputedStyle(el).lineHeight)*k || 13*1.35*k;
+    x.font = font(text); x.fillStyle = getComputedStyle(text).color;
     let line = '', y = t.Y + lh/2;
     for (const ch of text.textContent){   // wrap letter by letter, like the bubble's word-break:break-all
       if (line && x.measureText(line + ch).width > t.W + 1){ x.fillText(line, t.X, y); line = ''; y += lh; }
@@ -2808,6 +2816,7 @@ document.getElementById('photoSave').addEventListener('click', async () => {
   toast(MOBILE ? '사진을 내려받았어요. 안 보이면 사진을 길게 눌러 저장해 주세요' : '사진을 저장했어요');
 });
 document.getElementById('photoAgain').addEventListener('click', () => { photoView.hidden = true; });
+document.getElementById('photoViewClose').addEventListener('click', () => setPhoto(false));   // done: back to the game
 
 /* ---------- loop ---------- */
 let viewW = 0, viewH = 0;
