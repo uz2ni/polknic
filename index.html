@@ -1259,14 +1259,14 @@ const POSES = {
 
   /* double pole (two on one pole): each move is a pair of poses in the same pole frame, `top` for the one who
      started it and `base` for the partner; both holders sit on the pole with the same turn so the two line up */
-  // 쌓기 — chibi version (arms can't reach over those big heads): the base stands by the pole with both hands up
+  // 눈사람(예전 이름 쌓기) — chibi version (arms can't reach over those big heads): the base stands by the pole with both hands up
   //   at her ears, the top sits right on her head with legs apart, a foot on each of the base's hands, one hand on the pole
-  duoStackTop: { label:'쌓기', view:0.3, face:'joy', emote:'heart',
+  duoStackTop: { label:'눈사람', view:0.3, face:'joy', emote:'heart',
     p:[0.2,1.19,0.03], r:[0,0,0],
     j:{ head:[0.05,0.15,0], lUp:[-0.2,0,2.3], lFore:[-0.5,0,0],
         lThigh:[-0.5,0,1.2], rThigh:[-0.5,0,-1.2], lShin:[0.8,0,0], rShin:[0.8,0,0], lFoot:[0.3,0,0], rFoot:[0.3,0,0] },
     ik:{ rArm:{ t:[0.01,1.5,0.02], h:[0,-1,-0.6] } } },
-  duoStackBase: { label:'쌓기', face:'wow',
+  duoStackBase: { label:'눈사람', face:'wow',
     p:[0.2,STAND_Y,0.03], r:[0,0,0],
     j:{ head:[-0.12,0,0] },
     ik:{ lArm:{ t:[0.49,0.88,0.06], h:[1,-0.4,0.3] },
@@ -1712,7 +1712,7 @@ MOVE_ORDER.forEach(n => {
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
 movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span></button>');
 // double pole moves: only while my pole-mate and I are both on our pole
-const DUO_MOVES = [['stack', '쌓기'], ['fly', '회전목마']];
+const DUO_MOVES = [['stack', '눈사람'], ['fly', '회전목마']];
 DUO_MOVES.forEach(([k, label]) => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'move duo'; b.id = 'mv-duo-' + k; b.hidden = true;

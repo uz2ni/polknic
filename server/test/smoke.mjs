@@ -103,7 +103,7 @@ b.send({ t: 'pole', i: 1 });
 ok((await b.next('pole'))?.ok === true, '짝은 같은 폴을 잡을 수 있음');
 a.send({ t: 'duoMove', kind: 'stack' });
 const dm = await b.next('duoMove');
-ok(dm && dm.kind === 'stack' && dm.from === wa.id, 'B가 A의 더블 기술(쌓기) 받음');
+ok(dm && dm.kind === 'stack' && dm.from === wa.id, 'B가 A의 더블 기술(눈사람) 받음');
 b.send({ t: 'duoSpin', on: true });
 const ds = await a.next('duoSpin');
 ok(ds && ds.on === true && ds.from === wb.id, 'A가 B의 스핀 켜기 받음');
