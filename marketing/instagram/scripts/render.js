@@ -44,6 +44,9 @@ const HIDE = '.hud,#wardrobe,.brand,.corner,#entry,#loading,#nameTag,#settings,#
     if (!s.ui) await page.evaluate(() => __poleDebug.pause(true));
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(ROOT, 'renders', s.name + '.png') });
+    // 장면 스크립트가 window.__marks(머리 위 화면 좌표 등)를 남기면 renders/<name>.json으로 저장(말풍선 배치용)
+    const marks = await page.evaluate(() => window.__marks || null);
+    if (marks) fs.writeFileSync(path.join(ROOT, 'renders', s.name + '.json'), JSON.stringify(marks, null, 1));
     await page.close();
     console.log('render', s.name);
   }

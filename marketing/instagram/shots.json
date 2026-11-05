@@ -123,41 +123,6 @@
    "js": "__poleDebug.duo('fly', null, null, 3.4)"
   },
   {
-   "name": "tile-chair",
-   "look": "sky",
-   "w": 640,
-   "h": 640,
-   "js": "__poleDebug.pose('chair', null, null, 1.9)"
-  },
-  {
-   "name": "tile-hera",
-   "look": "lilac",
-   "w": 640,
-   "h": 640,
-   "js": "__poleDebug.pose('hera', null, null, 1.9)"
-  },
-  {
-   "name": "tile-brass",
-   "look": "sage",
-   "w": 640,
-   "h": 640,
-   "js": "__poleDebug.pose('brass', null, null, 1.9)"
-  },
-  {
-   "name": "tile-ppose",
-   "look": "coral",
-   "w": 640,
-   "h": 640,
-   "js": "__poleDebug.pose('ppose', null, null, 1.9)"
-  },
-  {
-   "name": "tile-split",
-   "look": "rose",
-   "w": 640,
-   "h": 640,
-   "js": "__poleDebug.pose('split', null, null, 1.9)"
-  },
-  {
    "name": "move-chair",
    "look": "sky",
    "w": 1080,
@@ -216,14 +181,6 @@
    "js": "__poleDebug.duo('fly', null, null, 2.9)"
   },
   {
-   "name": "crowd",
-   "look": "rose",
-   "w": 1080,
-   "h": 1080,
-   "q": "?bots=16",
-   "js": "__poleDebug.look(0.4, 0.28, 5.5)"
-  },
-  {
    "name": "entry",
    "look": "ivory",
    "w": 390,
@@ -244,6 +201,13 @@
    "h": 960,
    "jsFile": "scenes/about.js",
    "q": "?yaw=0.3"
+  },
+  {
+   "name": "chat-stage",
+   "look": "sky",
+   "w": 956,
+   "h": 760,
+   "jsFile": "scenes/chat.js"
   }
  ]
 }
