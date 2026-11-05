@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>폴크닉 · 온라인 폴댄스 놀이터</title>
 <meta name="description" content="귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요.">
 <meta property="og:type" content="website">
@@ -47,6 +47,8 @@ window.polkTrack = function(){};
 html,body{height:100%}
 body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased}
 #scene{position:fixed;inset:0}
+/* the page never zooms on phones (pinch is the 3D camera's); iOS ignores user-scalable, see the gesture guard in the script */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 #scene canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #scene canvas:active{cursor:grabbing}
 
@@ -103,8 +105,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .face{border:0;background:transparent;font:400 13.5px var(--f-display);color:var(--ink);padding:6px 10px;border-radius:999px;cursor:pointer}
 .face[aria-pressed="true"]{background:var(--accent);color:#fff}
 /* chat: one input row in the HUD, speech bubbles over heads */
+/* chat log: the last lines of this visit (memory only, gone on reload or room change); tap to open it taller */
+.chatlog{width:100%;max-width:min(100%,560px);box-sizing:border-box;padding:6px 12px;border-radius:14px;background:rgba(255,250,238,.78);font:500 12.5px/1.45 var(--f-body);color:var(--ink);text-align:left;max-height:calc(1.45em*3 + 12px);overflow-y:auto;overscroll-behavior:contain;cursor:pointer;scrollbar-width:thin}
+.chatlog.open{max-height:40vh}
+.chatlog div{word-break:break-all}
+.chatlog b{color:var(--accent);font-weight:700;margin-right:5px}
+.chatlog .sys{color:var(--muted);font-size:11.5px}
+body.clean .chatlog{display:none!important}
 .chat{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;flex:1;min-width:0;box-sizing:border-box}
-.chat input{flex:1;min-width:0;border:0;background:transparent;font:500 14px var(--f-body);color:var(--ink);outline:none;padding:6px 0}
+.chat input{flex:1;min-width:0;border:0;background:transparent;font:500 16px var(--f-body);color:var(--ink);outline:none;padding:6px 0}
 .chat input::placeholder{color:var(--muted)}
 .chat button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 14px var(--f-display);padding:7px 14px;cursor:pointer}
 .bubble{position:fixed;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;z-index:2;max-width:180px;padding:6px 11px;border-radius:14px;background:#fff;color:var(--ink);font:500 13px/1.35 var(--f-body);word-break:break-all;box-shadow:0 2px 0 rgba(90,66,55,.12);transition:opacity .3s}
@@ -161,7 +170,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 #entry .rooms-label{font:600 11px var(--f-body);letter-spacing:.14em;color:var(--muted);text-align:left;margin-bottom:-4px}
 .go{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 18px var(--f-display);padding:12px;cursor:pointer;box-shadow:0 3px 0 #c95a7c}
 .name-row{display:flex;gap:6px}
-.name-row input{flex:1;font-size:14px;padding:8px 12px}
+.name-row input{flex:1;font-size:16px;padding:8px 12px}   /* 16px: iOS zooms the page into smaller inputs */
 .name-row .chip{flex:0 0 auto}
 @media (max-width:640px){
   .brand{top:calc(16px + env(safe-area-inset-top,0px));text-align:left;padding-left:max(16px,env(safe-area-inset-left,0px))}
@@ -170,7 +179,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
   .corner{gap:6px}
   .iconbtn{width:38px;height:38px}
   .moves{gap:0;padding:5px 3px;width:100%;max-width:none}
-  .talk{max-width:none}
+  .talk,.chatlog{max-width:none}
   .move{flex:1 0 auto;padding:9px 7px;min-width:0;font-size:14px}
 }
 </style>
@@ -247,6 +256,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
     <span class="sep" id="sitSep" aria-hidden="true"></span>
     <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
   </nav>
+  <div class="chatlog" id="chatLog" role="log" aria-label="채팅 기록" hidden></div>
   <div class="talk">
     <button id="faceBtn" class="iconbtn glass" type="button" aria-controls="faces" aria-expanded="false" aria-label="표정" title="표정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6"/></svg></button>
     <div class="faces glass" id="faces" role="group" aria-label="표정" hidden><span>표정</span></div>
@@ -259,6 +269,8 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 <script>
 (() => {
 const T = THREE;
+// iOS Safari ignores user-scalable=no: block its pinch-zoom gestures on the page (the 3D view handles pinch itself)
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive:false }));
 const V3 = T.Vector3, Q = T.Quaternion;
 const col = h => new T.Color(h).convertSRGBToLinear();
 const PI = Math.PI;
@@ -2198,6 +2210,7 @@ function netStatus(){
   netEl.hidden = !net.on && !net.badName && !net.full;
   netEl.textContent = net.badName ? '닉네임을 바꾸면 같이 놀 수 있어요' : net.full ? `${ROOM_NAME(net.room)}가 꽉 찼어요` : net.id ? netPeople() : net.ws ? '연결 중…' : '혼자 노는 중';
   chatForm.hidden = chatTog.hidden = !net.id;   // chat only while connected
+  syncLog();
   setRoomsSec.hidden = !net.on && !net.full;
   if (net.id && roomN) roomN[net.room - 1] = others.filter(av => av.net).length + 1;   // my own room's count stays exact between refreshes
   roomButtons();
@@ -2245,6 +2258,7 @@ function pickRoom(n){
   if (n === net.room && net.id) return;   // already here
   net.room = n; net.full = false;
   try { localStorage.setItem('pole-room', String(n)); } catch (e) {}
+  if (entry.hidden) clearLog();   // another lakeside, another conversation
   if (entry.hidden){   // already playing: hop over
     const ws = net.ws;
     if (ws){ net.ws = null; net.id = null; net.sent = null; ws.onclose = null; try { ws.close(); } catch (e) {} clearRemotes(); }
@@ -2317,8 +2331,8 @@ function netMessage(raw){
       if (!loadingEl.hidden) hideLoading();
       (m.players || []).forEach(addRemote);
       break;
-    case 'join': addRemote(m.p); break;
-    case 'leave': if (av) dropRemote(av); break;
+    case 'join': addRemote(m.p); if (m.p && m.p.name) logLine('', `${String(m.p.name).slice(0, 16)}님이 들어왔어요`, true); break;
+    case 'leave': if (av){ logLine('', `${av.net.tag.textContent}님이 나갔어요`, true); dropRemote(av); } break;
     case 'move': if (av){ remoteMove(av, m); } break;
     case 'state': if (av){ remoteState(av, m); if (EMOTES_OK.has(m.emote)) showEmote(av, m.emote); } break;
     case 'outfit': if (av){ av.outfit = safeLook(m.look); dressAvatar(av); } break;
@@ -2327,8 +2341,8 @@ function netMessage(raw){
       else if (av) av.net.tag.textContent = String(m.name || '').slice(0, 16);
       break;
     case 'chat':
-      if (m.ok === false){ hideBubble(me); toast(CHAT_WHY[m.why] || '보내지 못했어요'); }
-      else if (av && typeof m.text === 'string') showBubble(av, m.text);
+      if (m.ok === false){ hideBubble(me); if (lastMine){ lastMine.remove(); lastMine = null; syncLog(); } toast(CHAT_WHY[m.why] || '보내지 못했어요'); }
+      else if (av && typeof m.text === 'string'){ showBubble(av, m.text); logLine(av.net.tag.textContent, m.text); }
       break;
     case 'invite': showInvite(m.from, String(m.name || '').slice(0, 16)); break;
     case 'decline': toast(m.busy ? '이미 다른 폴메이트와 타고 있어요' : `${mateLabel(m.by)}님이 다음에 타재요`); break;
@@ -2573,7 +2587,7 @@ function duoTick(){
 }
 
 /* chat: a line typed under the HUD shows as a bubble over the head for a few seconds; the server only relays it */
-const CHAT_SHOW = 5;
+const CHAT_SHOW = 8;   // seconds a speech bubble stays up
 const CHAT_WHY = { fast:'조금 천천히 보내 주세요 (1초에 한 번)', word:'쓸 수 없는 말이 있어서 보내지 않았어요', link:'링크는 보낼 수 없어요' };
 const chatForm = document.getElementById('chatForm'), chatInput = document.getElementById('chatInput'), chatTog = document.getElementById('chatTog');
 let chatShown = true, chatLast = 0;
@@ -2587,6 +2601,24 @@ function showBubble(av, text){
   av.bubble.lastChild.textContent = text; av.bubbleAt = clock;
 }
 function hideBubble(av){ av.bubbleAt = -99; }
+// chat log under the moves: newest at the bottom, only the last LOG_MAX kept
+const LOG_MAX = 20, chatLog = document.getElementById('chatLog');
+let lastMine = null;
+function logLine(name, text, sys){
+  const d = document.createElement('div');
+  if (sys) d.className = 'sys';
+  else { const b = document.createElement('b'); b.textContent = name; d.append(b); }
+  d.append(text);
+  const atEnd = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 8;
+  chatLog.appendChild(d);
+  while (chatLog.children.length > LOG_MAX) chatLog.firstChild.remove();
+  syncLog();
+  if (atEnd || !sys) chatLog.scrollTop = chatLog.scrollHeight;
+  return d;
+}
+function clearLog(){ chatLog.textContent = ''; lastMine = null; syncLog(); }
+function syncLog(){ chatLog.hidden = !net.id || !chatShown || !chatLog.children.length; }
+chatLog.addEventListener('click', () => { chatLog.classList.toggle('open'); chatLog.scrollTop = chatLog.scrollHeight; });
 chatForm.addEventListener('submit', e => {
   e.preventDefault();
   const text = chatInput.value.replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -2594,6 +2626,7 @@ chatForm.addEventListener('submit', e => {
   if (performance.now() - chatLast < 1000){ toast(CHAT_WHY.fast); return; }
   chatLast = performance.now();
   showBubble(me, text);   // mine shows at once; taken back if the server refuses it
+  lastMine = logLine(playerName, text);
   netSend({ t:'chat', text });
   polkTrack('chat_send', {});
   chatInput.value = '';
@@ -2601,6 +2634,7 @@ chatForm.addEventListener('submit', e => {
 chatInput.addEventListener('keydown', e => { if (e.key === 'Escape') chatInput.blur(); });
 function setChatShown(v){
   chatShown = v; chatTog.setAttribute('aria-pressed', String(v)); chatTog.textContent = v ? '채팅 보기' : '채팅 숨김';
+  syncLog();
   try { localStorage.setItem('pole-chat-show', v ? '1' : '0'); } catch (e) {}
 }
 chatTog.addEventListener('click', () => setChatShown(!chatShown));

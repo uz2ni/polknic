@@ -64,6 +64,7 @@
 - InstancedMesh에 툰 재질(`tcol`이 이미 곱해진 흰색)을 쓸 땐 `setColorAt`에 **원래 색**을 넣는다. `TOON_K`를 또 곱하면 두 번 어두워짐
 - 모래톱/물거품은 `depthWrite:false` + `renderOrder`(1, 2, 물 3)로 겹침. polygonOffset만으로는 먼 거리에서 물이 가려짐
 - 모드 전환 시 holder를 옮길 땐 `rebase()`를 거쳐 캐릭터 월드 위치가 튀지 않게
+- 폰에서 페이지 확대·축소는 막는다(viewport `user-scalable=no` + iOS `gesturestart` 막기 + 입력창 글자 16px 이상: 더 작으면 iOS가 입력할 때 확대함). 핀치는 3D 카메라 줌 전용
 - 화면 크기는 resize 이벤트만 믿지 말 것: 카카오톡·인스타 인앱 브라우저는 툴바가 접힐 때 이벤트 없이 높이가 바뀌어 화면이 위아래로 찌그러짐. `ResizeObserver` + `visualViewport` + 매 프레임 크기 비교로 `resize()` 호출
 - 키 입력은 물리 키(`e.code`) 기준. `e.key`만 보면 한글 입력 상태에서 WASD·숫자·Q가 'ㅈ' 등으로 들어와 무시됨. 화살표는 `preventDefault`(패널 스크롤 방지)
 - 이동 시 폴 근처 차단은 "폴에 더 가까워지는 걸음"만 막는다. 내려온 직후 캐릭터가 폴 0.4m 안에 서 있어서, 거리만으로 막으면 아무 방향으로도 못 움직임
@@ -89,7 +90,7 @@
 - BGM: 코드로 합성하는 2곡(`MUSIC.TRACKS`: 오르골 소풍 / 노을 로파이. 우쿨렐레 왈츠는 사용자 선호로 뺌). 입장 시 시작(브라우저 자동재생 정책 때문에 클릭 후에만 소리 가능), "♪ BGM 켜짐/꺼짐" 버튼·M 키로 토글, 곡 이름 버튼으로 다음 곡. 탭이 숨겨지면 일시정지
   - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
 - 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음
-- 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 5초(`showBubble`), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
+- 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 8초(`CHAT_SHOW`, `showBubble`), 동작 바 아래 채팅 기록(`chatLog`, 최근 20줄만 화면에만, 누르면 크게 펼침, 입장·퇴장 알림 포함, 새로고침·방 이동 시 비움), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
 - localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`, `pole-room`
 
 ## 좌표·포즈 규약
