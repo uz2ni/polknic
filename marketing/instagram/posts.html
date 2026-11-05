@@ -48,6 +48,70 @@ body.export .ab::before{display:none}
 #p03-mate .card .t{font-family:var(--f-d);font-size:46px;line-height:1.15}
 #p03-mate .card .d{font-size:28px;font-weight:600;color:var(--ink-soft);margin-top:6px}
 #p03-mate .btn{margin-left:auto}
+
+/* ---------- 안쪽 장(캐러셀 2장부터): 시리즈 색을 옅게 깐 바탕, 위에서부터 제목 → 내용 ---------- */
+.inner{display:flex;flex-direction:column;gap:44px;padding:150px var(--pad) 64px;box-sizing:border-box}
+.inner.news{background:#fff1f4;--sc:var(--pink)}
+.inner.move{background:#eaf6fb;--sc:var(--sky-d)}
+.inner.mate{background:#fff6d9;--sc:var(--butter-d)}
+.inner .pageno{position:absolute;top:var(--pad);right:var(--pad);font:700 28px var(--f-b);color:var(--ink-soft);background:#fff;border-radius:999px;padding:10px 22px}
+.inner .ititle{font:400 86px/1.12 var(--f-d);margin:0;letter-spacing:-.01em}
+.inner .ititle em{font-style:normal;color:var(--sc)}
+.inner .lead{font-size:36px;font-weight:600;line-height:1.5;margin:-20px 0 0;color:var(--ink-soft)}
+.photo{border-radius:44px;overflow:hidden;border:6px solid #fff;box-shadow:var(--drop-lg);position:relative;background:#cfeedd}
+.photo > img{width:100%;height:100%;object-fit:cover;display:block}
+.note{background:#fff;border-radius:36px;padding:30px 36px;font-size:34px;line-height:1.55;font-weight:600;box-shadow:var(--drop)}
+.note b{font-family:var(--f-d);font-weight:400;color:var(--sc)}
+.bullets{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;list-style:none}
+.bullets li{display:flex;align-items:center;gap:20px;font-size:38px;font-weight:600}
+.bullets li::before{content:"";width:22px;height:22px;border-radius:50%;background:var(--sc);flex:none;box-shadow:0 0 0 7px #fff}
+
+/* 01-2 폴크닉은요 */
+#p01-2-about .photo{height:640px}
+/* 01-3 이렇게 놀아요: 2×2 */
+#p01-3-play .grid4{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+#p01-3-play .tile{background:#fff;border-radius:40px;padding:12px;box-shadow:var(--drop);display:flex;flex-direction:column}
+#p01-3-play .tile .ph{flex:1;border-radius:30px;overflow:hidden;position:relative}
+#p01-3-play .tile .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#p01-3-play .tile .ph img.cut{object-fit:contain;transform:scale(var(--z,1));transform-origin:var(--o,50% 50%)}
+#p01-3-play .tile b{font:400 44px var(--f-d);padding:18px 14px 8px}
+/* 01-4 들어오는 법 */
+#p01-4-join .row{display:flex;gap:48px;align-items:center;flex:1}
+#p01-4-join .phone{width:380px;height:794px;border-radius:56px;border:12px solid var(--ink);overflow:hidden;flex:none;box-shadow:var(--drop-lg)}
+#p01-4-join .phone img{width:100%;display:block}
+#p01-4-join ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:40px}
+#p01-4-join ol li{display:flex;gap:22px;align-items:flex-start;font-size:38px;font-weight:600;line-height:1.35}
+#p01-4-join ol li i{font:400 40px var(--f-d);font-style:normal;flex:none;width:64px;height:64px;border-radius:50%;background:var(--sc);color:#fff;display:grid;place-items:center}
+#p01-4-join ol li small{display:block;font-size:28px;color:var(--ink-soft);margin-top:6px}
+#p01-4-join .link{justify-content:center}
+
+/* 02-2~6 기술 한 장씩 */
+.move-page .ititle{display:flex;align-items:center;gap:24px;font-size:110px}
+.move-page .ititle i{font:400 34px var(--f-d);font-style:normal;color:#fff;background:var(--sc);border-radius:999px;padding:8px 22px}
+.move-page .photo{height:820px}
+.move-page .photo img{transform:scale(1.4);transform-origin:var(--o,48% 42%)}
+.move-page .photo img.framed{transform:none}   /* scenes/center.js로 이미 캐릭터 가운데에 맞춰 뽑은 장면 */
+
+/* 03-2 같이 타는 법 */
+#p03-2-how .steps{display:flex;flex-direction:column;gap:36px;flex:1;justify-content:center}
+#p03-2-how .step{background:#fff;border-radius:40px;padding:44px 38px;display:flex;align-items:center;gap:26px;box-shadow:var(--drop)}
+#p03-2-how .step > i{font:400 40px var(--f-d);font-style:normal;flex:none;width:68px;height:68px;border-radius:50%;background:var(--sc);color:#fff;display:grid;place-items:center}
+#p03-2-how .step .t{font:400 46px var(--f-d)}
+#p03-2-how .step .d{font-size:28px;font-weight:600;color:var(--ink-soft);margin-top:6px}
+#p03-2-how .step .mock{margin-left:auto;flex:none}
+#p03-2-how .menu{background:var(--cream);border:4px solid #fff;border-radius:28px;padding:14px 26px;font:400 34px var(--f-d);box-shadow:var(--drop);color:var(--pink)}
+#p03-2-how .thumb{width:210px;height:210px;border-radius:30px;overflow:hidden;border:5px solid #fff}
+#p03-2-how .thumb img{width:100%;height:100%;object-fit:cover;transform:scale(1.25)}
+/* 03-3 둘이 하는 기술 */
+#p03-3-moves .two{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+#p03-3-moves .card{background:#fff;border-radius:40px;padding:12px;box-shadow:var(--drop);display:flex;flex-direction:column}
+#p03-3-moves .card .ph{flex:1;border-radius:30px;overflow:hidden}
+#p03-3-moves .card .ph img{width:100%;height:100%;object-fit:cover;transform:scale(1.15)}
+#p03-3-moves .card b{font:400 48px var(--f-d);padding:18px 16px 6px}
+#p03-3-moves .card span{font-size:28px;font-weight:600;color:var(--ink-soft);padding:0 16px 14px;line-height:1.4}
+/* 03-4 같은 호숫가에서 */
+#p03-4-chat .photo{flex:1}
+#p03-4-chat .photo .bubble{font-size:38px;padding:16px 28px}
 </style>
 </head>
 <body>
@@ -96,6 +160,113 @@ body.export .ab::before{display:none}
     <div><div class="t">자몽님이 같이 타재요!</div><div class="d">캐릭터를 누르면 같이 타기 신청</div></div>
     <div class="btn butter">수락</div>
   </div>
+</section>
+
+<!-- ====== ① 첫인사 안쪽 ====== -->
+<section class="ab inner news" id="p01-2-about">
+  <span class="series news">폴크닉 오픈</span><span class="pageno">2 / 4</span>
+  <h2 class="ititle">폴크닉은<br><em>온라인 폴댄스 놀이터</em>예요</h2>
+  <div class="photo"><img src="renders/about-stage.png" style="object-position:50% 62%" alt=""></div>
+  <ul class="bullets">
+    <li>귀여운 캐릭터로 폴댄스 기술을 해 봐요</li>
+    <li>설치 없이 브라우저에서 바로 들어와요</li>
+    <li>폴메이트들과 같이 구경하고 응원해요</li>
+  </ul>
+</section>
+
+<section class="ab inner news" id="p01-3-play">
+  <span class="series news">폴크닉 오픈</span><span class="pageno">3 / 4</span>
+  <h2 class="ititle">이렇게 <em>놀아요</em></h2>
+  <div class="grid4">
+    <div class="tile"><div class="ph" style="background:#ffe3ea"><img class="cut" src="../logo/mascot/joy-full.png" style="--z:1.5;--o:50% 30%" alt=""></div><b>옷 갈아입기</b></div>
+    <div class="tile"><div class="ph"><img src="renders/move-chair.png" alt=""></div><b>폴 기술</b></div>
+    <div class="tile"><div class="ph" style="background:#e3f4fb"><img class="cut" src="../logo/mascot/wink-34.png" style="--z:1.1" alt=""></div><b>표정 고르기</b></div>
+    <div class="tile"><div class="ph"><img src="renders/play-sit.png" alt=""></div><b>앉아서 쉬기</b></div>
+  </div>
+</section>
+
+<section class="ab inner news" id="p01-4-join">
+  <span class="series news">폴크닉 오픈</span><span class="pageno">4 / 4</span>
+  <h2 class="ititle">들어오는 법은<br><em>딱 세 단계</em></h2>
+  <div class="row">
+    <div class="phone"><img src="renders/entry.png" alt=""></div>
+    <ol>
+      <li><i>1</i><div>프로필 링크 누르기<small>앱 설치는 필요 없어요</small></div></li>
+      <li><i>2</i><div>닉네임 정하기<small>최대 12자, 다음에도 기억해요</small></div></li>
+      <li><i>3</i><div>입장하기<small>입장할 방을 선택해요</small></div></li>
+    </ol>
+  </div>
+  <div class="note" style="text-align:center"><b>polknic.yujamong.com</b></div>
+</section>
+
+<!-- ====== ② 기술 도감 안쪽: 기술 한 장씩 ====== -->
+<section class="ab inner move move-page" id="p02-2-chair">
+  <span class="series move">폴 기술 도감</span><span class="pageno">2 / 6</span>
+  <h2 class="ititle">체어 <i>01</i></h2>
+  <div class="photo"><img src="renders/move-chair.png" alt=""></div>
+  <div class="note">의자에 앉은 것처럼 <b>무릎을 접고</b> 폴 옆에 떠 있어요. </br>양손으로 폴을 꼭 잡아야해요!</div>
+</section>
+
+<section class="ab inner move move-page" id="p02-3-ppose">
+  <span class="series move">폴 기술 도감</span><span class="pageno">3 / 6</span>
+  <h2 class="ititle">P포즈 <i>02</i></h2>
+  <div class="photo"><img src="renders/move-ppose.png" alt=""></div>
+  <div class="note">골반을 폴에 붙이고 <b>등을 뒤로 젖혀요.</b> </br>한쪽 다리를 접어 걸면 옆에서 P 모양!</div>
+</section>
+
+<section class="ab inner move move-page" id="p02-4-hera">
+  <span class="series move">폴 기술 도감</span><span class="pageno">4 / 6</span>
+  <h2 class="ititle">헤라 <i>03</i></h2>
+  <div class="photo"><img src="renders/move-hera.png" alt=""></div>
+  <div class="note">폴을 등지고 <b>한 손을 뒤로 뻗어</b> 잡아요. 다리는 폴을 따라 길게~</div>
+</section>
+
+<section class="ab inner move move-page" id="p02-5-brass">
+  <span class="series move">폴 기술 도감</span><span class="pageno">5 / 6</span>
+  <h2 class="ititle">브라스 <i>04</i></h2>
+  <div class="photo"><img class="framed" src="renders/move-brass.png" alt=""></div>
+  <div class="note">브라스 포즈~ <b>무릎을 폴에 걸고</b> 거꾸로 매달려요. </br>한 손은 자유롭게!</div>
+</section>
+
+<section class="ab inner move move-page" id="p02-6-split">
+  <span class="series move">폴 기술 도감</span><span class="pageno">6 / 6</span>
+  <h2 class="ititle">스플릿 <i>05</i></h2>
+  <div class="photo"><img class="framed" src="renders/move-split.png" alt=""></div>
+  <div class="note">오른 다리는 폴 위로, 왼 다리는 아래로 <b>쭉 뻗어요.</b> </br>등을 젖혀 시원하게~</div>
+</section>
+
+<!-- ====== ③ 폴메이트 안쪽 ====== -->
+<section class="ab inner mate" id="p03-2-how">
+  <span class="series mate">폴메이트</span><span class="pageno">2 / 4</span>
+  <h2 class="ititle">같이 타는 법</h2>
+  <div class="steps">
+    <div class="step"><i>1</i><div><div class="t">친구 캐릭터 누르기</div><div class="d">같은 호숫가에 있는 친구를 눌러요</div></div><div class="mock menu">같이 타기</div></div>
+    <div class="step"><i>2</i><div><div class="t">수락 카드가 떠요</div><div class="d">친구가 10초 안에 수락하면 끝</div></div><div class="mock btn butter">수락</div></div>
+    <div class="step"><i>3</i><div><div class="t">둘이 폴로 쏙</div><div class="d">가까운 빈 폴로 같이 걸어가요</div></div><div class="mock thumb"><img src="renders/duo-sq-fly.png" alt=""></div></div>
+  </div>
+  <div class="note">한 명이 내려오면 같이 타기가 끝나고, <b>남은 사람은 혼자</b> 계속 탈 수 있어요.</div>
+</section>
+
+<section class="ab inner mate" id="p03-3-moves">
+  <span class="series mate">폴메이트</span><span class="pageno">3 / 4</span>
+  <h2 class="ititle">둘이 하는 <em>기술</em></h2>
+  <div class="two">
+    <div class="card"><div class="ph"><img src="renders/duo-sq-stack.png" alt=""></div><b>눈사람</b><span>친구 머리 위에 폴짝 올라앉아요</span></div>
+    <div class="card"><div class="ph"><img src="renders/duo-sq-fly.png" alt=""></div><b>회전목마</b><span>손잡고 폴 둘레를 빙글빙글</span></div>
+  </div>
+  <div class="note">스핀 폴을 켜면 <b>둘이 같이 돌아요.</b> 누가 눌러도 같이!</div>
+</section>
+
+<section class="ab inner mate" id="p03-4-chat">
+  <span class="series mate">폴메이트</span><span class="pageno">4 / 4</span>
+  <h2 class="ititle">같은 호숫가에서<br><em>수다 떨기</em></h2>
+  <div class="photo">
+    <img src="renders/crowd.png" alt="">
+    <div class="bubble" style="left:360px;top:300px">안녕하세요!</div>
+    <div class="bubble" style="left:520px;top:180px">같이 탈래요?</div>
+    <div class="bubble" style="left:40px;top:150px">옷 예쁘다</div>
+  </div>
+  <div class="note">머리 위 <b>말풍선 채팅</b>으로 이야기해요. 친구랑 같은 호숫가 번호로 만나요!</div>
 </section>
 
 </body>
