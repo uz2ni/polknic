@@ -10,6 +10,7 @@ body{margin:0;background:#2f2a28;display:flex;flex-wrap:wrap;gap:40px;padding:40
 body:not(.export){zoom:.4}
 .ab::before{content:attr(id);position:absolute;z-index:9;top:-1px;right:0;font:700 28px var(--f-b);color:#fff;background:rgba(0,0,0,.5);padding:4px 14px}
 body.export .ab::before{display:none}
+.ab.sq{height:1080px}   /* 프로필 사진용 정사각형 */
 
 /* 01 첫인사 */
 #p01-hello .bg{transform:scale(1.05);transform-origin:40% 40%}
@@ -270,6 +271,22 @@ body.export .ab::before{display:none}
     <div class="bubble" style="left:690px;top:186px">같이 탈래요?</div>
   </div>
   <div class="note">머리 위 <b>말풍선 채팅</b>으로 이야기를 나눠요.</br>친구랑 같은 방번호로 들어오면 만날 수 있어요!</div>
+</section>
+
+<!-- ====== 프로필 사진(1080×1080, 인스타가 원으로 자름: 중요한 건 가운데 원 안에) ====== -->
+<!-- 공용 계정(@yujamong.pole, 폴 관련 서비스 모음)용: 폴크닉 P 대신 폴 자체를 상징으로 -->
+<section class="ab sq" id="profile-pole" style="background:var(--cream)">
+  <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%"><rect x="43" y="28" width="14" height="58" rx="7" fill="#5a4237"/><circle cx="50" cy="19" r="9" fill="#f0789a"/></svg>
+</section>
+<section class="ab sq" id="profile-yuja" style="background:#fff6d9">
+  <!-- 유자(yuja) 캡: 폴 꼭대기를 노란 유자 열매 + 잎으로 -->
+  <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%"><rect x="43" y="30" width="14" height="56" rx="7" fill="#5a4237"/><circle cx="50" cy="20" r="10.5" fill="#ffc83d"/><circle cx="46.5" cy="17" r="2.2" fill="#fff" opacity=".6"/><path d="M51 10.5 q6 -6 11 -2 q-5 5 -11 2Z" fill="#79c565"/></svg>
+</section>
+<section class="ab sq" id="profile-p" style="background:var(--cream)">
+  <img src="../logo/v2/symbol-p.svg" style="position:absolute;inset:90px;width:900px;height:900px" alt="">
+</section>
+<section class="ab sq" id="profile-char" style="background:var(--blush)">
+  <img src="../logo/mascot/joy-34.png" style="position:absolute;left:40px;top:120px;width:1000px" alt="">
 </section>
 
 </body>
