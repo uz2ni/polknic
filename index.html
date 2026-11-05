@@ -136,6 +136,25 @@ body.clean #mateMenu,body.clean #inviteCard{display:none!important}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
 body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,body.clean .hud{display:none!important}
+/* photo mode: every control hides (name tags and bubbles stay, as set); a shutter and a close button take their place */
+body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,body.photo .hud,body.photo #uiShow,body.photo .poleTag,body.photo #mateMenu,body.photo #inviteCard{display:none!important}
+#photoUI{position:fixed;inset:0;z-index:9;pointer-events:none}
+#photoUI > *{pointer-events:auto}
+#shutter{position:absolute;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:72px;height:72px;border-radius:50%;border:5px solid #fff;background:rgba(255,255,255,.55);box-shadow:0 3px 14px rgba(40,70,90,.3);cursor:pointer;padding:0}
+#shutter::after{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
+#shutter:active::after{inset:8px}
+#photoClose{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px))}
+#photoHint{position:absolute;left:50%;bottom:calc(112px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);color:#fff;font:600 12.5px var(--f-body);text-shadow:0 1px 0 rgba(90,66,55,.45),0 1px 8px rgba(40,90,50,.5);white-space:nowrap;pointer-events:none}
+#flash{position:fixed;inset:0;z-index:12;background:#fff;opacity:0;pointer-events:none}
+#flash.on{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.95}100%{opacity:0}}
+#photoView{position:fixed;inset:0;z-index:13;display:grid;place-items:center;padding:16px;background:rgba(40,52,60,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#photoView .card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;max-width:min(520px,100%);box-sizing:border-box}
+#photoView img{display:block;max-width:100%;max-height:62vh;border-radius:14px;box-shadow:0 2px 0 rgba(90,66,55,.12)}
+#photoView .row{display:flex;gap:8px}
+#photoView button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:400 16px var(--f-display);padding:10px 20px;cursor:pointer}
+#photoView button.no{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
+#photoView p{margin:0;font:500 12.5px var(--f-body);color:var(--muted);text-align:center}
 #uiShow{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:6;width:30px;height:30px;padding:0;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);border-radius:50%;background:rgba(255,250,238,.55);color:var(--ink);cursor:pointer;transition:opacity .4s}
 #uiShow svg{width:14px;height:14px}
 #uiShow.idle{opacity:0}
@@ -196,7 +215,7 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 </header>
 
 <div class="corner">
-  <button id="camTog" class="iconbtn glass" type="button" aria-pressed="false" aria-label="전체 보기" title="전체 보기"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <button id="photoBtn" class="iconbtn glass" type="button" aria-label="사진 찍기" title="사진 찍기"><svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2l1.4 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/></svg></button>
   <button id="uiHide" class="iconbtn glass" type="button" aria-label="메뉴 숨기기" title="메뉴 숨기기 (H)"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12 12 0 0 1-2.6 3.6M6.2 6.2C4.3 7.5 3 9.6 2.5 12c1 2.5 4.5 7 9.5 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
   <span class="gap"></span>
   <button id="wardrobeBtn" class="iconbtn glass" type="button" aria-controls="wardrobe" aria-expanded="false" aria-label="옷장" title="옷장"><svg viewBox="0 0 24 24"><path d="M12 7.5a2 2 0 1 1 2-2M12 7.5v1.2L3.6 15a1.7 1.7 0 0 0 1 3.1h14.8a1.7 1.7 0 0 0 1-3.1L12 8.7"/></svg></button>
@@ -218,6 +237,13 @@ body.clean .brand,body.clean #wardrobe,body.clean #settings,body.clean .corner,b
 </div>
 <div id="nameTag" hidden></div>
 <div id="toast" role="status" hidden></div>
+<div id="photoUI" hidden>
+  <button id="photoClose" class="iconbtn glass" type="button" aria-label="사진 모드 나가기" title="나가기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div id="photoHint">드래그로 돌리고, 두 손가락이나 휠로 확대해서 구도를 잡아요</div>
+  <button id="shutter" type="button" aria-label="찰칵"></button>
+</div>
+<div id="flash"></div>
+<div id="photoView" hidden><div class="card glass"><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
 <div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
@@ -1681,6 +1707,7 @@ canvas.addEventListener('wheel', e => { e.preventDefault(); camDist = Math.min(1
 
 const ray = new T.Raycaster(), groundPlane = new T.Plane(new V3(0, 1, 0), 0);
 function clickGround(e){
+  if (photoOn) return;   // framing a photo: taps only turn and zoom the camera
   const r = canvas.getBoundingClientRect();
   ray.setFromCamera({ x:((e.clientX - r.left)/r.width)*2 - 1, y:-((e.clientY - r.top)/r.height)*2 + 1 }, camera);
   const who = net.id && ray.intersectObjects(others.filter(av => av.net).map(av => av.holder), true)[0];
@@ -1699,6 +1726,7 @@ function clickGround(e){
 // physical keys (e.code), so WASD / 1–5 / Q still work while a Korean input source is active
 const DIRS = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right' };
 window.addEventListener('keydown', e => {
+  if (photoOn && e.key === 'Escape'){ setPhoto(false); return; }
   if (e.target.matches && e.target.matches('input, textarea')) return;   // typing a nickname
   if (e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
   const dir = DIRS[e.code] || DIRS[e.key];
@@ -1763,8 +1791,6 @@ function setSpin(on, fromMate){
   if (!fromMate && myMate) netSend({ t:'duoSpin', on });
 }
 spinTog.addEventListener('click', () => setSpin(!spinPole));
-const camTog = document.getElementById('camTog');
-camTog.addEventListener('click', () => { wide = !wide; camTog.setAttribute('aria-pressed', String(wide)); camTog.title = wide ? '캐릭터 보기' : '전체 보기'; camTog.setAttribute('aria-label', camTog.title); });
 
 // expressions: auto follows each move, or the player picks one
 const FACES = [['auto','자동'], ['open','방긋'], ['wink','윙크'], ['joy','활짝'], ['wow','깜짝']];
@@ -2662,6 +2688,126 @@ function roomCurtain(text){
 let toastTimer = 0;
 const toastEl = document.getElementById('toast');
 function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2800); }
+
+/* photo mode: the camera icon hides every control and frames my character; the shutter flashes, clicks and makes a
+   picture of the 3D view plus the name tags and bubbles as they are on screen, with a small watermark (the Instagram account: photos mostly go there, where links don't open). Saving goes
+   through the phone's share sheet (web pages can't write to the photo gallery), a download, or a long press on the preview */
+const photoUI = document.getElementById('photoUI'), photoView = document.getElementById('photoView');
+const photoImg = document.getElementById('photoImg'), photoTip = document.getElementById('photoTip'), flashEl = document.getElementById('flash');
+const IN_APP = /KAKAOTALK|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+const MOBILE = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+let photoOn = false, photoPrev = null, photoBlob = null, photoUrl = null, sfx = null;
+function setPhoto(on){
+  photoOn = on; document.body.classList.toggle('photo', on); photoUI.hidden = !on;
+  if (on){
+    photoPrev = { camDist, pitch };
+    camDist = 2.3; pitch = 0.12;   // close enough for a portrait; turn and zoom from here
+    setWardrobe(false); setSettings(false); setFacesOpen(false); closeMateMenu(); chatInput.blur();
+    polkTrack('camera_mode', { on:true });
+  } else {
+    if (photoPrev){ camDist = photoPrev.camDist; pitch = photoPrev.pitch; photoPrev = null; }
+    photoView.hidden = true;
+  }
+}
+document.getElementById('photoBtn').addEventListener('click', () => setPhoto(true));
+document.getElementById('photoClose').addEventListener('click', () => setPhoto(false));
+
+// a little shutter "chk-chk": two short bursts of filtered noise, made on the spot
+function shutterSound(){
+  try {
+    unmuteIOS();
+    sfx = sfx || new (window.AudioContext || window.webkitAudioContext)(); sfx.resume();
+    [[0, 1700, 0.8], [0.075, 2600, 0.55]].forEach(([d, hz, vol]) => {
+      const len = Math.floor(sfx.sampleRate*0.055), buf = sfx.createBuffer(1, len, sfx.sampleRate), ch = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) ch[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 3);
+      const src = sfx.createBufferSource(), f = sfx.createBiquadFilter(), g = sfx.createGain();
+      src.buffer = buf; f.type = 'bandpass'; f.frequency.value = hz; f.Q.value = 0.9; g.gain.value = vol;
+      src.connect(f).connect(g).connect(sfx.destination); src.start(sfx.currentTime + d);
+    });
+  } catch (e) {}
+}
+const shown = el => !el.hidden && getComputedStyle(el).display !== 'none';
+function roundRect(x, X, Y, w, h, r){
+  x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r);
+  x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath();
+}
+// the HTML name tags and speech bubbles, painted where they sit on screen (k = canvas pixels per CSS pixel)
+function paintTags(x, r, k){
+  const at = el => { const b = el.getBoundingClientRect(); return { X:(b.left - r.left)*k, Y:(b.top - r.top)*k, W:b.width*k, H:b.height*k }; };
+  x.textBaseline = 'middle'; x.lineJoin = 'round';
+  [nameTag, ...document.querySelectorAll('.nameTag')].filter(shown).forEach(el => {
+    const { X, Y, W, H } = at(el);
+    x.font = `700 ${12.5*k}px "IBM Plex Sans KR", sans-serif`; x.textAlign = 'center';
+    x.lineWidth = 3.5*k; x.strokeStyle = 'rgba(90,66,55,.85)'; x.strokeText(el.textContent, X + W/2, Y + H/2);
+    x.fillStyle = '#fff'; x.fillText(el.textContent, X + W/2, Y + H/2);
+  });
+  document.querySelectorAll('.bubble').forEach(el => {
+    if (!shown(el) || el.classList.contains('fade')) return;
+    const { X, Y, W, H } = at(el);
+    x.save(); x.shadowColor = 'rgba(90,66,55,.18)'; x.shadowOffsetY = 2*k;
+    x.fillStyle = '#fff'; roundRect(x, X, Y, W, H, 14*k); x.fill();
+    x.beginPath(); x.moveTo(X + W/2 - 6*k, Y + H - 1); x.lineTo(X + W/2 + 6*k, Y + H - 1); x.lineTo(X + W/2, Y + H + 6*k); x.closePath(); x.fill();
+    x.restore();
+    x.textAlign = 'left';
+    const name = el.firstChild, text = el.lastChild;
+    if (name.textContent){ const n = at(name); x.font = `600 ${11*k}px "IBM Plex Sans KR", sans-serif`; x.fillStyle = '#f0789a'; x.fillText(name.textContent, n.X, n.Y + n.H/2); }
+    const t = at(text), lh = 13*1.35*k;
+    x.font = `500 ${13*k}px "IBM Plex Sans KR", sans-serif`; x.fillStyle = '#5a4237';
+    let line = '', y = t.Y + lh/2;
+    for (const ch of text.textContent){   // wrap letter by letter, like the bubble's word-break:break-all
+      if (line && x.measureText(line + ch).width > t.W + 1){ x.fillText(line, t.X, y); line = ''; y += lh; }
+      line += ch;
+    }
+    if (line) x.fillText(line, t.X, y);
+  });
+}
+function paintWatermark(x, W, H){
+  const size = Math.round(Math.min(W, H)*0.034), pad = size*0.8;
+  x.font = `400 ${size}px Jua, "IBM Plex Sans KR", sans-serif`; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+  x.save(); x.shadowColor = 'rgba(90,66,55,.55)'; x.shadowBlur = size*0.3; x.shadowOffsetY = size*0.06;
+  x.fillStyle = 'rgba(255,255,255,.92)'; x.fillText('폴크닉 @yujamong.pole', W - pad, H - pad);
+  x.restore();
+}
+function takePhoto(){
+  renderer.render(scene, camera);   // copy right after drawing: the WebGL buffer isn't kept between frames
+  updateNameTag();                  // tags and bubbles placed for exactly this frame
+  const src = renderer.domElement, c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d'); x.drawImage(src, 0, 0);
+  const r = src.getBoundingClientRect();
+  paintTags(x, r, src.width/r.width);
+  paintWatermark(x, c.width, c.height);
+  return c;
+}
+document.getElementById('shutter').addEventListener('click', () => {
+  shutterSound();
+  flashEl.classList.remove('on'); void flashEl.offsetWidth; flashEl.classList.add('on');
+  takePhoto().toBlob(b => {
+    if (!b) return;
+    photoBlob = b;
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photoImg.src = photoUrl = URL.createObjectURL(b);
+    photoTip.textContent = IN_APP ? '이 앱에서는 사진을 길게 눌러 저장해 주세요' : '저장이 안 되면 사진을 길게 눌러 저장할 수 있어요';
+    photoView.hidden = false;
+  }, 'image/png');
+  polkTrack('photo_take', {});
+});
+document.getElementById('photoSave').addEventListener('click', async () => {
+  if (!photoBlob) return;
+  const d = new Date(), p2 = v => String(v).padStart(2, '0');
+  const name = `polknic-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}.png`;
+  const file = new File([photoBlob], name, { type:'image/png' });
+  // phones: the share sheet has "save image" (straight into the gallery); elsewhere a plain download
+  if (MOBILE && navigator.canShare && navigator.canShare({ files:[file] })){
+    try { await navigator.share({ files:[file], title:'폴크닉' }); polkTrack('photo_save', { how:'share' }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = photoUrl; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  polkTrack('photo_save', { how:'download' });
+  toast(MOBILE ? '사진을 내려받았어요. 안 보이면 사진을 길게 눌러 저장해 주세요' : '사진을 저장했어요');
+});
+document.getElementById('photoAgain').addEventListener('click', () => { photoView.hidden = true; });
 
 /* ---------- loop ---------- */
 let viewW = 0, viewH = 0;

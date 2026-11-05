@@ -37,7 +37,7 @@
 |---|---|
 | 1–33 | `<head>`: 제목, 설명·OG 태그, 파비콘, GA4 로더(`GA_ID`, `polkTrack`), 폰트 |
 | 34–126 | `<style>`: 크림색 둥근 패널 UI, 입장 화면, 이름표, 메뉴 숨기기(`body.clean`), 640px 이하 모바일 |
-| 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 전체 보기·메뉴 숨기기·옷장·설정), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
+| 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·옷장·설정), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
 | 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 5개(`POLES`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
 | 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 표지판, 울타리, 바위(`OBSTACLES`), 나비 |
@@ -86,10 +86,11 @@
 - 화면 구성(2026-11-05): 하단은 두 줄만(위 동작 바, 아래 표정 버튼+채팅). 동작 바는 넓은 화면에선 버튼 크기만큼(최대 760px) 가운데, 채팅 줄(표정 버튼+입력창)은 넓은 화면에서 최대 560px 가운데. 640px 이하 폰에선 둘 다 가로 전체 폭(동작 버튼은 늘어나 줄을 채우고 넘치면 다음 줄로). 자주 안 바꾸는 설정은 오른쪽 위 톱니 아이콘의 설정 서랍, 옷장은 옷걸이 아이콘(둘은 같은 자리라 하나를 열면 다른 하나는 닫힘). 아이콘은 외부 에셋 없이 인라인 SVG. "지금: 동작" 상태 글자는 사용자 요청으로 없앰
 - 표정: 하단 웃는 얼굴 버튼을 누르면 펼쳐지는 줄에서 자동(포즈별 `face`)/방긋/윙크/활짝/깜짝 선택(`faceMode`). 고르면 해당 이모트가 뜸
 - 앉기(E 또는 "앉기" 버튼): 벤치 2.2m 안이면 벤치로 걸어가 앉고, 아니면 그 자리 바닥에. 걷는 중에 누르면 도착 지점에서 앉음. 벤치를 클릭해도 앉으러 감. 움직이면 일어남(`sitAt`, `sitQueued`, 포즈 `sitGround`/`sitBench`)
+- 사진 찍기(오른쪽 위 카메라 아이콘, 예전 "전체 보기" 자리): `body.photo`가 메뉴·아이콘을 다 숨기고(이름표·말풍선은 설정대로 남음) 카메라를 내 캐릭터 가까이(`camDist` 2.3). 드래그·핀치로 구도, 땅 클릭으로는 안 걸어감, ✕나 Esc로 나감. 셔터: 하얀 반짝 + 코드로 만든 찰칵 소리 → `takePhoto()`가 3D 화면을 그린 직후 복사하고 HTML 이름표·말풍선을 화면 위치대로 덧그리고 오른쪽 아래 워터마크 "폴크닉 @yujamong.pole"(인스타 계정: 사진은 주로 인스타에 올라가고 거기선 주소가 안 눌림). 미리보기에서 [저장]: 폰은 공유 창(사진첩 저장, 웹은 사진첩에 직접 못 씀), 그 외는 다운로드, 인앱 브라우저는 "길게 눌러 저장" 안내
 - 메뉴 숨기기(사진·영상용): 오른쪽 위 눈 가림 아이콘 또는 H. `body.clean`이 상·하단 UI를 숨기고, 오른쪽 위 "메뉴 보기" 버튼만 2.5초 뒤 투명해짐(마우스·터치·키 입력 시 다시 보임). 이름표는 별도 토글 그대로
 - BGM: 코드로 합성하는 2곡(`MUSIC.TRACKS`: 오르골 소풍 / 노을 로파이. 우쿨렐레 왈츠는 사용자 선호로 뺌). 입장 시 시작(브라우저 자동재생 정책 때문에 클릭 후에만 소리 가능), "♪ BGM 켜짐/꺼짐" 버튼·M 키로 토글, 곡 이름 버튼으로 다음 곡. 탭이 숨겨지면 일시정지
   - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
-- 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음
+- 분석: GA4. `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`(메뉴 숨기기), `camera_mode`, `photo_take`, `photo_save{how}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음
 - 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 8초(`CHAT_SHOW`, `showBubble`), 동작 바 아래 채팅 기록(`chatLog`, 최근 20줄만 화면에만, 누르면 크게 펼침, 입장·퇴장 알림 포함, 새로고침·방 이동 시 비움), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
 - localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`, `pole-room`
 
