@@ -94,13 +94,13 @@ ok((await b.next('name'))?.ok === false, '금칙어 닉네임 변경 거절');
 console.log('같이 타기');
 a.send({ t: 'invite', to: wb.id });
 const inv = await b.next('invite');
-ok(inv && inv.from === wa.id && inv.name === '유자', 'B가 A의 같이 타기 요청 받음');
+ok(inv && inv.from === wa.id && inv.name === '유자' && inv.size === 2, 'B가 A의 같이 타기 요청 받음(2명이 됨)');
 b.send({ t: 'accept', from: wa.id, i: 1 });
 const da = await a.next('duo'), db = await b.next('duo');
-ok(da && da.ok && da.i === 1 && da.mate === wb.id && da.lead === wa.id && db && db.mate === wa.id, '수락하면 둘 다 1번 폴로 짝 지어짐');
+ok(da && da.ok && da.i === 1 && da.members.join() === [wa.id, wb.id].join() && db && db.members.length === 2, '수락하면 둘이 1번 폴 그룹(들어온 순서)');
 await sleep(200); b.inbox.length = 0;
 b.send({ t: 'pole', i: 1 });
-ok((await b.next('pole'))?.ok === true, '짝은 같은 폴을 잡을 수 있음');
+ok((await b.next('pole'))?.ok === true, '그룹은 같은 폴을 잡을 수 있음');
 a.send({ t: 'duoMove', kind: 'stack' });
 const dm = await b.next('duoMove');
 ok(dm && dm.kind === 'stack' && dm.from === wa.id, 'B가 A의 더블 기술(눈사람) 받음');
@@ -127,13 +127,13 @@ ok(pn && pn.i === 2 && pn.by === wa.id, 'B가 "2번 폴 A가 사용 중" 알림 
 b.send({ t: 'pole', i: 2 });
 const pb = await b.next('pole');
 ok(pb && pb.ok === false && pb.i === 2 && pb.by === wa.id, 'B 2번 폴 잡기 거절');
-b.send({ t: 'pole', i: 3 });
-ok((await b.next('pole'))?.ok === true, 'B는 3번 폴은 잡을 수 있음');
+b.send({ t: 'pole', i: 0 });
+ok((await b.next('pole'))?.ok === true, 'B는 0번 폴은 잡을 수 있음');
 await a.next('pole');   // A가 받은 "3번 B" 알림
-b.send({ t: 'pole', i: 4 });
+b.send({ t: 'pole', i: 1 });
 await b.next('pole');
 const sw = [await a.next('pole'), await a.next('pole')];
-ok(sw.some(p => p && p.i === 3 && p.by === null) && sw.some(p => p && p.i === 4 && p.by === wb.id), 'B가 4번으로 옮기면 3번은 풀림');
+ok(sw.some(p => p && p.i === 0 && p.by === null) && sw.some(p => p && p.i === 1 && p.by === wb.id), 'B가 1번으로 옮기면 0번은 풀림');
 b.send({ t: 'pole', i: 9 });
 ok(!(await b.next('pole', 300)), '없는 폴 번호는 무시');
 
@@ -145,11 +145,37 @@ console.log('정원(3명)');
 const c = client(); await c.open;
 c.send({ t: 'join', name: '셋째', look });
 const wc = await c.next('welcome');
-ok(wc && wc.poles[2] === wa.id && wc.poles[4] === wb.id && wc.players.length === 2, '세 번째 입장, 스냅샷에 폴별 사용자 포함');
+ok(wc && wc.poles[2] === wa.id && wc.poles[1] === wb.id && wc.players.length === 2, '세 번째 입장, 스냅샷에 폴별 사용자 포함');
 const d = client(); await d.open;
 ok(!!(await d.next('full')), '네 번째는 full');
 for (let i = 0; i < 50 && d.closed === null; i++) await sleep(100);
 ok(d.closed === 4001, `full 후 연결 끊김(${d.closed})`);
+
+console.log('3명 그룹(밖에서 요청)');
+await sleep(3100);
+a.inbox.length = 0; b.inbox.length = 0; c.inbox.length = 0;
+a.send({ t: 'invite', to: wb.id });                       // A(2번 폴)와 B가 그룹
+await b.next('invite'); b.send({ t: 'accept', from: wa.id, i: 2 });
+await a.next('duo'); await b.next('duo');
+c.send({ t: 'invite', to: wb.id });                       // 밖에 있던 C가 그룹의 B에게 요청
+const ci = await b.next('invite');
+ok(ci && ci.from === wc.id && ci.size === 3, 'B가 밖에서 온 C의 요청 받음(3명이 됨)');
+b.send({ t: 'accept', from: wc.id });
+const g3 = [await a.next('duo'), await b.next('duo'), await c.next('duo')];
+ok(g3.every(d => d && d.ok && d.i === 2 && d.members.join() === [wa.id, wb.id, wc.id].join()), 'C가 2번 폴 그룹에 3번째로 합류, 셋 다 알림');
+c.send({ t: 'duoMove', kind: 'ball' });
+const b1 = await a.next('duoMove'), b2 = await b.next('duoMove');
+ok(b1?.kind === 'ball' && b2?.kind === 'ball', 'C의 콩벌레를 A·B 모두 받음');
+c.send({ t: 'state', pose: 'duoBall', ball: [2, 3] });
+const sb = await a.next('state');
+ok(sb && sb.pose === 'duoBall' && sb.ball.join() === '2,3', '콩벌레 자리(3명 중 3번째) 전달');
+b.send({ t: 'unpole' });
+const g2 = await a.next('duo');
+ok(g2 && g2.members.join() === [wa.id, wc.id].join(), 'B가 내려오면 A·C 둘이 그룹으로 남음');
+c.send({ t: 'unpole' });
+ok(!!(await a.next('duoEnd')), 'C도 내려오면 A 혼자(같이 타기 끝)');
+await sleep(300);
+a.inbox.length = 0; b.inbox.length = 0; c.inbox.length = 0;
 
 console.log('퇴장하면 폴 풀림');
 a.ws.close();

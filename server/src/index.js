@@ -35,13 +35,14 @@ export default {
 
 /* ---------- 검증 ---------- */
 const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
-  'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase']);
-const DUO = new Set(['stack', 'fly']);   // 더블폴 기술(둘이 한 폴)
+  'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase', 'duoBall']);
+const DUO = new Set(['stack', 'fly', 'ball']);   // 같이 타기 기술(stack·fly는 2명, ball은 2~4명)
+const GROUP_MAX = 4;
 const INVITE_GAP = 3000;
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
-const POLES = 5;   // 호숫가마다 폴 5개(index.html POLES와 같은 수)
+const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
@@ -100,20 +101,31 @@ export class Room extends DurableObject {
   byId(id) {
     return id ? this.others(null).find(w => w.deserializeAttachment().id === id) : null;
   }
-  // 같이 타기 끝: 짝에게 알리고, 짝은 폴을 혼자 잡은 상태로 남는다
-  endDuo(a) {
-    const mw = this.byId(a.mate);
-    a.mate = null;
-    if (!mw) return;
-    const b = mw.deserializeAttachment();
-    b.mate = null; mw.serializeAttachment(b);
-    mw.send(JSON.stringify({ t: 'duoEnd' }));
-    if (Number.isInteger(b.pole)) this.broadcast({ t: 'pole', i: b.pole, by: b.id }, null);
+  /* 같이 타기 그룹(최대 4명): 각자 attachment의 grp에 같은 멤버 id 목록(들어온 순서)과 같은 pole */
+  setGroup(ids, pole) {
+    ids.forEach(id => {
+      const w = this.byId(id); if (!w) return;
+      const p = w.deserializeAttachment();
+      p.grp = ids.slice(); p.pole = pole; w.serializeAttachment(p);
+      w.send(JSON.stringify({ t: 'duo', ok: true, i: pole, members: ids }));
+    });
   }
+  // 그룹에서 빠지기: 남은 사람이 2명 이상이면 그룹 갱신, 1명이면 끝(그 사람은 폴을 혼자 잡은 채로)
+  leaveGroup(a) {
+    const rest = (a.grp || []).filter(id => id !== a.id), pole = a.pole;
+    a.grp = null;
+    if (rest.length >= 2) this.setGroup(rest, pole);
+    else if (rest.length === 1) {
+      const w = this.byId(rest[0]);
+      if (w) { const p = w.deserializeAttachment(); p.grp = null; w.serializeAttachment(p); w.send(JSON.stringify({ t: 'duoEnd' })); }
+    }
+    return rest;
+  }
+  inGroup(a, id) { return !!(a.grp && a.grp.includes(id)); }
   // 다른 사람에게 보이는 내 상태(snapshot / join 알림용)
   static pub(a) {
     const { id, name, look, x, z, ry, pose, sit, face, spin } = a;
-    return { id, name, look, x, z, ry, pose, sit, face, spin };
+    return { id, name, look, x, z, ry, pose, sit, face, spin, ball: a.ball || null };
   }
 
   async webSocketMessage(ws, raw) {
@@ -151,7 +163,10 @@ export class Room extends DurableObject {
         if (m.face !== undefined && FACES.has(m.face)) a.face = m.face;
         if (m.sit !== undefined) a.sit = Number.isInteger(m.sit) && m.sit >= 0 && m.sit < 10 ? m.sit : null;
         if (m.spin !== undefined) a.spin = !!m.spin;
-        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin };
+        // 콩벌레 자리: [몇 번째, 몇 명 중] (다른 사람 화면에서 높이·방향을 맞추는 데 씀)
+        if (m.ball !== undefined) a.ball = Array.isArray(m.ball) && Number.isInteger(m.ball[0]) && Number.isInteger(m.ball[1])
+          && m.ball[1] >= 1 && m.ball[1] <= GROUP_MAX && m.ball[0] >= 0 && m.ball[0] < m.ball[1] ? [m.ball[0], m.ball[1]] : null;
+        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null };
         if (EMOTES.has(m.emote)) out.emote = m.emote;   // 이모트는 한 번 뜨고 끝이라 저장하지 않음
         this.broadcast(out, ws);
         break;
@@ -184,8 +199,8 @@ export class Room extends DurableObject {
         const i = m.i === undefined ? 0 : m.i;   // i 없이 보내던 예전 웹은 0번 폴
         if (!Number.isInteger(i) || i < 0 || i >= POLES) break;
         const by = this.poles()[i];
-        if (by && by !== a.id && by !== a.mate) { ws.send(JSON.stringify({ t: 'pole', ok: false, i, by })); break; }
-        if (a.mate && a.pole !== i) this.endDuo(a);   // 짝과 다른 폴로 가면 같이 타기 끝
+        if (by && by !== a.id && !this.inGroup(a, by)) { ws.send(JSON.stringify({ t: 'pole', ok: false, i, by })); break; }
+        if (a.grp && a.pole !== i) this.leaveGroup(a);   // 그룹과 다른 폴로 가면 그룹에서 빠짐
         const old = a.pole;
         a.pole = i; ws.serializeAttachment(a);
         ws.send(JSON.stringify({ t: 'pole', ok: true, i, by: a.id }));
@@ -195,20 +210,23 @@ export class Room extends DurableObject {
       }
       case 'unpole': {
         if (!Number.isInteger(a.pole)) break;
-        const i = a.pole, mate = a.mate;
+        const i = a.pole;
+        const rest = a.grp ? this.leaveGroup(a) : [];   // 남은 사람들은 그 폴에 그대로(내 폴 번호를 지우기 전에)
         a.pole = null;
-        if (mate) this.endDuo(a);   // 짝은 그 폴에 혼자 남음(endDuo가 알림)
-        else this.broadcast({ t: 'pole', i, by: null }, ws);
+        this.broadcast({ t: 'pole', i, by: rest[0] || null }, ws);
         ws.serializeAttachment(a);
         return;
       }
-      /* 같이 타기: invite → (상대가) accept 또는 decline. accept 때 상대 웹이 고른 빈 폴을 둘 몫으로 잡는다 */
+      /* 같이 타기: invite → (받은 사람이) accept 또는 decline
+         둘 다 혼자면 새 그룹(accept 때 받은 쪽 웹이 고른 빈 폴), 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류(최대 4명) */
       case 'invite': {
         const tw = this.byId(m.to), now = Date.now();
-        if (!tw || tw === ws || a.mate || now - (a.invAt || 0) < INVITE_GAP) break;
-        if (tw.deserializeAttachment().mate) { ws.send(JSON.stringify({ t: 'decline', by: m.to, busy: true })); break; }
+        if (!tw || tw === ws || now - (a.invAt || 0) < INVITE_GAP) break;
+        const t = tw.deserializeAttachment(), grp = a.grp || t.grp;
+        if (a.grp && t.grp) { ws.send(JSON.stringify({ t: 'decline', by: m.to, busy: true })); break; }
+        if (grp && grp.length >= GROUP_MAX) { ws.send(JSON.stringify({ t: 'decline', by: m.to, full: true })); break; }
         a.invAt = now; a.inviteTo = m.to;
-        tw.send(JSON.stringify({ t: 'invite', from: a.id, name: a.name }));
+        tw.send(JSON.stringify({ t: 'invite', from: a.id, name: a.name, size: (grp ? grp.length : 1) + 1 }));
         break;
       }
       case 'decline': {
@@ -221,32 +239,35 @@ export class Room extends DurableObject {
         break;
       }
       case 'accept': {
-        const fw = this.byId(m.from), i = m.i;
-        const f = fw && fw.deserializeAttachment();
-        const by = Number.isInteger(i) && i >= 0 && i < POLES ? this.poles()[i] : 'x';
-        if (!f || f.inviteTo !== a.id || f.mate || a.mate || (by && by !== a.id && by !== f.id)) {
-          ws.send(JSON.stringify({ t: 'duo', ok: false })); break;
+        const fw = this.byId(m.from), f = fw && fw.deserializeAttachment();
+        const no = () => ws.send(JSON.stringify({ t: 'duo', ok: false }));
+        if (!f || f.inviteTo !== a.id || (f.grp && a.grp)) { no(); break; }
+        let ids, pole;
+        if (f.grp || a.grp) {   // 혼자인 쪽이 그룹에 합류
+          const g = f.grp || a.grp, owner = f.grp ? f : a;
+          if (g.length >= GROUP_MAX) { no(); break; }
+          ids = [...g, (f.grp ? a : f).id]; pole = owner.pole;
+        } else {
+          const i = m.i, by = Number.isInteger(i) && i >= 0 && i < POLES ? this.poles()[i] : 'x';
+          if (by && by !== a.id && by !== f.id) { no(); break; }
+          ids = [f.id, a.id]; pole = i;
         }
-        // 둘 다 예전 폴은 놓고 이 폴로
-        [[ws, a], [fw, f]].forEach(([w, p]) => { if (Number.isInteger(p.pole) && p.pole !== i) this.broadcast({ t: 'pole', i: p.pole, by: null }, null); });
-        f.inviteTo = null; f.pole = i; f.mate = a.id; fw.serializeAttachment(f);
-        a.pole = i; a.mate = f.id; ws.serializeAttachment(a);
-        const msg = { t: 'duo', ok: true, i, lead: f.id };
-        fw.send(JSON.stringify({ ...msg, mate: a.id }));
-        ws.send(JSON.stringify({ ...msg, mate: f.id }));
-        this.broadcast({ t: 'pole', i, by: f.id }, null);
+        // 들어오는 사람이 잡고 있던 다른 폴은 놓음
+        [[ws, a], [fw, f]].forEach(([w, p]) => { if (Number.isInteger(p.pole) && p.pole !== pole && !p.grp) this.broadcast({ t: 'pole', i: p.pole, by: null }, null); });
+        f.inviteTo = null; fw.serializeAttachment(f); ws.serializeAttachment(a);
+        this.setGroup(ids, pole);
+        this.broadcast({ t: 'pole', i: pole, by: ids[0] }, null);
         return;
       }
       case 'duoSpin': {
-        // 같이 타는 중엔 한 명이 스핀을 켜고 끄면 짝도 똑같이
-        const mw = this.byId(a.mate);
-        if (mw) mw.send(JSON.stringify({ t: 'duoSpin', on: !!m.on, from: a.id }));
+        // 같이 타는 중엔 한 명이 스핀을 켜고 끄면 모두 똑같이
+        (a.grp || []).filter(id => id !== a.id).forEach(id => { const w = this.byId(id); if (w) w.send(JSON.stringify({ t: 'duoSpin', on: !!m.on, from: a.id })); });
         break;
       }
       case 'duoMove': {
-        // 기술을 누른 사람이 위, 짝이 아래. 짝에게만 전달(다른 사람은 각자의 state로 봄)
-        const mw = this.byId(a.mate);
-        if (mw && DUO.has(m.kind)) mw.send(JSON.stringify({ t: 'duoMove', kind: m.kind, from: a.id }));
+        // 기술을 누른 사람 기준으로 그룹 모두에게(2인 기술은 누른 사람이 위, 짝이 아래)
+        if (!DUO.has(m.kind) || !a.grp) break;
+        a.grp.filter(id => id !== a.id).forEach(id => { const w = this.byId(id); if (w) w.send(JSON.stringify({ t: 'duoMove', kind: m.kind, from: a.id })); });
         break;
       }
     }
@@ -269,7 +290,7 @@ export class Room extends DurableObject {
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,
       z: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.z) : 1.6,
       ry: num(m.ry, 100) ? round(m.ry) : 0, pose: 'stand', sit: null,
-      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, mate: null,
+      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, grp: null, ball: null,
     });
     ws.serializeAttachment(a);
     ws.send(JSON.stringify({
@@ -289,10 +310,9 @@ export class Room extends DurableObject {
   leave(ws) {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
-    const mate = a.mate;
-    ws.serializeAttachment({ ...a, joined: false, pole: null, mate: null });
+    const pole = a.pole, rest = a.grp ? this.leaveGroup(a) : [];
+    ws.serializeAttachment({ ...a, joined: false, pole: null, grp: null });
     this.broadcast({ t: 'leave', id: a.id }, ws);
-    if (mate) this.endDuo(a);
-    else if (Number.isInteger(a.pole)) this.broadcast({ t: 'pole', i: a.pole, by: null }, ws);
+    if (Number.isInteger(pole)) this.broadcast({ t: 'pole', i: pole, by: rest[0] || null }, ws);
   }
 }

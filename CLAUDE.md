@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630, [marketing/logo/og.html](marketing/logo/og.html) → `node export-og.js`). 로고는 글자 로고 [marketing/logo/v2/wordmark.svg](marketing/logo/v2/wordmark.svg)('닉'의 ㅣ를 핑크 캡 폴로 바꾼 Jua 글자)와 P 심볼 `favicon.svg`(= `v2/symbol-p.svg`, 폴 굵기 14의 P 위에 핑크 캡. PNG 아이콘도 같은 모양). 인스타 게시물은 [marketing/instagram/](marketing/instagram/README.md). 로고·아이콘·OG 이미지를 바꾸면 `index.html`의 주소 뒤 `?v=N`(현재 3)을 올릴 것(안 올리면 브라우저·카톡 캐시에 예전 그림이 남음). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 5개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 3개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -39,7 +39,7 @@
 | 34–126 | `<style>`: 크림색 둥근 패널 UI, 입장 화면, 이름표, 메뉴 숨기기(`body.clean`), 640px 이하 모바일 |
 | 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·옷장·설정), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
-| 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 5개(`POLES`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
+| 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 3개(`POLES`, 앞쪽 오른편 요가 매트 3개 `MATS`·`onMat()`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
 | 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 표지판, 울타리, 바위(`OBSTACLES`), 나비 |
 | 591–1041 | 캐릭터: 공용 재질(`accM` 등)·헬퍼, `chinify()`, 표정별 `drawFace()`(`EXPRS`), 이모트(`showEmote(av, kind)`), **`createAvatar(look, faceRes)`**(리그 `joint()` → `av.J[name]`, `skull`, 헤어, 팔다리, 치마, 장식), `removeAvatar(av)` |
 | 1042–1097 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `dressAvatar(av)`, 내 아바타 `me`(+ 별칭 `holder`/`char`/`J`/`skull`), `applyOutfit()` |
@@ -79,7 +79,7 @@
 - 입장 화면: 닉네임(최대 12자) 입력 후 입장. 다시 들어오면 저장된 이름이 미리 채워짐. 설정 서랍 맨 위 "닉네임"에서 변경
 - 닉네임 태그: HTML 요소(`#nameTag`)를 머리 위 월드 좌표를 투영해 매 프레임 배치(`updateNameTag`). 거꾸로 매달린 포즈에서는 가장 높은 쪽 위로. "이름 표시/숨김" 토글
 - 첫 방문엔 옷·헤어·색을 랜덤으로 골라 바로 저장(`pole-outfit-v2`가 없을 때만), 다시 오면 저장된 모습 그대로
-- 더블폴(같이 타기): 다른 캐릭터를 누르면 "같이 타기" 메뉴 → 상대에게 수락 카드(10초) → 수락하면 두 사람 중간에서 가까운 빈 폴을 둘 몫으로 잡고 양옆으로 걸어가 레디. 둘 다 폴 위면 동작 바에 "눈사람"(코드 이름 stack, 예전 이름 쌓기)·"회전목마". 누른 사람이 위(`duo…Top`), 짝이 아래(`duo…Base`, 위 사람의 폴 회전을 따라감: 내 화면은 `duoTick`, 다른 사람 화면은 `update`에서 같은 폴의 위 캐릭터를 찾아 회전 복사). 같이 타는 중 회전폴(버튼 글자: 멈춰 있으면 "고정폴", 돌면 "회전폴")은 누가 누르든 둘 다 켜지고 꺼짐(`setSpin`, `duoSpin`). 한 명이 내려오거나 다른 폴로 가면 끝나고 남은 사람은 폴을 혼자 잡음. 자세 미리보기 `__poleDebug.duo('stack'|'fly')`
+- 같이 타기(최대 4명 그룹, `myGroup`=들어온 순서의 id 목록): 다른 캐릭터를 누르면 "같이 타기" → 받은 사람 수락 카드(10초, 3명 이상이 되면 "콩벌레만 할 수 있어요" 안내). 둘 다 혼자면 둘 중간에서 가까운 빈 폴로 새 그룹, 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류(그룹 밖에서 그룹 사람에게 보내도 됨). 둘이면 동작 바에 눈사람·회전목마·콩벌레, 3~4명이면 콩벌레만. 눈사람·회전목마: 누른 사람이 위(`duo…Top`), 짝이 아래(`duo…Base`, 위 회전을 따라감). 콩벌레(`duoBall`): 모두 웅크림, 들어온 순서대로 위에서부터 높이(`ballHeight`, 2명 1.0m·3명 0.8m·4명 0.6m 간격), 첫 사람 기준 90°씩 회전(내 화면 `duoTick`, 남의 화면은 state의 `ball:[자리, 인원]`으로). 스핀은 누가 켜든 모두. 한 명이 내려가면 그 사람만 빠지고 1명 남으면 끝. 미리보기 `__poleDebug.duo('stack'|'fly')`, `__poleDebug.ball(n, 회전)`
 - 방: 입장 화면과 설정 서랍에서 "1번~5번 호숫가" 중 고름(방별 인원 표시, 꽉 찬 방은 못 누름, 마지막 방 기억 `pole-room`)
 - 접속 인원 문구: "N번 호숫가 · 폴메이트 N명과 함께 있어요!"(N은 나를 뺀 인원, 0명이면 "폴메이트를 기다리는 중이에요")
 - 로딩 화면 `#loading`: 처음엔 첫 프레임이 그려지고 폰트가 올 때까지(최대 2.5초, 최소 페이지 연 뒤 1.5초) 하늘색 화면, three.js를 못 받으면 새로고침 안내. 방 입장·이동 중엔 흐린 화면에 "N번 호숫가로 이동하는 중…"(최소 0.7초, welcome·거절이 오면 닫힘, 7초 넘으면 닫고 혼자 놀기 안내)
@@ -97,7 +97,7 @@
 ## 좌표·포즈 규약
 
 - 캐릭터 정면 +Z, 왼쪽 +X. 팔다리는 -Y로 뻗음. 관절 **x 회전 음수 = 앞**, 양수 = 뒤
-- 폴은 `POLES`(호숫가 잔디에 무대 5개, 좌표는 서버 `POLES` 수와 맞출 것). 내가 탄/가는 폴은 `myPole`. 동작 버튼은 가장 가까운 빈 폴(`freePole`), 폴(바닥 근처)을 클릭하면 그 폴로. 잠금은 `netTick`이 `mode`를 보고 `pole{i}`/`unpole`을 한곳에서 보냄(서버가 거절하면 `losePole`). 남이 잡은 폴 위에 "사용 중" 표시
+- 폴은 `POLES`(호숫가 잔디에 무대 3개, 개수는 서버 `POLES`와 맞출 것). 앞쪽 오른편엔 요가 매트 3개(`MATS`, 아직 장식만). 내가 탄/가는 폴은 `myPole`. 동작 버튼은 가장 가까운 빈 폴(`freePole`), 폴(바닥 근처)을 클릭하면 그 폴로. 잠금은 `netTick`이 `mode`를 보고 `pole{i}`/`unpole`을 한곳에서 보냄(서버가 거절하면 `losePole`). 남이 잡은 폴 위에 "사용 중" 표시
 - 포즈 좌표는 폴 프레임(내가 탄 폴 = Y축, 원점), 높이는 데크 윗면 기준(스테이지 위면 `STAGE_H` 0.06이 자동으로 더해짐)
 - 치수(m): 키 약 1.06, 머리 반지름 `HEAD_R` 0.22(중심은 head 관절 위 `HEAD_Y` 0.2), 서 있을 때 루트 `STAND_Y` 0.367, 폴 힐 +0.022, 폴 높이 `POLE_H` 3.0
 - 머리가 커서 포즈마다 머리 중심이 폴 축에서 약 0.24m 이상 떨어져야 안 뚫림. `__poleDebug.ik()`의 `headGap`이 0보다 커야 함
@@ -112,6 +112,13 @@
 ## 검증 방법
 
 포즈·외형을 바꾸면 반드시 렌더링해서 눈으로 확인한다(코드만 보고 "됐다"고 하지 말 것).
+
+테스트가 이상하게 나오면 같은 무거운 테스트를 반복하지 말고 이 순서로 한다(2026-11-06, 4인 헤드리스 테스트를 반복하다 원인이 맥 부하였던 일 이후 정한 규칙):
+1. **가벼운 재현부터**: 2인 문제는 Browser pane 탭 2개(앞에 있는 탭만 rAF가 돎, 루프가 중요한 쪽을 앞으로), 서버 문제는 `server/test/smoke.mjs`. 헤드리스 여러 개는 마지막 확인용
+2. **첫 실행부터 내부 상태 기록**: 결과와 함께 mode·pose·타이머(`clock - poseStart`)·대기 플래그·초당 프레임(`__poleDebug.fps()`)을 찍어, 한 번의 실패로 코드 문제인지 환경 문제인지 가른다
+3. **무거운 테스트 전 환경 점검**: `uptime` 로드 평균, 남은 테스트 프로세스(`ps`, 5199 포트). 부하가 높으면 가벼운 방법으로
+4. **타임박스**: 같은 재현이 2번 실패하거나 10분이 넘으면 멈추고, 아는 것·가설·다음 방법을 사용자에게 알린 뒤 방법을 바꾼다
+5. **시간에 덜 휘둘리게**: 로직 확인은 실제 프레임을 기다리지 말고 `__poleDebug.step(초)`로 시뮬레이션을 직접 진행
 
 - 빠른 확인: `.claude/launch.json`의 `static`(python http.server, 5173)으로 띄우고 Browser pane에서 `http://localhost:5173/index.html`을 열어 `__poleDebug` 사용
 - 헤드리스 비교: three r128을 로컬로 받아 CDN 경로 치환한 사본으로 Playwright 스크린샷
@@ -128,6 +135,8 @@
   - `__poleDebug.state()` 카메라/캐릭터/모드 JSON
   - `__poleDebug.ik()` 현재 포즈의 IK 목표까지 남은 거리(팔은 손목 기준이라 0.032가 정상 도달)와 `headGap`
   - `__poleDebug.net()` 접속 상태와 받은 다른 사람 목록(위치·포즈·표정·옷). 로컬 멀티 확인은 launch.json의 `server` + `static`을 띄우고 탭 두 개로 입장
+  - `__poleDebug.step(초, dt)` 화면 갱신을 기다리지 않고 게임 시간을 직접 진행(기본 dt 1/30, 끝나면 한 번 그림). 반환값은 mode·pose·타이머 등 상태. 컴퓨터가 느려도 결과가 같음
+  - `await __poleDebug.fps(ms)` 그 페이지의 실제 초당 프레임(rAF). 테스트 결과가 이상하면 먼저 이것부터
   - `__poleDebug.bots(n)` 또는 주소에 `?bots=N`(최대 30): 돌아다니는 봇 N명 + 위쪽에 fps·draw call 표시. 폰에서 방 정원 측정용
   - 주소에 `?bench`: 봇을 0→49명으로 늘리며 단계마다 fps(평균/느릴 때)·draw call을 재고 표로 보여 줌(결과 복사 가능). 카메라를 멀리 빼서 전원이 화면에 보이는 최악의 경우를 잼. 폰에서는 `.claude/launch.json`의 `lan`(0.0.0.0:5174)으로 띄우고 같은 와이파이에서 `http://맥IP:5174/index.html?bench`
   - 프로덕션에선 개발 모드 한정으로 노출하는 방향
