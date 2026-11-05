@@ -1710,7 +1710,7 @@ MOVE_ORDER.forEach(n => {
   movesEl.appendChild(b);
 });
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
-movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>스핀 폴</span></button>');
+movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>고정폴</span></button>');
 // double pole moves: only while my pole-mate and I are both on our pole
 const DUO_MOVES = [['stack', '눈사람'], ['fly', '회전목마']];
 DUO_MOVES.forEach(([k, label]) => {
@@ -1744,6 +1744,7 @@ const spinTog = document.getElementById('spinTog');
 // spin the pole (stops where it is); while sharing a pole the mate's spin goes on and off with mine
 function setSpin(on, fromMate){
   spinPole = on; spinTog.setAttribute('aria-pressed', String(on));
+  spinTog.firstElementChild.textContent = on ? '회전폴' : '고정폴';   // 버튼 글자가 지금 폴 상태를 보여 줌
   if (!on) poseYaw = holder.rotation.y + (POSES[poseName].view || 0);
   netState();
   if (!fromMate && myMate) netSend({ t:'duoSpin', on });
