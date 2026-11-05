@@ -669,26 +669,28 @@ const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit
     BENCHES.push({ x, z, rot:g.rotation.y, mesh:g });
   }
   bench(-7, 2.4); bench(7, 2.2);   // out at the sides, looking across the meadow at the stages (in front they hid the poles)
-  {
-    // painted in the same Jua face as the page title; drawn again once the web font has loaded.
-    // Google Fonts splits Korean into many small files, so ask for the exact letters or some come from a fallback font
-    const SIGN = '안전 폴링';
-    const drawSign = (x, s) => {
-      x.fillStyle = '#e6bd88'; x.fillRect(0, 0, s, s);
-      x.strokeStyle = 'rgba(120,70,30,.35)'; x.lineWidth = 6; [128, 256, 384].forEach(y => { x.beginPath(); x.moveTo(0, y); x.lineTo(s, y); x.stroke(); });
-      x.fillStyle = '#5a4237'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '118px Jua, "Apple SD Gothic Neo", sans-serif'; x.fillText(SIGN, 256, 205, 480);
-      x.fillStyle = '#f0789a'; x.font = '100px sans-serif'; x.fillText('♥', 256, 350);
+  // wooden signs, painted in the same Jua face as the page title; drawn again once the web font has loaded.
+  // Google Fonts splits Korean into many small files, so ask for the exact letters or some come from a fallback font
+  function woodSign(text, x, z, rot){
+    const px = text.length > 4 ? 96 : 118;   // longer words get a smaller face so they don't squash
+    const draw = (c, s) => {
+      c.fillStyle = '#e6bd88'; c.fillRect(0, 0, s, s);
+      c.strokeStyle = 'rgba(120,70,30,.35)'; c.lineWidth = 6; [128, 256, 384].forEach(y => { c.beginPath(); c.moveTo(0, y); c.lineTo(s, y); c.stroke(); });
+      c.fillStyle = '#5a4237'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = px + 'px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(text, 256, 205, 480);
+      c.fillStyle = '#f0789a'; c.font = '100px sans-serif'; c.fillText('♥', 256, 350);
     };
-    const sign = canvasTex(512, drawSign);
-    if (document.fonts) document.fonts.load('118px Jua', SIGN).then(() => { drawSign(sign.image.getContext('2d'), 512); sign.needsUpdate = true; }).catch(() => {});
+    const tex = canvasTex(512, draw);
+    if (document.fonts) document.fonts.load(px + 'px Jua', text).then(() => { draw(tex.image.getContext('2d'), 512); tex.needsUpdate = true; }).catch(() => {});
     const g = new T.Group();
     const post = new T.Mesh(new T.CylinderGeometry(0.04, 0.05, 1.1, 8), woodD); post.position.y = 0.55; post.castShadow = true; g.add(post);
-    const board = new T.Mesh(new T.BoxGeometry(0.62, 0.46, 0.05), [woodD, woodD, woodD, woodD, toonF('#ffffff', { map:sign }), woodD]);
+    const board = new T.Mesh(new T.BoxGeometry(0.62, 0.46, 0.05), [woodD, woodD, woodD, woodD, toonF('#ffffff', { map:tex }), woodD]);
     board.position.set(0, 1.05, 0.08); board.castShadow = true; g.add(board);   // in front of the post, not skewered by it
-    g.position.set(-2.1, 0, 1.4); g.rotation.y = 0.35; scene.add(g);
-    OBSTACLES.push([-2.1, 1.4, 0.4]);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+    OBSTACLES.push([x, z, 0.4]);
   }
+  woodSign('안전 폴링', -2.1, 1.4, 0.35);
+  woodSign('스트레칭존', 6.5, 7.1, PI + 0.38);   // in the flowers past the far corner of the yoga mats, facing back toward the stages
   // low picket fences on the east and west edges of the meadow
   const postGeo = new T.CylinderGeometry(0.045, 0.05, 0.62, 8); postGeo.translate(0, 0.31, 0);
   const capGeo = new T.ConeGeometry(0.055, 0.08, 8);
