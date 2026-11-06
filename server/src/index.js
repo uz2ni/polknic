@@ -46,6 +46,8 @@ const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle', 'sweat']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
 const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
+// 이만큼 아무 소식(메시지·ping)이 없으면 나간 것으로 본다. 클라이언트는 화면이 켜져 있는 동안 25초마다 ping
+const IDLE_SEC = 60;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
 const round = v => Math.round(v*1000)/1000;
@@ -67,6 +69,9 @@ export class Room extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.cap = +env.ROOM_CAP;
+    // 시험할 땐 --var IDLE_SEC:4 처럼 짧게. 훑는 간격은 그 절반(최대 30초)
+    this.idleMs = (+env.IDLE_SEC || IDLE_SEC)*1000;
+    this.sweepMs = Math.min(30000, this.idleMs/2);
     // 연결 유지용 ping은 방을 깨우지 않고 Cloudflare가 바로 답한다
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
@@ -74,16 +79,38 @@ export class Room extends DurableObject {
   async fetch(req) {
     if (new URL(req.url).pathname === '/count') return Response.json({ n: this.others(null).length });
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
-    if (this.ctx.getWebSockets().length >= this.cap) {
+    if (this.live().length >= this.cap) {
       // 꽉 참: 방에 등록하지 않는 일반 소켓으로 받아 알리고 바로 닫는다(hibernation 소켓으로 받으면 닫힘이 전달되지 않음)
       server.accept();
       server.send(JSON.stringify({ t: 'full' }));
       server.close(4001, 'full');
     } else {
       this.ctx.acceptWebSocket(server);
-      server.serializeAttachment({ joined: false, rl: [0, 0] });
+      server.serializeAttachment({ joined: false, rl: [0, 0], seen: Date.now() });
+      if (await this.ctx.storage.getAlarm() == null) await this.ctx.storage.setAlarm(Date.now() + this.sweepMs);
     }
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /* 유령 정리: 앱을 그냥 내리거나 폰이 잠기면 소켓이 닫히지 않은 채 남아 캐릭터가 계속 보인다.
+     ping은 Cloudflare가 방을 깨우지 않고 대신 답하므로 방은 그 사람이 조용해진 걸 모른다.
+     그래서 사람이 있는 동안만 알람으로 훑어서, 마지막 메시지와 마지막 ping 중 늦은 쪽이 idleMs보다 오래된 접속을 내보낸다.
+     자세한 경위는 docs/GHOST_PLAYERS.md */
+  async alarm() {
+    const now = Date.now();
+    for (const ws of this.live()) {
+      const a = ws.deserializeAttachment();
+      const ping = this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() || 0;
+      if (now - Math.max(a.seen || 0, ping) < this.idleMs) continue;
+      this.leave(ws);   // 다른 사람들에게 leave, 폴·매트·같이 타기 풀기
+      ws.serializeAttachment({ ...ws.deserializeAttachment(), gone: true });   // 닫는 중인 소켓은 정원·다음 훑기에서 뺀다
+      try { ws.close(4003, 'idle'); } catch (e) {}
+    }
+    if (this.live().length) await this.ctx.storage.setAlarm(Date.now() + this.sweepMs);   // 빈 방은 알람 없이 잠든다
+  }
+  // 아직 내보내지 않은 소켓(입장 전 포함)
+  live() {
+    return this.ctx.getWebSockets().filter(ws => !ws.deserializeAttachment()?.gone);
   }
 
   // 접속해 있는(join을 마친) 다른 사람들
@@ -142,6 +169,7 @@ export class Room extends DurableObject {
     // 초당 메시지 수 제한(도배·폭주 방지)
     const sec = Math.floor(Date.now()/1000);
     if (a.rl[0] !== sec) a.rl = [sec, 0];
+    a.seen = Date.now();   // 유령 정리용 마지막 소식(메시지 끝에서 attachment에 함께 저장)
     if (++a.rl[1] > MAX_PER_SEC) return ws.close(1008, 'too many messages');
 
     let m;

@@ -2495,12 +2495,16 @@ function netConnect(){
   ws.onmessage = e => netMessage(e.data);
   ws.onclose = e => netClosed(ws, e.code);
 }
-// lost the connection (closed, timed out or full): drop everyone else and try again
+// forget the room: everyone else, pole/mat locks and my group
+function netReset(){
+  net.ws = null; net.id = null; net.sent = null;
+  clearRemotes(); polesBy.fill(null); matsBy.fill(null); myGroup = null; inviteCard.hidden = true;
+}
+// lost the connection (closed, timed out, full, or sent away after a minute without a word): drop everyone else and try again
 function netClosed(ws, code){
   if (ws !== net.ws) return;
   if (code === 4001 || code === 4002) hideLoading();   // refused: lift the curtain so the notice can be read
-  net.ws = null; net.id = null; net.sent = null;
-  clearRemotes(); polesBy.fill(null); matsBy.fill(null); myGroup = null; inviteCard.hidden = true;
+  netReset();
   if (code === 4002){   // the server refused my nickname: stop until it's changed in settings
     net.on = false; net.badName = true; toast('닉네임에 쓸 수 없는 말이 있어서 혼자 놀아요. 설정에서 바꿔 주세요');
   } else if (code === 4001){   // the room filled up before I got in: stay alone until another room is picked
@@ -2510,13 +2514,23 @@ function netClosed(ws, code){
 }
 // back off 1, 2, 4 … 30 s with jitter, so a server restart doesn't bring everyone back in the same instant
 function netRetry(){
-  if (!net.on) return;
+  // not while the page is hidden: a background tab sends no pings, so it would only come back as a ghost
+  // until the server sends it away again. Coming back to the page reconnects (visibilitychange → netNow)
+  if (!net.on || document.hidden) return;
   const s = Math.min(30, 2 ** net.tries++)*(0.5 + Math.random());
   clearTimeout(net.retryTimer); net.retryTimer = setTimeout(netConnect, s*1000);
 }
-function netNow(){ if (net.on && !net.ws){ net.tries = 0; netConnect(); } else if (net.id){ net.pingT = NET_PING; } }
+function netNow(){ if (document.hidden) return; if (net.on && !net.ws){ net.tries = 0; netConnect(); } else if (net.id){ net.pingT = NET_PING; } }
 window.addEventListener('online', netNow);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) netNow(); });
+// leaving the page (tab closed, navigated away, or tucked into the back/forward cache): say goodbye now so my
+// character doesn't linger for others until the server's idle sweep. Back from the cache → join again
+window.addEventListener('pagehide', () => {
+  const ws = net.ws; if (!ws) return;
+  ws.onclose = null; try { ws.close(1000, 'bye'); } catch (e) {}
+  netReset();
+});
+window.addEventListener('pageshow', e => { if (e.persisted) netNow(); });
 
 function netMessage(raw){
   if (raw === 'pong'){ net.pongBy = 0; netRtt(); return; }

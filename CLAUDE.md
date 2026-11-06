@@ -72,6 +72,7 @@
 - 걸어서 피해야 하는 소품은 `OBSTACLES`(`[x, z, r]`)에 넣으면 `walkable()`/`stepOK()`가 막아줌. 이동은 `stepOK()`를 써야 장애물 안(벤치에서 일어난 직후 등)에서 빠져나올 수 있음
 - 입력창에 타이핑 중일 때는 keydown 처리를 건너뜀(닉네임에 WASD·E·Q가 들어가도 캐릭터가 안 움직이게)
 - 내 포즈·표정·스핀이 바뀌는 곳에서는 `netState(emote)`를 부른다(직접 `netSend`로 state를 보내지 말 것: 0.1초 묶음 전송이 서버 도배 제한을 지켜 줌). 다른 사람 아바타는 `others`에 `av.net`이 붙은 것, 봇은 `av.bot`
+- 서버는 60초 넘게 메시지·ping이 없는 접속을 내보낸다(앱을 그냥 내린 사람의 유령 캐릭터 정리, [docs/GHOST_PLAYERS.md](docs/GHOST_PLAYERS.md)). 그래서 숨겨진 페이지는 재접속하지 않고(`netRetry`·`netNow`의 `document.hidden`), 화면이 보이는 동안은 25초 ping을 멈추면 안 됨
 - 다른 사람에게 받은 값은 그리기 전에 검사: 옷은 `safeLook()`, 포즈는 `POSES`에 있는 것만, 이름·채팅은 `textContent`로만(innerHTML 금지)
 
 ## 플레이어 기능

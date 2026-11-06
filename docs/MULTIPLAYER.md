@@ -36,6 +36,7 @@
 - 구조: Worker가 `GET /ws?room=N`(1~`MAX_ROOMS`)을 Durable Object `room-N`으로 넘김. 방 정원 `ROOM_CAP`(20)·방 개수 `MAX_ROOMS`(5)는 `wrangler.toml`의 `[vars]`
 - 접속 출처는 `https://polknic.yujamong.com`과 개발용(localhost·사설 IP)만 허용, 나머지 403
 - Hibernation: 접속자 정보는 소켓마다 `serializeAttachment()`(잠들면 메모리가 사라짐). `ping` → `pong`은 방을 깨우지 않는 자동 응답
+- 유령 정리(2026-11-06): 사람이 있는 방만 30초마다 알람으로 훑어, 마지막 메시지·ping이 60초(`IDLE_SEC`) 넘게 없는 접속을 `leave` 처리하고 4003으로 닫음. 게임은 `pagehide`에서 바로 끊고, 숨겨진 동안은 재접속 안 함. 경위는 [GHOST_PLAYERS.md](GHOST_PLAYERS.md), 확인은 `npm run test:idle`
 - 폴 잠금: 폴이 하나라 한 명만. 소켓 attachment의 `pole` 표시로 판단(잠들었다 깨도 유지), 퇴장하면 자동 해제
 - 검증: 메시지 2KB·초당 30개 초과 시 연결 끊기, 공원 밖 좌표·모르는 포즈/표정/이모트 무시, 옷은 아는 키·16자 이하 문자열만, 닉네임 12자·중복은 `#2`
 - 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
@@ -87,6 +88,7 @@
 |---|---|---|
 | `welcome` | `id, name, cap, poles[], players[]` | 입장 결과(바뀐 이름 포함)와 방 안 사람들 스냅샷 |
 | `full` | | 방이 꽉 참. 바로 닫힘(코드 4001) → 다음 방 번호로 |
+| (닫힘 4003) | | 60초 넘게 메시지·ping이 없어 내보냄. 화면이 보이면 바로 재접속, 숨겨져 있으면 돌아올 때 재접속 |
 | `join` | `p` | 누가 들어옴(`p`는 스냅샷 한 명 형식) |
 | `move` / `state` / `outfit` / `name` / `chat` | `id` + 위와 같음 | 다른 사람 변화. `move`에는 걷는 속도 `vx, vz`와 클릭한 목적지 `tx, tz`가 붙을 수 있음 |
 | `pole` | `ok?, i, by` | 내 요청 결과(`ok`) 또는 `i`번 폴 사용자 변경 알림(`by`, 없으면 null) |
