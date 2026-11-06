@@ -41,8 +41,8 @@ const MATS = 6;   // 요가 매트 6개(index.html MATS와 같은 수), 한 매�
 const DUO = new Set(['stack', 'fly', 'ball']);   // 같이 타기 기술(stack·fly는 2명, ball은 2~4명)
 const GROUP_MAX = 4;
 const INVITE_GAP = 3000;
-const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow']);
-const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle']);
+const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow', 'pant']);
+const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle', 'sweat']);
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
 const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;

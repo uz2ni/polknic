@@ -858,8 +858,8 @@ function chinify(geo, r){
 // painted face (eyes, brows, nose, mouth, cheeks) on a shell over the front of the head
 const FACE_W = 768, FACE_H = 576;
 const FACE_PHI = 2.0, FACE_TH0 = 1.0, FACE_THL = 1.5;
-// one texture per expression: open (default), blink, wink, joy (^ ^), wow (surprised)
-const EXPRS = ['open', 'blink', 'wink', 'joy', 'wow'];
+// one texture per expression: open (default), blink, wink, joy (^ ^), wow (surprised), pant (> < huffing and puffing)
+const EXPRS = ['open', 'blink', 'wink', 'joy', 'wow', 'pant'];
 
 function shade(hex, k){ const c = new T.Color(hex); return '#' + c.multiplyScalar(k).getHexString(); }
 function mixHex(a, b, t){ return '#' + new T.Color(a).lerp(new T.Color(b), t).getHexString(); }
@@ -871,7 +871,7 @@ function drawFace(cv, expr, eye, hair){
   x.lineCap = 'round'; x.lineJoin = 'round';
   const ink = '#2a1a16';
   // rosy cheeks (a little stronger when happy)
-  const blush = expr === 'joy' || expr === 'wink' ? 0.7 : 0.55;
+  const blush = expr === 'pant' ? 0.85 : expr === 'joy' || expr === 'wink' ? 0.7 : 0.55;
   [[214, 352], [554, 352]].forEach(([bx, by]) => {
     const g = x.createRadialGradient(bx, by, 6, bx, by, 60);
     g.addColorStop(0, `rgba(255,128,140,${blush})`); g.addColorStop(0.6, `rgba(255,128,140,${blush*0.58})`); g.addColorStop(1, 'rgba(255,128,140,0)');
@@ -887,7 +887,24 @@ function drawFace(cv, expr, eye, hair){
   x.fillStyle = 'rgba(214,120,110,.6)';
   x.beginPath(); x.ellipse(384, 330, 9, 6, 0, 0, PI*2); x.fill();
   // mouth
-  if (expr === 'wow'){
+  if (expr === 'pant'){
+    // wide open, out of breath, with the tongue poking out over the lower lip
+    x.fillStyle = '#9c3a44';
+    x.beginPath(); x.moveTo(384 - 36, 380); x.quadraticCurveTo(384, 372, 384 + 36, 380); x.quadraticCurveTo(384 + 34, 436, 384, 438); x.quadraticCurveTo(384 - 34, 436, 384 - 36, 380); x.fill();
+    x.strokeStyle = ink; x.lineWidth = 6; x.stroke();
+    x.fillStyle = '#f47f8f';
+    x.beginPath(); x.moveTo(384 - 20, 418); x.quadraticCurveTo(384 - 22, 462, 384, 462); x.quadraticCurveTo(384 + 22, 462, 384 + 20, 418); x.closePath(); x.fill();
+    x.strokeStyle = '#c95666'; x.lineWidth = 5; x.stroke();
+    x.beginPath(); x.moveTo(384, 428); x.lineTo(384, 448); x.stroke();
+    // sweat drops at the temples
+    [[630, 190, 1.5], [142, 232, 1.1]].forEach(([dx, dy, k]) => {
+      x.save(); x.translate(dx, dy); x.scale(k, k);
+      x.beginPath(); x.moveTo(0, -34); x.quadraticCurveTo(22, -2, 20, 12); x.arc(0, 12, 20, 0, PI); x.quadraticCurveTo(-22, -2, 0, -34);
+      x.fillStyle = '#9fd8ff'; x.fill(); x.strokeStyle = '#ffffff'; x.lineWidth = 6; x.stroke();
+      x.fillStyle = 'rgba(255,255,255,.85)'; x.beginPath(); x.ellipse(-7, 10, 5, 8, -0.3, 0, PI*2); x.fill();
+      x.restore();
+    });
+  } else if (expr === 'wow'){
     x.fillStyle = '#9c3a44'; x.beginPath(); x.ellipse(384, 400, 17, 21, 0, 0, PI*2); x.fill();
     x.strokeStyle = ink; x.lineWidth = 6; x.stroke();
   } else {
@@ -902,7 +919,13 @@ function drawFace(cv, expr, eye, hair){
 
   [[236, -1], [532, 1]].forEach(([cx, f]) => {
     const cy = 262;
-    const shut = expr === 'blink' ? 'line' : expr === 'joy' || (expr === 'wink' && f > 0) ? 'arc' : null;
+    const shut = expr === 'blink' ? 'line' : expr === 'joy' || (expr === 'wink' && f > 0) ? 'arc' : expr === 'pant' ? 'squeeze' : null;
+    if (shut === 'squeeze'){
+      // squeezed shut, > <
+      x.strokeStyle = ink; x.lineWidth = 12;
+      x.beginPath(); x.moveTo(cx + f*30, cy - 26); x.lineTo(cx - f*24, cy); x.lineTo(cx + f*30, cy + 26); x.stroke();
+      return;
+    }
     if (shut === 'arc'){
       // happy closed eye ( ^ )
       x.strokeStyle = ink; x.lineWidth = 12;
@@ -977,10 +1000,19 @@ function frillGeo(r0, r1, h, waves, amp){
 
 /* --- emotes: a small icon pops up over the head when a move lands --- */
 const emoteTex = {};
-['heart', 'note', 'wow', 'sparkle'].forEach(kind => {
+['heart', 'note', 'wow', 'sparkle', 'sweat'].forEach(kind => {
   emoteTex[kind] = canvasTex(128, (x) => {
     x.lineJoin = 'round'; x.lineWidth = 10; x.strokeStyle = '#ffffff';
-    if (kind === 'heart'){
+    if (kind === 'sweat'){
+      // two flying sweat drops
+      [[46, 70, 1], [92, 46, 0.7]].forEach(([dx, dy, k]) => {
+        x.save(); x.translate(dx, dy); x.scale(k, k); x.rotate(-0.4);
+        x.beginPath(); x.moveTo(0, -40); x.quadraticCurveTo(28, -2, 26, 14); x.arc(0, 14, 26, 0, PI); x.quadraticCurveTo(-28, -2, 0, -40);
+        x.stroke(); x.fillStyle = '#7cc8ff'; x.fill();
+        x.fillStyle = 'rgba(255,255,255,.85)'; x.beginPath(); x.ellipse(-9, 12, 6, 10, -0.3, 0, PI*2); x.fill();
+        x.restore();
+      });
+    } else if (kind === 'heart'){
       x.beginPath(); x.moveTo(64, 108); x.bezierCurveTo(10, 72, 8, 30, 38, 24); x.bezierCurveTo(54, 21, 62, 32, 64, 40);
       x.bezierCurveTo(66, 32, 74, 21, 90, 24); x.bezierCurveTo(120, 30, 118, 72, 64, 108); x.closePath();
       x.stroke(); x.fillStyle = '#ff6f96'; x.fill();
@@ -1701,7 +1733,8 @@ function animateAvatar(av, dt){
   // blink
   if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
   if (av.blinking > 0) av.blinking -= dt;
-  const expr = av.faceMode !== 'auto' ? av.faceMode : (av.onPole && pose.face) || 'open';
+  const expr = av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || 'open';
+  const panting = expr === 'pant';
   av.faceM.map = av.faceTex[av.blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
 
   // hop up onto the pole, squash a little when landing back on the ground
@@ -1724,7 +1757,7 @@ function animateAvatar(av, dt){
   char.quaternion.slerp(pose.q, k);
 
   const sw = Math.sin(av.walkPhase)*av.moveAmp;
-  const breath = Math.sin(clock*1.6)*0.018;
+  const breath = panting ? Math.sin(clock*9)*0.06 : Math.sin(clock*1.6)*0.018;   // quick heaving breaths while panting
   JOINTS.forEach(n => {
     if (pose.ikSkip.has(n)) return;
     const b = pose.j[n] || [0,0,0];
@@ -1926,8 +1959,8 @@ function setSpin(on, fromMate){
 spinTog.addEventListener('click', () => setSpin(!spinPole));
 
 // expressions: auto follows each move, or the player picks one
-const FACES = [['auto','자동'], ['open','방긋'], ['wink','윙크'], ['joy','활짝'], ['wow','깜짝']];
-const FACE_EMOTE = { open:'sparkle', wink:'note', joy:'heart', wow:'wow' };
+const FACES = [['auto','자동'], ['open','방긋'], ['wink','윙크'], ['joy','활짝'], ['wow','깜짝'], ['pant','헥헥']];
+const FACE_EMOTE = { open:'sparkle', wink:'note', joy:'heart', wow:'wow', pant:'sweat' };
 let faceMode = 'auto';
 try { const f = localStorage.getItem('pole-face'); if (FACES.some(([v]) => v === f)) faceMode = f; } catch (e) {}
 const facesEl = document.getElementById('faces');
@@ -2591,7 +2624,7 @@ function netTick(dt){
 }
 
 /* other players: an avatar each, eased toward the last position and state the server sent */
-const EMOTES_OK = new Set(['heart', 'note', 'wow', 'sparkle']);
+const EMOTES_OK = new Set(['heart', 'note', 'wow', 'sparkle', 'sweat']);
 const remoteById = id => others.find(av => av.net && av.net.id === id);
 // only draw outfits the wardrobe actually has (anything else falls back to the default piece)
 function safeLook(l){
