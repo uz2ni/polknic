@@ -39,6 +39,7 @@
 - 유령 정리(2026-11-06): 사람이 있는 방만 30초마다 알람으로 훑어, 마지막 메시지·ping이 60초(`IDLE_SEC`) 넘게 없는 접속을 `leave` 처리하고 4003으로 닫음. 게임은 `pagehide`에서 바로 끊고, 숨겨진 동안은 재접속 안 함. 경위는 [GHOST_PLAYERS.md](GHOST_PLAYERS.md), 확인은 `npm run test:idle`
 - 폴 잠금: 폴이 하나라 한 명만. 소켓 attachment의 `pole` 표시로 판단(잠들었다 깨도 유지), 퇴장하면 자동 해제
 - 검증: 메시지 2KB·초당 30개 초과 시 연결 끊기, 공원 밖 좌표·모르는 포즈/표정/이모트 무시, 옷은 아는 키·16자 이하 문자열만, 닉네임 12자·중복은 `#2`
+- 입장 알림(2026-11-08): `join`이 끝나면 운영자 슬랙 채널로 "닉네임 님이 N번 호숫가에 들어왔어요 (지금 N명)"을 보냄(`notifyJoin`, Slack Incoming Webhook). 같은 방·같은 닉네임은 10분(`NOTIFY_GAP`)에 한 번만(새로고침·재접속 도배 방지, 기록은 방 storage `notified`). 웹훅 주소는 공개 저장소라 `wrangler.toml`에 넣지 말고 `npx wrangler secret put SLACK_WEBHOOK`. 없으면(로컬 개발) 안 보냄. 본인 테스트 닉네임은 `NOTIFY_SKIP`(쉼표 구분, `wrangler secret put` 또는 `[vars]`)으로 뺌. 로컬 확인은 `--var SLACK_WEBHOOK:http://127.0.0.1:포트/`로 가짜 웹훅
 - 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
 - 개발: `cd server && nvm use 24 && npm i && npx wrangler dev --port 8787 --var ROOM_CAP:3` 후 `npm test`(24개 항목 확인)
 - 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. **2026-11-04 배포**, 주소 `wss://polknic-ws.yujamong.com/ws`(`wrangler.toml`의 `routes`, DNS는 배포 때 자동 생성, workers.dev 주소는 꺼 둠)

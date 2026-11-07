@@ -50,6 +50,8 @@ const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
 // 이만큼 아무 소식(메시지·ping)이 없으면 나간 것으로 본다. 클라이언트는 화면이 켜져 있는 동안 25초마다 ping
 const IDLE_SEC = 60;
+// 입장 알림(슬랙): 같은 방에 같은 닉네임이 이 시간 안에 다시 들어오면(새로고침·재접속) 또 보내지 않는다
+const NOTIFY_GAP = 10*60*1000;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
 const round = v => Math.round(v*1000)/1000;
@@ -88,7 +90,8 @@ export class Room extends DurableObject {
       server.close(4001, 'full');
     } else {
       this.ctx.acceptWebSocket(server);
-      server.serializeAttachment({ joined: false, rl: [0, 0], seen: Date.now() });
+      const room = parseInt(new URL(req.url).searchParams.get('room'), 10) || 0;   // 입장 알림에 쓸 방 번호
+      server.serializeAttachment({ joined: false, rl: [0, 0], seen: Date.now(), room });
       if (await this.ctx.storage.getAlarm() == null) await this.ctx.storage.setAlarm(Date.now() + this.sweepMs);
     }
     return new Response(null, { status: 101, webSocket: client });
@@ -383,6 +386,28 @@ export class Room extends DurableObject {
       players: this.others(ws).map(w => Room.pub(w.deserializeAttachment())),
     }));
     this.broadcast({ t: 'join', p: Room.pub(a) }, ws);
+    this.ctx.waitUntil(this.notifyJoin(a).catch(() => {}));   // 알림이 늦거나 실패해도 입장에는 영향 없게
+  }
+
+  // 운영자 슬랙으로 입장 알림. SLACK_WEBHOOK(wrangler secret)이 없으면(로컬 개발 등) 보내지 않는다.
+  // NOTIFY_SKIP(쉼표로 구분한 닉네임)은 운영자 본인 테스트용으로 알림에서 뺀다
+  async notifyJoin(a) {
+    const hook = this.env.SLACK_WEBHOOK;
+    if (!hook) return;
+    const base = a.name.replace(/#\d+$/, '');
+    if ((this.env.NOTIFY_SKIP || '').split(',').map(s => s.trim()).includes(base)) return;
+    const now = Date.now(), sent = (await this.ctx.storage.get('notified')) || {};
+    for (const k in sent) if (now - sent[k] >= NOTIFY_GAP) delete sent[k];
+    if (sent[base]) return;
+    sent[base] = now;
+    await this.ctx.storage.put('notified', sent);
+    // 닉네임에 <!channel> 같은 슬랙 문법이 들어가도 글자로만 보이게
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const n = this.others(null).length;
+    await fetch(hook, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: `:wave: *${esc(a.name)}* 님이 ${a.room || '?'}번 호숫가에 들어왔어요 (지금 ${n}명)` }),
+    });
   }
 
   async webSocketClose(ws, code, reason) {
