@@ -25,7 +25,7 @@
 | `pose_start` | `pose` | 폴 동작 버튼(체어·P포즈·헤라·브라스·스플릿) |
 | `duo_start` | `kind`(stack 눈사람·fly 회전목마·ball 탕후루), `n`(인원) | 같이 타기 동작 시작 |
 | `stretch` | `pose` | 매트 위 스트레칭 동작 |
-| `sit` | `spot`(ground/bench/mat) | 앉기 |
+| `sit` | `spot`(ground/bench/mat/chair) | 앉기 (chair는 간식 테이블 의자) |
 | `face_change` | `face` | 표정 고르기 |
 | `outfit_change` | `slot`, `value` | 옷장에서 옷·헤어·색 고르기 |
 | `bgm_toggle` | `on` | BGM 켜기/끄기 |

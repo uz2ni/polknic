@@ -269,7 +269,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 </div>
 <div id="flash"></div>
 <div id="photoView" hidden><div class="card glass"><button type="button" class="x" id="photoViewClose" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
-<div id="shopMenu" class="glass" hidden><div class="head"><b>냠냠 매점</b><button type="button" id="shopClose" aria-label="닫기">✕</button></div><p id="shopText"></p><div id="shopItems"></div></div>
+<div id="shopMenu" class="glass" hidden><div class="head"><b>폴짝 매점</b><button type="button" id="shopClose" aria-label="닫기">✕</button></div><p id="shopText"></p><div id="shopItems"></div></div>
 <div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
@@ -674,6 +674,7 @@ const POLE_MESHES = [];   // clicking a pole walks to it
 const OBSTACLES = [];   // [x, z, r] circles the character walks around
 const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on
 // snack stand past the west bench, facing the middle of the meadow; the clerk stands behind its counter
+const TABLE = { x:-4.2, z:6.8, r:0.4, h:0.56 };   // the snack table (with three chairs) next to the stand
 const SHOP = { x:-6.3, z:5.3 }; SHOP.rot = Math.atan2(-SHOP.x, -(SHOP.z - 1));
 SHOP.front = new V3(SHOP.x + Math.sin(SHOP.rot)*1.0, 0, SHOP.z + Math.cos(SHOP.rot)*1.0);   // where a customer stands at the counter
 // what the stand sells (the server checks the same keys: server/src/index.js SNACKS)
@@ -706,6 +707,29 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
     BENCHES.push({ x, z, rot:g.rotation.y, mesh:g });
   }
   bench(-7, 2.4); bench(7, 2.2);   // out at the sides, looking across the meadow at the stages (in front they hid the poles)
+  // a round snack table with three chairs beside the stand. The chairs are seats like the benches (same sitBench pose, seat
+  // at the same height); you walk up from behind the chair, and a snack you hold sits on the table in front of you
+  {
+    const g = new T.Group(); g.position.set(TABLE.x, 0, TABLE.z); scene.add(g); TABLE.mesh = g;
+    const topM = toonF('#fff3dc'), legM = toonF('#c99462');
+    const top = new T.Mesh(new T.CylinderGeometry(TABLE.r, TABLE.r, 0.05, 32), [toonF('#f6a9bd'), topM, topM]); top.position.y = TABLE.h - 0.025; top.castShadow = true; g.add(top);
+    const leg = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, TABLE.h - 0.05, 10), legM); leg.position.y = (TABLE.h - 0.05)/2; leg.castShadow = true; g.add(leg);
+    const foot = new T.Mesh(new T.CylinderGeometry(0.2, 0.22, 0.04, 20), legM); foot.position.y = 0.02; g.add(foot);
+    OBSTACLES.push([TABLE.x, TABLE.z, TABLE.r + 0.12]);
+    ['#a9e3cf', '#f6a9bd', '#fbe39a'].forEach((hex, i) => {
+      const a = 0.4 + i*PI*2/3, x = TABLE.x + Math.sin(a)*0.72, z = TABLE.z + Math.cos(a)*0.72, rot = a + PI;   // facing the table
+      const c = new T.Group(), seatM = toonF(hex);
+      const box = (w, h, d, px, py, pz, m) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(px, py, pz); b.castShadow = true; c.add(b); };
+      box(0.36, 0.05, 0.34, 0, 0.42, 0, seatM);
+      box(0.36, 0.3, 0.05, 0, 0.62, -0.17, seatM);   // back rest, away from the table
+      [[-0.15, -0.14], [0.15, -0.14], [-0.15, 0.14], [0.15, 0.14]].forEach(([lx, lz]) => box(0.04, 0.4, 0.04, lx, 0.2, lz, legM));
+      c.position.set(x, 0, z); c.rotation.y = rot; scene.add(c);
+      OBSTACLES.push([x, z, 0.26]);
+      // where her snack goes on the table, in front of this chair
+      const food = new V3(TABLE.x + Math.sin(a)*0.22, TABLE.h + 0.045, TABLE.z + Math.cos(a)*0.22);
+      BENCHES.push({ x, z, rot, mesh:c, chair:true, front:-0.62, food });
+    });
+  }
   // wooden signs, painted in the same Jua face as the page title; drawn again once the web font has loaded.
   // Google Fonts splits Korean into many small files, so ask for the exact letters or some come from a fallback font
   function woodSign(text, x, z, rot){
@@ -777,7 +801,7 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
       ['#e8475f', '#7cc36a', '#e8475f'].forEach((hex, j) => { const f = new T.Mesh(fruitGeo, toonF(hex)); f.position.y = 0.17 + j*0.045; k.add(f); });
     });
     // sign board on top, in the title face like the wood signs
-    const signText = '냠냠 매점';
+    const signText = '폴짝 매점';
     const drawSign = (c, s) => {
       c.fillStyle = '#fff3dc'; c.fillRect(0, 0, s, s);
       c.fillStyle = '#5a4237'; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -1336,6 +1360,7 @@ function createAvatar(look, faceRes = 1){
 // remove an avatar (a player who left); shared materials and the lace texture stay
 function removeAvatar(av){
   const own = new Set([...Object.values(av.mats), av.faceM, av.emote.material]);
+  if (av.snackG){ placeSnack(av, null); }   // a snack left on the table goes with her
   av.holder.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
   own.forEach(m => m.dispose());
   Object.values(av.faceTex).forEach(t => t.dispose());
@@ -1697,10 +1722,10 @@ const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z
 
 /* ---------- sitting: on the grass wherever she is, or on a bench ---------- */
 let sitAt = null, sitQueued = null;   // null | 'ground' | a bench
-const benchFront = b => new V3(b.x + Math.sin(b.rot)*0.95, 0, b.z + Math.cos(b.rot)*0.95);
+const benchFront = b => { const f = b.front ?? 0.95; return new V3(b.x + Math.sin(b.rot)*f, 0, b.z + Math.cos(b.rot)*f); };   // where she walks to sit (chairs: from behind)
 const isMat = t => !!t && t !== 'ground' && t.mat !== undefined;
 function sitDown(target){
-  polkTrack('sit', { spot: target === 'ground' ? 'ground' : isMat(target) ? 'mat' : 'bench' });
+  polkTrack('sit', { spot: target === 'ground' ? 'ground' : isMat(target) ? 'mat' : target.chair ? 'chair' : 'bench' });
   walkTarget = null; sitQueued = null;
   if (target === 'ground'){ sitAt = 'ground'; setPose('sitGround'); return; }
   rebase(new V3(target.x, 0, target.z), target.rot);
@@ -1733,7 +1758,8 @@ function toggleSit(){
   if (mode === 'roam' && walkTarget){ sitQueued = 'ground'; updateUI(); return; }   // sit down where she is headed
   const mat = MAT_SPOTS.find(m => onMat(holder.position.x, holder.position.z) && Math.abs(holder.position.x - m.x) < MAT_W/2 + 0.2 && Math.abs(holder.position.z - m.z) < MAT_L/2 + 0.2);
   if (mat){ goSitMat(mat); return; }
-  const near = BENCHES.find(b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z) < 2.2);
+  const d = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
+  const near = BENCHES.filter(b => d(b) < 2.2).sort((a, b) => d(a) - d(b))[0];   // the closest seat (the table has three)
   if (near) goSitBench(near); else sitDown('ground');
 }
 
@@ -1851,11 +1877,16 @@ function animateAvatar(av, dt){
   if (av.snackG) av.snackG.visible = holding;
   if (holding) showBites(av);
   const sip = holding ? sipAmount(av) : 0;
+  // sitting on a chair at the snack table: the snack waits on the table, in hand only for a bite
+  const chair = holding && av.pose === 'sitBench' ? BENCHES.find(b => b.chair && Math.hypot(holder.position.x - b.x, holder.position.z - b.z) < 0.2) : null;
+  const inHand = holding && (!chair || clock - av.biteAt < BITE_T);
+  if (holding) placeSnack(av, inHand ? null : chair.food);
 
   // blink
   if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
   if (av.blinking > 0) av.blinking -= dt;
-  const expr = av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || (sip > 0.3 ? 'joy' : 'open');
+  const full = clock - (av.fullAt || -9) < 2.5;   // just finished a snack: a happy full face for a moment, then back to the usual one
+  const expr = full ? 'joy' : av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || (sip > 0.3 ? 'joy' : 'open');
   const panting = expr === 'pant';
   av.faceM.map = av.faceTex[av.blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
 
@@ -1896,8 +1927,8 @@ function animateAvatar(av, dt){
     if (n === 'chest') x += breath;
     if (av.pose === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
-    if (holding && n === 'rUp'){ x = -0.35 - 0.55*sip; y = 0; z = 0.15 + 0.15*sip; }   // snack in front of the chest, up to the mouth for a sip
-    if (holding && n === 'rFore'){ x = -1.25 - 0.3*sip; y = 0; z = 0; }
+    if (inHand && n === 'rUp'){ x = -0.35 - 0.55*sip; y = 0; z = 0.15 + 0.15*sip; }   // snack in front of the chest, up to the mouth for a sip
+    if (inHand && n === 'rFore'){ x = -1.25 - 0.3*sip; y = 0; z = 0; }
     if (pose.legRaise){   // leg raises: straight legs up to the sky and slowly down
       const u = (1 - Math.cos(clock*1.8))/2;
       if (n === 'lThigh' || n === 'rThigh') x -= 1.45*u;
@@ -1991,6 +2022,10 @@ function clickGround(e){
   const matHit = ray.intersectObjects(MAT_SPOTS.map(m => m.mesh), false)[0];
   if (matHit){ const m = MAT_SPOTS.find(sp => sp.mesh === matHit.object); if (m){ goSitMat(m); return; } }
   if (ray.intersectObjects([SHOP.mesh, clerk.holder], true)[0]){ goShop(); return; }
+  if (ray.intersectObjects([TABLE.mesh], true)[0]){
+    const chairs = BENCHES.filter(b => b.chair), d = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
+    goSitBench(chairs.sort((a, b) => d(a) - d(b))[0]); return;
+  }
   const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
   if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
   const hit = new V3();
@@ -2420,7 +2455,7 @@ clerk.holder.rotation.y = SHOP.rot;
 }
 
 /* ---------- snacks in hand: a few simple shapes, one small group per avatar on the right hand ---------- */
-const SNACK_BITES = 4, BITE_T = 1.1;   // bites (sips) to finish a snack / how long one bite takes
+const SNACK_BITES = 3, BITE_T = 1.1;   // bites (sips) to finish a snack / how long one bite takes
 const snackMats = {};
 const snackM = h => snackMats[h] || (snackMats[h] = toon(h));   // shared, so removeAvatar leaves them alone
 function buildSnack(kind){
@@ -2439,7 +2474,7 @@ function buildSnack(kind){
     cyl(0.008, 0.008, 0.04, '#fffaf0', 0); ball(0.011, '#fffaf0', 0.006, -0.022, 0); ball(0.011, '#fffaf0', -0.006, -0.022, 0);
   } else if (kind === 'tanghulu'){
     cyl(0.004, 0.004, 0.17, '#e6bd88', 0.05);
-    ['#e8475f', '#7cc36a', '#e8475f', '#8c55b8'].forEach((hex, i) => { ball(0.02, hex, 0, 0.035 + i*0.035, 0).userData.bite = SNACK_BITES - i; });   // eaten from the top, one per bite
+    ['#e8475f', '#7cc36a', '#8c55b8'].forEach((hex, i) => { ball(0.022, hex, 0, 0.04 + i*0.04, 0).userData.bite = SNACK_BITES - i; });   // three fruits, eaten from the top, one per bite
   }
   g.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = false; } });
   return g;
@@ -2455,6 +2490,16 @@ function setSnack(av, kind){
   av.snack = kind || null; av.bites = 0; av.biteAt = -9;
   if (av === me) updateUI();   // the 한 입 button comes and goes with the snack
 }
+// the snack in her right hand (spot null) or set down at a world spot (on the table)
+function placeSnack(av, spot){
+  const g = av.snackG;
+  if (spot){
+    if (g.parent !== scene){ scene.add(g); g.rotation.set(0, 0, 0); }
+    g.position.copy(spot);
+  } else if (g.parent !== av.J.rHand){
+    av.J.rHand.add(g); g.position.set(0, -0.04, 0.012); g.rotation.set(PI/2, 0, 0);
+  }
+}
 // 0..1: how far the hand is raised to the mouth right now (during a bite)
 function sipAmount(av){
   const t = clock - av.biteAt;
@@ -2466,7 +2511,7 @@ function showBites(av){
   const n = clock - av.biteAt < BITE_T/2 ? av.bites - 1 : av.bites;
   part.children.forEach(o => {
     if (o.userData.bite) o.visible = n < o.userData.bite;
-    if (o.userData.shrink) o.scale.copy(o.userData.shrink).multiplyScalar(1 - 0.17*Math.max(0, n));
+    if (o.userData.shrink) o.scale.copy(o.userData.shrink).multiplyScalar(1 - 0.25*Math.max(0, n));   // 1 → 0.75 → 0.5, gone on the third
   });
 }
 // the 한 입 button: one bite per press (not while the last one is still going), the last one finishes it
@@ -2565,7 +2610,7 @@ function updateShop(){
     }
   }
   if (!me.snack) return;
-  if (snackDoneAt && clock >= snackDoneAt){ snackDoneAt = 0; setSnack(me, null); showEmote(me, 'heart'); netState('heart'); }   // all gone
+  if (snackDoneAt && clock >= snackDoneAt){ snackDoneAt = 0; setSnack(me, null); me.fullAt = clock; showEmote(me, 'heart'); netState('heart'); }   // all gone
   else if (mode === 'pole' || isMat(sitAt)){ snackDoneAt = 0; setSnack(me, null); netState(); }   // put away on the pole or a mat
 }
 function onShopQueue(q){
@@ -3005,6 +3050,7 @@ function remoteState(av, m){
   if (FACES.some(([v]) => v === m.face)) av.faceMode = m.face;
   av.net.spin = !!m.spin;
   const snack = SNACK_KEYS.includes(m.snack) ? m.snack : null;
+  if (!snack && av.snack && av.bites >= SNACK_BITES) av.fullAt = clock;   // they finished it
   if (snack !== (av.snack || null)) setSnack(av, snack);
   const bites = Number.isInteger(m.bite) ? Math.min(SNACK_BITES, Math.max(0, m.bite)) : 0;
   if (av.snack && bites > av.bites){ av.bites = bites; av.biteAt = clock; }   // they took a bite: the same hand-to-mouth here
@@ -3417,6 +3463,8 @@ window.__poleDebug = {
   face(d){ holder.updateMatrixWorld(true); const h = new V3(); skull.getWorldPosition(h); const f = new V3(0,0,1).applyQuaternion(J.head.getWorldQuaternion(new Q())); camera.position.copy(h).addScaledVector(f, d || 0.5); camera.lookAt(h); renderer.render(scene, camera); },
   state(){ holder.updateMatrixWorld(true); const c = new V3(); char.getWorldPosition(c); return { cam: camera.position.toArray(), tgt: camTarget.toArray(), holder: holder.position.toArray(), char: c.toArray(), q: char.quaternion.toArray(), mode, poseName }; },
   ik(){ holder.updateMatrixWorld(true); const pose = POSES[poseName], out = {}; Object.entries(pose.ik || {}).forEach(([n, s]) => { const hand = J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')], w = new V3(); hand.getWorldPosition(w); out[n] = +w.distanceTo(holder.localToWorld(new V3(...s.t))).toFixed(3); }); const h = new V3(); skull.getWorldPosition(h); out.headGap = +(Math.hypot(h.x - POLES[myPole].x, h.z - POLES[myPole].z) - HEAD_R*1.06).toFixed(3); return out; },
+  // sit on chair i at the snack table holding a snack, then look (yaw/pitch/dist like look())
+  table(i = 0, kind = 'tanghulu', y, p, d){ mode = 'roam'; sitAt = null; sitDown(BENCHES.filter(b => b.chair)[i]); snackDoneAt = 0; setSnack(me, kind); if (y != null) this.look(y, p, d); return this.step(0.1); },
   // hold a snack with some bites already taken; returns which way the snack points up in the world
   snack(kind = 'coffee', bites = 0){ snackDoneAt = 0; setSnack(me, kind); if (kind) me.bites = bites; this.step(0.1); return kind && new V3(0, 1, 0).transformDirection(me.snackG.matrixWorld).toArray().map(v => +v.toFixed(2)); },
   // stand in front of the snack stand and look at it (yaw is added to the stand's facing)
