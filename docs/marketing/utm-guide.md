@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | 공식 프로필 | `social` | `profile` | `yujamong.pole` | 없음 |
 | 공식 홍보하기 광고 | `paid_social` | `ad_app` | `yujamong.pole` | `YYMMDD_소재_내용` |
+| 공식 스토리 | `social` | `story` | `yujamong.pole` | 없음 |
 | 개인 스토리 | `social` | `story` | `uz2ning_pole` | 없음 |
 | 개인 프로필 | `social` | `profile` | `uz2ning_pole` | 없음 |
 
@@ -25,6 +26,12 @@ https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaig
 
 ```text
 https://polknic.yujamong.com/?utm_source=instagram&utm_medium=paid_social&utm_campaign=ad_app&utm_content=yujamong.pole&utm_term=261107_cardnews_open
+```
+
+공식 스토리
+
+```text
+https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=story&utm_content=yujamong.pole
 ```
 
 개인 스토리
@@ -101,3 +108,4 @@ https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaig
 |---|---|---|---|
 | 2026-11-07 | 공식 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=yujamong.pole` | medium `bio` → `social` 변경 |
 | 2026-11-07 | 개인 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=uz2ning_pole` | 새로 추가 |
+| 2026-11-08 | 공식 스토리 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=story&utm_content=yujamong.pole` | 새로 추가(스트레칭존·사진 찍기 릴스 홍보) |
