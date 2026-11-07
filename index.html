@@ -140,7 +140,21 @@ body.clean .poleTag{display:none}
 #inviteCard .note{margin-top:4px;font-size:12px;color:var(--muted)}
 #inviteCard button.no{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
 .move.duo{color:var(--accent)}
+.move.bite{color:#b5764a}
 body.clean #mateMenu,body.clean #inviteCard{display:none!important}
+/* snack stand menu */
+#shopMenu{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;width:min(360px,calc(100% - 32px));box-sizing:border-box;padding:10px 14px 14px;color:var(--ink);font:500 13px var(--f-body)}
+#shopMenu .head{display:flex;align-items:center;justify-content:space-between}
+#shopMenu .head b{font:400 20px var(--f-display);color:var(--accent)}
+#shopMenu .head button{border:0;background:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px 6px}
+#shopMenu p{margin:0 0 10px;color:var(--muted)}
+#shopItems[hidden]{display:none}
+#shopItems{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#shopItems button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 4px 8px;border:1.5px solid var(--line);border-radius:16px;background:#fff;color:var(--ink);cursor:pointer;font:400 14px var(--f-display)}
+#shopItems button:hover{border-color:var(--accent)}
+#shopItems i{font-style:normal;font-size:26px;line-height:1.15}
+#shopItems small{font:400 10.5px/1.3 var(--f-body);color:var(--muted);text-align:center}
+body.clean #shopMenu,body.photo #shopMenu{display:none!important}
 #toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
@@ -255,6 +269,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 </div>
 <div id="flash"></div>
 <div id="photoView" hidden><div class="card glass"><button type="button" class="x" id="photoViewClose" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
+<div id="shopMenu" class="glass" hidden><div class="head"><b>냠냠 매점</b><button type="button" id="shopClose" aria-label="닫기">✕</button></div><p id="shopText"></p><div id="shopItems"></div></div>
 <div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
@@ -290,6 +305,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 <div class="hud">
   <nav class="moves glass" id="moves" aria-label="동작">
     <button id="sitTog" class="move side" type="button" aria-pressed="false"><span>앉기</span></button>
+    <button id="biteBtn" class="move side bite" type="button" hidden><span>한 입</span></button>
     <span class="sep" id="sitSep" aria-hidden="true"></span>
     <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
   </nav>
@@ -657,6 +673,19 @@ const POLE_MESHES = [];   // clicking a pole walks to it
 /* props: stepping stones, benches, a sign, low fences, rocks by the water, butterflies */
 const OBSTACLES = [];   // [x, z, r] circles the character walks around
 const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on
+// snack stand past the west bench, facing the middle of the meadow; the clerk stands behind its counter
+const SHOP = { x:-6.3, z:5.3 }; SHOP.rot = Math.atan2(-SHOP.x, -(SHOP.z - 1));
+SHOP.front = new V3(SHOP.x + Math.sin(SHOP.rot)*1.0, 0, SHOP.z + Math.cos(SHOP.rot)*1.0);   // where a customer stands at the counter
+// what the stand sells (the server checks the same keys: server/src/index.js SNACKS)
+const SNACKS = {
+  coffee:   { label:'아메리카노', icon:'☕', note:'폴타기 전 커피 한 잔' },
+  shake:    { label:'단백질 쉐이크', icon:'🥤', note:'초코맛 단백질 듬뿍' },
+  ion:      { label:'이온음료', icon:'💧', note:'땀 흘린 뒤 수분 보충' },
+  chicken:  { label:'닭가슴살', icon:'🍗', note:'촉촉한 훈제 닭가슴살로 원기충전' },
+  tanghulu: { label:'탕후루', icon:'🍡', note:'오늘만 치팅데이' },
+};
+const SNACK_KEYS = Object.keys(SNACKS);
+let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here because updateUI() reads it from the start)
 {
   const stoneM = toonF('#ddd5c4'), woodM = toonF('#c99462'), woodD = toonF('#a8784e'), rockM = toonF('#b9b8b0');
   const stoneGeo = new T.CylinderGeometry(1, 1.06, 1, 18);
@@ -699,6 +728,84 @@ const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit
   }
   woodSign('안전 폴링', -2.1, 1.4, 0.35);
   woodSign('스트레칭존', 6.5, 7.1, PI + 0.38);   // in the flowers past the far corner of the yoga mats, facing back toward the stages
+  // snack stand at the west edge past the bench: a low counter (so the clerk shows above it), striped awning, sign, menu board
+  {
+    const g = new T.Group(); g.position.set(SHOP.x, 0, SHOP.z); g.rotation.y = SHOP.rot; scene.add(g); SHOP.mesh = g;   // clicking it walks to the counter
+    const add = (geo, m, x, y, z, shadow = true) => { const o = new T.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = shadow; g.add(o); return o; };
+    const box = (w, h, d, m, x, y, z) => add(new T.BoxGeometry(w, h, d), m, x, y, z);
+    const creamM = toonF('#fff3dc'), mintM = toonF('#a9e3cf'), pinkM = toonF('#f6a9bd'), brownM = toonF('#8a5a3c');
+    // counter: mint front with a cream top that overhangs toward the customer
+    const W = 1.9, D = 0.55, H = 0.46;
+    const front = canvasTex(256, (c, s) => {
+      c.fillStyle = '#a9e3cf'; c.fillRect(0, 0, s, s);
+      c.fillStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < 8; i++) c.fillRect(i*s/8 + 4, 0, s/16, s);   // soft vertical panelling
+    });
+    box(W, H, D, [mintM, mintM, mintM, mintM, toonF('#ffffff', { map:front }), mintM], 0, H/2, 0);
+    box(W + 0.12, 0.06, D + 0.16, creamM, 0, H + 0.03, 0.05);
+    // corner posts and the striped scalloped awning
+    [-1, 1].forEach(s => [[0.22, 1.55], [-0.75, 1.75]].forEach(([z, h]) => add(new T.CylinderGeometry(0.04, 0.045, h, 10), creamM, s*(W/2 - 0.03), h/2, z)));
+    const stripes = canvasTex(256, (c, s) => { for (let i = 0; i < 8; i++){ c.fillStyle = i % 2 ? '#fffaf0' : '#f6a9bd'; c.fillRect(i*s/8, 0, s/8, s); } });
+    const awnM = toonF('#ffffff', { map:stripes, side:T.DoubleSide });
+    const awn = add(new T.PlaneGeometry(W + 0.3, 1.25), awnM, 0, 1.68, -0.24); awn.rotation.x = -PI/2 + 0.16;
+    const scallop = new T.SphereGeometry(1, 14, 8, 0, PI*2, PI/2, PI/2);   // lower half-domes along the front edge
+    for (let i = 0; i < 9; i++){
+      const b = add(scallop, i % 2 ? creamM : pinkM, -W/2 - 0.15 + (i + 0.5)*(W + 0.3)/9, 1.58, 0.38, false);
+      b.scale.set((W + 0.3)/18, 0.1, 0.04);
+    }
+    // back wall with a shelf of bottles and cups behind the clerk
+    box(W, 1.6, 0.06, creamM, 0, 0.8, -0.8);
+    box(W - 0.1, 0.14, 0.42, brownM, 0, 0.07, -0.55);   // a step behind the counter so the clerk stands tall enough to be seen
+    box(W - 0.2, 0.04, 0.16, brownM, 0, 1.05, -0.72);
+    const bottleGeo = new T.CylinderGeometry(0.035, 0.035, 0.16, 10), capGeo2 = new T.CylinderGeometry(0.025, 0.025, 0.03, 10);
+    ['#f6a9bd', '#9fd3ff', '#fbe39a', '#cdbbf0', '#a9e3cf', '#ffc9a8', '#f6a9bd', '#9fd3ff'].forEach((hex, i) => {
+      const x = -0.7 + i*0.2;
+      add(bottleGeo, toonF(hex), x, 1.15, -0.72); add(capGeo2, creamM, x, 1.245, -0.72, false);
+    });
+    // on the counter: two coffee cups, a chocolate protein shaker, a jar of tanghulu skewers
+    const cupGeo = new T.CylinderGeometry(0.05, 0.038, 0.12, 14), lidGeo = new T.CylinderGeometry(0.054, 0.054, 0.02, 14);
+    [[-0.6, 0.05], [-0.46, 0.12]].forEach(([x, z]) => {
+      add(cupGeo, creamM, x, H + 0.12, z); add(lidGeo, brownM, x, H + 0.19, z, false);
+      add(new T.CylinderGeometry(0.051, 0.045, 0.04, 14), toonF('#c99462'), x, H + 0.11, z, false);   // cardboard sleeve
+    });
+    add(new T.CylinderGeometry(0.055, 0.05, 0.2, 14), toonF('#8a5a3c'), 0.5, H + 0.16, 0.08);
+    add(new T.CylinderGeometry(0.058, 0.058, 0.05, 14), creamM, 0.5, H + 0.285, 0.08, false);
+    add(new T.CylinderGeometry(0.06, 0.055, 0.1, 14), creamM, 0.75, H + 0.08, 0.1);
+    const stickGeo = new T.CylinderGeometry(0.005, 0.005, 0.26, 6), fruitGeo = new T.SphereGeometry(0.026, 10, 8);
+    [[-0.025, -0.2], [0.02, 0], [-0.005, 0.22]].forEach(([dx, lean], i) => {
+      const k = new T.Group(); k.position.set(0.75 + dx, H + 0.06, 0.1 + (i - 1)*0.02); k.rotation.z = lean; g.add(k);
+      const st = new T.Mesh(stickGeo, toonF('#e6bd88')); st.position.y = 0.13; k.add(st);
+      ['#e8475f', '#7cc36a', '#e8475f'].forEach((hex, j) => { const f = new T.Mesh(fruitGeo, toonF(hex)); f.position.y = 0.17 + j*0.045; k.add(f); });
+    });
+    // sign board on top, in the title face like the wood signs
+    const signText = '냠냠 매점';
+    const drawSign = (c, s) => {
+      c.fillStyle = '#fff3dc'; c.fillRect(0, 0, s, s);
+      c.fillStyle = '#5a4237'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '150px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(signText, s/2, s/2 + 8, s - 40);
+    };
+    const signTex = canvasTex(512, drawSign); signTex.repeat.set(1, 0.36); signTex.offset.set(0, 0.32);
+    if (document.fonts) document.fonts.load('150px Jua', signText).then(() => { drawSign(signTex.image.getContext('2d'), 512); signTex.needsUpdate = true; }).catch(() => {});
+    const sign = box(1.2, 0.36, 0.06, [pinkM, pinkM, pinkM, pinkM, toonF('#ffffff', { map:signTex }), pinkM], 0, 2.02, -0.15);
+    sign.rotation.x = 0.16;
+    [-0.42, 0.42].forEach(x => add(new T.CylinderGeometry(0.025, 0.025, 0.3, 8), creamM, x, 1.78, -0.18));   // little posts holding the sign on the awning
+    // a little A-frame menu board out front
+    const menuText = SNACK_KEYS.map(k => SNACKS[k].icon + ' ' + SNACKS[k].label);
+    const drawMenu = (c, s) => {
+      c.fillStyle = '#4f6b5a'; c.fillRect(0, 0, s, s);
+      c.strokeStyle = '#c99462'; c.lineWidth = 18; c.strokeRect(9, 9, s - 18, s - 18);
+      c.fillStyle = '#fff3dc'; c.textAlign = 'center'; c.font = '64px Jua, sans-serif'; c.fillText('MENU', s/2, 92);
+      c.textAlign = 'left'; c.font = '42px Jua, "Apple SD Gothic Neo", sans-serif';
+      menuText.forEach((t, i) => c.fillText(t, 50, 160 + i*60, s - 90));
+    };
+    const menuTex = canvasTex(512, drawMenu);
+    if (document.fonts) document.fonts.load('42px Jua', menuText.join('') + 'MENU').then(() => { drawMenu(menuTex.image.getContext('2d'), 512); menuTex.needsUpdate = true; }).catch(() => {});
+    const board = new T.Group(); board.position.set(1.25, 0, 0.75); board.rotation.y = 0.35; g.add(board);
+    [1, -1].forEach(s => {
+      const p = new T.Mesh(new T.BoxGeometry(0.44, 0.56, 0.025), [brownM, brownM, brownM, brownM, s > 0 ? toonF('#ffffff', { map:menuTex }) : brownM, brownM]);
+      p.position.set(0, 0.27, s*0.07); p.rotation.x = -s*0.18; p.castShadow = true; board.add(p);
+    });
+    OBSTACLES.push([SHOP.x + Math.sin(SHOP.rot)*-0.25, SHOP.z + Math.cos(SHOP.rot)*-0.25, 1.15]);
+  }
   // low picket fences on the east and west edges of the meadow
   const postGeo = new T.CylinderGeometry(0.045, 0.05, 0.62, 8); postGeo.translate(0, 0.31, 0);
   const capGeo = new T.ConeGeometry(0.055, 0.08, 8);
@@ -1709,6 +1816,8 @@ function update(dt){
   duoTick();
   me.pose = poseName; me.onPole = mode === 'pole'; me.faceMode = faceMode;
   animateAvatar(me, dt);
+  updateClerk(dt);
+  updateShop();
   for (let i = others.length - 1; i >= 0; i--) if (others[i].gone){ removeAvatar(others[i]); others.splice(i, 1); }
   others.forEach(av => {
     if (av.bot) updateBot(av, dt); if (av.net) updateRemote(av, dt);
@@ -1737,11 +1846,16 @@ function update(dt){
 // pose one avatar from its state: face, hop/squash, root and joint blending, IK grips, hair and skirts
 function animateAvatar(av, dt){
   const { holder, char, J } = av, pose = POSES[av.pose];
+  // a snack from the stand: held in the right hand on the ground (put away on the pole and the mats)
+  const holding = !!av.snack && !av.onPole && !pose.mat && !pose.ball;
+  if (av.snackG) av.snackG.visible = holding;
+  if (holding) showBites(av);
+  const sip = holding ? sipAmount(av) : 0;
 
   // blink
   if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
   if (av.blinking > 0) av.blinking -= dt;
-  const expr = av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || 'open';
+  const expr = av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || (sip > 0.3 ? 'joy' : 'open');
   const panting = expr === 'pant';
   av.faceM.map = av.faceTex[av.blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
 
@@ -1782,6 +1896,8 @@ function animateAvatar(av, dt){
     if (n === 'chest') x += breath;
     if (av.pose === 'sitBench' && (n === 'lShin' || n === 'rShin')) x += Math.sin(clock*3.2 + (n === 'lShin' ? 0 : PI))*0.28;   // swinging feet
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
+    if (holding && n === 'rUp'){ x = -0.35 - 0.55*sip; y = 0; z = 0.15 + 0.15*sip; }   // snack in front of the chest, up to the mouth for a sip
+    if (holding && n === 'rFore'){ x = -1.25 - 0.3*sip; y = 0; z = 0; }
     if (pose.legRaise){   // leg raises: straight legs up to the sky and slowly down
       const u = (1 - Math.cos(clock*1.8))/2;
       if (n === 'lThigh' || n === 'rThigh') x -= 1.45*u;
@@ -1874,6 +1990,7 @@ function clickGround(e){
   closeMateMenu();
   const matHit = ray.intersectObjects(MAT_SPOTS.map(m => m.mesh), false)[0];
   if (matHit){ const m = MAT_SPOTS.find(sp => sp.mesh === matHit.object); if (m){ goSitMat(m); return; } }
+  if (ray.intersectObjects([SHOP.mesh, clerk.holder], true)[0]){ goShop(); return; }
   const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
   if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
   const hit = new V3();
@@ -1893,8 +2010,11 @@ window.addEventListener('keydown', e => {
   const dir = DIRS[e.code] || DIRS[e.key];
   if (dir){ keys[dir] = true; e.preventDefault(); return; }   // arrows must not scroll the panels instead
   if (e.repeat) return;
-  if (e.key === 'Escape' || e.code === 'KeyQ') requestLeave(null);
-  if (e.code === 'KeyE') toggleSit();
+  if (e.key === 'Escape' || e.code === 'KeyQ'){ requestLeave(null); if (shopState) leaveShop(); }
+  if (e.code === 'KeyE'){
+    if (!sitAt && mode === 'roam' && nearShop(2.2)){ if (shopState) leaveShop(); else goShop(); }   // at the snack stand: line up instead of sitting
+    else toggleSit();
+  }
   if (e.code === 'KeyH') setClean(!document.body.classList.contains('clean'));
   if (e.code === 'KeyM') setBgm(!bgmOn);
   if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !chatForm.hidden){ e.preventDefault(); chatInput.focus(); }
@@ -1947,12 +2067,17 @@ function updateUI(){
   // the bar fits a phone: sitting off the pole, spinning and getting down on it
   const onPole = mode === 'pole';
   ['sitTog', 'sitSep'].forEach(id => { document.getElementById(id).hidden = onPole; });
+  // holding a snack: a 한 입 button up front until it's eaten
+  const bite = document.getElementById('biteBtn');
+  bite.hidden = !me.snack || !!snackDoneAt || onPole || isMat(sitAt);
+  if (me.snack) bite.firstChild.textContent = SNACKS[me.snack].icon + ' 한 입';
   ['mv-leave', 'spinTog', 'poleSep'].forEach(id => { document.getElementById(id).hidden = !onPole; });
   // on a mat: stretches instead of pole moves
   const mat = isMat(sitAt);
   movesEl.querySelectorAll('.move[data-move]').forEach(b => { b.hidden = mat; });
   movesEl.querySelectorAll('.move[data-stretch]').forEach(b => { b.hidden = !mat; b.setAttribute('aria-pressed', String(b.dataset.stretch === poseName)); });
 }
+document.getElementById('biteBtn').addEventListener('click', takeBite);
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
@@ -2214,6 +2339,7 @@ function updateNameTag(){
   });
   placeTag(nameTag, me, r, showName && playerName && entry.hidden);
   others.forEach(av => { if (av.net) placeTag(av.net.tag, av, r, showName); });
+  placeTag(clerkTag, clerk, r, false);
 }
 function placeTag(el, av, r, show){
   av.skull.getWorldPosition(_tag); _tag.y += HEAD_R + 0.1;
@@ -2279,6 +2405,174 @@ function randomLook(){
   Object.keys(COLORS).forEach(k => o[k] = pick(COLORS[k]));
   return o;
 }
+/* ---------- snack stand clerk: an ordinary avatar behind the counter, with an apron and a visor added on ---------- */
+const clerk = createAvatar({ top:'sport', topColor:'#ffffff', bottom:'hiShorts', bottomColor:'#9ec9e8', shoes:'bare', hair:'tail', acc:'none', hairColor:'#a7774a', eyeColor:'#3f8a63', skin:'#ffe2d2' }, 0.5);
+clerk.holder.position.set(SHOP.x - Math.sin(SHOP.rot)*0.5, 0, SHOP.z - Math.cos(SHOP.rot)*0.5);
+clerk.holder.rotation.y = SHOP.rot;
+{
+  const apronM = toon('#f6a9bd'), visorM = toon('#a9e3cf');
+  const bib = at(mesh(new T.BoxGeometry(0.15, 0.13, 0.012), apronM), 0, 0.05, 0.105); clerk.J.chest.add(bib);
+  const skirt = at(mesh(new T.CylinderGeometry(0.13, 0.155, 0.17, 20, 1, true, -PI*0.42, PI*0.84), apronM), 0, -0.06, 0.012); clerk.J.spine.add(skirt);
+  const pocket = at(mesh(new T.BoxGeometry(0.08, 0.04, 0.01), toon('#fff3dc')), 0, -0.07, 0.165); clerk.J.spine.add(pocket);
+  const band = at(mesh(new T.TorusGeometry(HEAD_R*1.02, 0.018, 6, 40), visorM), 0, HEAD_Y + 0.07, 0); band.rotation.x = PI/2; clerk.J.head.add(band);
+  const brim = at(mesh(new T.CylinderGeometry(0.13, 0.13, 0.014, 20, 1, false, -PI*0.35, PI*0.7), visorM), 0, HEAD_Y + 0.06, 0.15); brim.scale.z = 0.9; clerk.J.head.add(brim);
+  [bib, skirt, pocket, band, brim].forEach(o => { o.receiveShadow = false; o.castShadow = false; });
+}
+
+/* ---------- snacks in hand: a few simple shapes, one small group per avatar on the right hand ---------- */
+const SNACK_BITES = 4, BITE_T = 1.1;   // bites (sips) to finish a snack / how long one bite takes
+const snackMats = {};
+const snackM = h => snackMats[h] || (snackMats[h] = toon(h));   // shared, so removeAvatar leaves them alone
+function buildSnack(kind){
+  const g = new T.Group();
+  const add = (geo, hex, x, y, z) => { const o = new T.Mesh(geo, snackM(hex)); o.position.set(x, y, z); g.add(o); return o; };
+  const cyl = (rt, rb, h, hex, y) => add(new T.CylinderGeometry(rt, rb, h, 14), hex, 0, y, 0);
+  const ball = (r, hex, x, y, z) => add(new T.SphereGeometry(r, 12, 8), hex, x, y, z);
+  if (kind === 'coffee'){
+    cyl(0.03, 0.023, 0.085, '#fff3dc', 0); cyl(0.031, 0.027, 0.03, '#c99462', 0); cyl(0.033, 0.033, 0.012, '#8a5a3c', 0.047);
+  } else if (kind === 'shake'){
+    cyl(0.028, 0.026, 0.095, '#8a5a3c', 0); cyl(0.03, 0.03, 0.025, '#fff3dc', 0.058); cyl(0.008, 0.01, 0.02, '#fff3dc', 0.08);
+  } else if (kind === 'ion'){
+    cyl(0.024, 0.024, 0.085, '#9fd3ff', 0); cyl(0.025, 0.025, 0.03, '#ffffff', 0); cyl(0.012, 0.022, 0.02, '#9fd3ff', 0.052); cyl(0.012, 0.012, 0.014, '#3e6fb8', 0.068);
+  } else if (kind === 'chicken'){
+    const meat = ball(1, '#d9905a', 0, 0.05, 0); meat.scale.set(0.036, 0.05, 0.034); meat.userData.shrink = meat.scale.clone();   // gets smaller with each bite
+    cyl(0.008, 0.008, 0.04, '#fffaf0', 0); ball(0.011, '#fffaf0', 0.006, -0.022, 0); ball(0.011, '#fffaf0', -0.006, -0.022, 0);
+  } else if (kind === 'tanghulu'){
+    cyl(0.004, 0.004, 0.17, '#e6bd88', 0.05);
+    ['#e8475f', '#7cc36a', '#e8475f', '#8c55b8'].forEach((hex, i) => { ball(0.02, hex, 0, 0.035 + i*0.035, 0).userData.bite = SNACK_BITES - i; });   // eaten from the top, one per bite
+  }
+  g.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = false; } });
+  return g;
+}
+// give av a snack (or null: empty hands); the parts are built the first time each kind is held
+function setSnack(av, kind){
+  if (!av.snackG){
+    av.snackG = new T.Group(); av.snackG.position.set(0, -0.04, 0.012); av.snackG.rotation.x = PI/2;   // stands upright while the forearm points forward
+    av.J.rHand.add(av.snackG); av.snackParts = {};
+  }
+  if (kind && !av.snackParts[kind]) av.snackG.add(av.snackParts[kind] = buildSnack(kind));
+  Object.entries(av.snackParts).forEach(([k, o]) => { o.visible = k === kind; });
+  av.snack = kind || null; av.bites = 0; av.biteAt = -9;
+  if (av === me) updateUI();   // the 한 입 button comes and goes with the snack
+}
+// 0..1: how far the hand is raised to the mouth right now (during a bite)
+function sipAmount(av){
+  const t = clock - av.biteAt;
+  return t < BITE_T ? Math.min(1, Math.sin(t/BITE_T*PI)*1.5) : 0;
+}
+// what's left of the snack: a bite shows once the hand is at the mouth (tanghulu loses a fruit, the chicken gets smaller)
+function showBites(av){
+  const part = av.snackParts[av.snack]; if (!part) return;
+  const n = clock - av.biteAt < BITE_T/2 ? av.bites - 1 : av.bites;
+  part.children.forEach(o => {
+    if (o.userData.bite) o.visible = n < o.userData.bite;
+    if (o.userData.shrink) o.scale.copy(o.userData.shrink).multiplyScalar(1 - 0.17*Math.max(0, n));
+  });
+}
+// the 한 입 button: one bite per press (not while the last one is still going), the last one finishes it
+function takeBite(){
+  if (!me.snack || snackDoneAt || clock - me.biteAt < BITE_T*0.85) return;
+  me.bites++; me.biteAt = clock; netState();
+  if (me.bites >= SNACK_BITES){ snackDoneAt = clock + BITE_T; polkTrack('snack_finish', { item:me.snack }); updateUI(); }
+}
+
+let clerkWaveAt = 0;
+const clerkTag = document.createElement('div');   // only shows while the clerk is talking (in the bubble's first line)
+clerkTag.className = 'nameTag'; clerkTag.hidden = true; clerkTag.textContent = '매점 직원'; document.body.appendChild(clerkTag);
+// greet the player with an emote now and then while they stand near the counter
+function updateClerk(dt){
+  const near = Math.hypot(holder.position.x - SHOP.x, holder.position.z - SHOP.z) < 2.6;
+  if (near && clock > clerkWaveAt){ showEmote(clerk, clerkWaveAt ? 'note' : 'heart'); clerkWaveAt = clock + 6; }
+  clerk.faceMode = near ? 'joy' : 'auto';
+  animateAvatar(clerk, dt);
+  clerk.holder.position.y += 0.14;   // standing on the step (animateAvatar sets y every frame)
+}
+
+/* ---------- buying: line up at the counter (one customer at a time), pick from the menu, wait while it's made ---------- */
+// the server keeps one line per room (shop / unshop, then everyone gets { t:'shop', q:[ids] }); alone, the line is just me
+const SHOP_MAKE = 2.5, SHOP_IDLE = 25;   // seconds the clerk takes to make an order / to wait for the front customer to pick
+const shopMenu = document.getElementById('shopMenu'), shopItems = document.getElementById('shopItems'), shopText = document.getElementById('shopText');
+let shopQ = [];          // ids in line, first is at the counter
+let shopState = null;    // null | 'walking' (to the stand) | 'line' (in line, or picking at the front) | 'making' (ordered, the clerk is on it)
+let shopTarget = null, shopOrder = null, shopFrontAt = 0, shopReadyAt = 0;
+SNACK_KEYS.forEach(k => {
+  const b = document.createElement('button'); b.type = 'button';
+  const icon = document.createElement('i'), label = document.createElement('span'), note = document.createElement('small');
+  icon.textContent = SNACKS[k].icon; label.textContent = SNACKS[k].label; note.textContent = SNACKS[k].note;
+  b.append(icon, label, note); b.addEventListener('click', () => buySnack(k)); shopItems.appendChild(b);
+});
+document.getElementById('shopClose').addEventListener('click', () => leaveShop());
+// spot i in line: 0 at the counter, the rest one behind the other out toward the meadow
+const shopSpot = i => new V3(SHOP.front.x + Math.sin(SHOP.rot)*0.75*i, 0, SHOP.front.z + Math.cos(SHOP.rot)*0.75*i);
+const shopPlace = () => net.id ? shopQ.indexOf(net.id) : (shopState === 'line' || shopState === 'making' ? 0 : -1);
+const nearShop = m => Math.hypot(holder.position.x - SHOP.front.x, holder.position.z - SHOP.front.z) < m;
+function shopWalk(p){ shopTarget = p; walkTarget = p; }
+function goShop(){
+  if (shopState === 'line' || shopState === 'making') return;
+  shopState = 'walking';
+  const p = shopSpot(shopQ.filter(id => id !== net.id).length);   // the end of the line as it is now
+  if (mode === 'pole'){ shopTarget = p; requestLeave(p); return; }
+  sitQueued = null; standUp(); mode = 'roam'; queuedMove = null; shopWalk(p); updateUI();
+}
+function joinLine(){
+  shopState = 'line'; shopFrontAt = 0;
+  if (net.id) netSend({ t:'shop' });   // my place comes back in the 'shop' message
+}
+function leaveShop(why){
+  if (net.id && (shopState === 'line' || shopState === 'making')) netSend({ t:'unshop' });
+  shopState = null; shopTarget = null; shopOrder = null; shopMenu.hidden = true;
+  if (why) toast(why);
+}
+function buySnack(k){
+  if (shopState !== 'line' || shopPlace() !== 0) return;
+  shopState = 'making'; shopOrder = k; shopReadyAt = clock + SHOP_MAKE; shopMenu.hidden = true;
+  showEmote(clerk, 'note'); showBubble(clerk, SNACKS[k].label + ' 만드는 중이에요!');
+  polkTrack('snack_buy', { item:k });
+}
+// the panel: the menu when it's my turn, otherwise how many are ahead
+function shopPanel(place){
+  const order = place === 0 && shopState === 'line';
+  shopItems.hidden = !order;
+  shopText.textContent = order ? '골라 주시면 바로 만들어 드려요. 오늘은 전부 무료!' : `앞 손님 음식을 만드는 중이에요. 잠시만 기다려 주세요! (앞에 ${place}명)`;
+  shopMenu.hidden = false;
+}
+// every frame: walk up the line, take my turn, hand the order over, leave the line when she wanders off; eat the snack
+function updateShop(){
+  if (shopState === 'walking' && mode === 'roam' && !pendingLeave && walkTarget !== shopTarget){
+    if (!walkTarget && shopTarget && Math.hypot(holder.position.x - shopTarget.x, holder.position.z - shopTarget.z) < 1.0) joinLine();
+    else shopState = null;   // clicked somewhere else, walked off with the keys, or got stuck behind the stand
+  }
+  if (shopState === 'line' || shopState === 'making'){
+    const place = shopPlace();   // -1 for a moment, until the server answers my 'shop'
+    const spot = shopSpot(Math.max(0, place));
+    const off = Math.hypot(holder.position.x - spot.x, holder.position.z - spot.z);
+    if (mode !== 'roam' || sitAt || (walkTarget && walkTarget !== shopTarget) || (place >= 0 && !walkTarget && off > 1.6)){ leaveShop(); return; }   // went off to do something else
+    if (!walkTarget && off > 0.12 && place >= 0) shopWalk(spot);   // the line moved up
+    if (place === 0 && !walkTarget && off <= 0.12){
+      if (!shopFrontAt){
+        shopFrontAt = clock;
+        holder.rotation.y = SHOP.rot + PI;
+        yaw = SHOP.rot + 0.45;   // camera behind her, a little to the side, so the clerk shows (coming from the side it could end up inside the stand)
+        showEmote(clerk, 'note'); showBubble(clerk, '어서 오세요! 뭐 드릴까요?');
+      }
+      if (shopState === 'line' && clock - shopFrontAt > SHOP_IDLE){ leaveShop('다음 손님을 위해 줄에서 나왔어요'); return; }
+    }
+    if (place >= 0 && shopState !== 'making') shopPanel(place);
+    if (shopState === 'making' && clock >= shopReadyAt){
+      const k = shopOrder; leaveShop();
+      setSnack(me, k); netState();
+      showEmote(clerk, 'heart'); showBubble(clerk, SNACKS[k].label + ' 나왔어요! 맛있게 드세요');
+    }
+  }
+  if (!me.snack) return;
+  if (snackDoneAt && clock >= snackDoneAt){ snackDoneAt = 0; setSnack(me, null); showEmote(me, 'heart'); netState('heart'); }   // all gone
+  else if (mode === 'pole' || isMat(sitAt)){ snackDoneAt = 0; setSnack(me, null); netState(); }   // put away on the pole or a mat
+}
+function onShopQueue(q){
+  shopQ = Array.isArray(q) ? q.filter(id => typeof id === 'string').slice(0, 20) : [];
+  if (shopState === 'line' && net.id && !shopQ.includes(net.id) && shopFrontAt) leaveShop('줄에서 빠졌어요');   // the server dropped me (stood at the front too long)
+}
+
 let botRange = 7;   // how far from the middle bots wander (the benchmark keeps them on screen)
 function randomSpot(){
   for (let i = 0; i < 50; i++){
@@ -2423,7 +2717,7 @@ function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
 function netFlushState(){
   net.stateT = 0;
   const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
-  const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null };
+  const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null, snack:me.snack || null, bite:me.snack ? me.bites : 0 };
   if (net.emote) m.emote = net.emote;
   netSend(m); net.stateDirty = false; net.emote = null;
 }
@@ -2550,6 +2844,8 @@ function netMessage(raw){
       net.id = m.id; net.tries = 0; net.stateDirty = true; roomCounts();
       net.poleSent = null; polesBy.fill(null); (m.poles || []).forEach((by, i) => { if (i < polesBy.length) polesBy[i] = by || null; });
       net.matSent = null; matsBy.fill(null); (m.mats || []).forEach((by, i) => { if (i < matsBy.length) matsBy[i] = by || null; });
+      if (shopState){ shopState = null; shopTarget = null; shopMenu.hidden = true; }   // a new connection isn't in the line: walk up again
+      onShopQueue(m.shop);
       if (!loadingEl.hidden) hideLoading();
       (m.players || []).forEach(addRemote);
       break;
@@ -2575,6 +2871,7 @@ function netMessage(raw){
     case 'duoEnd': endDuo('같이 타기가 끝났어요'); break;
     case 'duoSpin': if (inMyGroup(m.from)) setSpin(!!m.on, true); break;
     case 'duoMove': if (inMyGroup(m.from) && DUO_MOVES.some(([k]) => k === m.kind)) takeDuoMove(m.kind); break;
+    case 'shop': onShopQueue(m.q); break;
     case 'mat':
       if (Number.isInteger(m.i) && m.i >= 0 && m.i < matsBy.length){
         matsBy[m.i] = m.by || null;
@@ -2707,6 +3004,10 @@ function remoteState(av, m){
   }
   if (FACES.some(([v]) => v === m.face)) av.faceMode = m.face;
   av.net.spin = !!m.spin;
+  const snack = SNACK_KEYS.includes(m.snack) ? m.snack : null;
+  if (snack !== (av.snack || null)) setSnack(av, snack);
+  const bites = Number.isInteger(m.bite) ? Math.min(SNACK_BITES, Math.max(0, m.bite)) : 0;
+  if (av.snack && bites > av.bites){ av.bites = bites; av.biteAt = clock; }   // they took a bite: the same hand-to-mouth here
   av.net.ball = Array.isArray(m.ball) && m.ball[1] >= 1 && m.ball[1] <= 4 && m.ball[0] >= 0 && m.ball[0] < m.ball[1] ? m.ball : null;
 }
 function updateRemote(av, dt){
@@ -3109,13 +3410,17 @@ window.__poleDebug = {
   step(sec = 1, dt = 1/30){
     for (let t = 0; t < sec - 1e-9; t += dt) update(dt);
     renderer.render(scene, camera); updateNameTag();
-    return { clock:+clock.toFixed(2), mode, pose:poseName, since:+(clock - poseStart).toFixed(2), leaving:!!pendingLeave, group:myGroup, net:!!net.id };
+    return { clock:+clock.toFixed(2), mode, pose:poseName, since:+(clock - poseStart).toFixed(2), leaving:!!pendingLeave, group:myGroup, net:!!net.id, snack:me.snack, shop:shopState, place:shopPlace(), q:shopQ.length };
   },
   // frames per second this page is actually getting (a starved loop explains "stuck" states in tests)
   fps(ms = 1000){ return new Promise(res => { let n = 0; const t0 = performance.now(); const f = now => { n++; if (now - t0 < ms) requestAnimationFrame(f); else res(Math.round(n*1000/ms)); }; requestAnimationFrame(f); }); },
   face(d){ holder.updateMatrixWorld(true); const h = new V3(); skull.getWorldPosition(h); const f = new V3(0,0,1).applyQuaternion(J.head.getWorldQuaternion(new Q())); camera.position.copy(h).addScaledVector(f, d || 0.5); camera.lookAt(h); renderer.render(scene, camera); },
   state(){ holder.updateMatrixWorld(true); const c = new V3(); char.getWorldPosition(c); return { cam: camera.position.toArray(), tgt: camTarget.toArray(), holder: holder.position.toArray(), char: c.toArray(), q: char.quaternion.toArray(), mode, poseName }; },
   ik(){ holder.updateMatrixWorld(true); const pose = POSES[poseName], out = {}; Object.entries(pose.ik || {}).forEach(([n, s]) => { const hand = J[n[0] + (n.endsWith('Arm') ? 'Hand' : 'Foot')], w = new V3(); hand.getWorldPosition(w); out[n] = +w.distanceTo(holder.localToWorld(new V3(...s.t))).toFixed(3); }); const h = new V3(); skull.getWorldPosition(h); out.headGap = +(Math.hypot(h.x - POLES[myPole].x, h.z - POLES[myPole].z) - HEAD_R*1.06).toFixed(3); return out; },
+  // hold a snack with some bites already taken; returns which way the snack points up in the world
+  snack(kind = 'coffee', bites = 0){ snackDoneAt = 0; setSnack(me, kind); if (kind) me.bites = bites; this.step(0.1); return kind && new V3(0, 1, 0).transformDirection(me.snackG.matrixWorld).toArray().map(v => +v.toFixed(2)); },
+  // stand in front of the snack stand and look at it (yaw is added to the stand's facing)
+  shop(y = 0, p = 0.2, d = 4, near = 1.6){ mode = 'roam'; sitAt = null; holder.position.set(SHOP.x + Math.sin(SHOP.rot)*near, 0, SHOP.z + Math.cos(SHOP.rot)*near); holder.rotation.y = SHOP.rot + PI; this.look(SHOP.rot + y, p, d); },
   look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
   bots(n){ setBots(n); return others.length; },
   // preview a double pole move with a stand-in partner: duo('stack' | 'fly', yaw, pitch, dist), duo(null) removes her

@@ -37,12 +37,14 @@ export default {
 const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
   'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase', 'duoBall',
   'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
+const SHOP_HOLD = 45000;   // 매점 카운터 맨 앞에서 이만큼(ms) 넘게 있으면 줄에서 뺌(웹은 25초에 스스로 나감)
 const MATS = 6;   // 요가 매트 6개(index.html MATS와 같은 수), 한 매트에 한 명
 const DUO = new Set(['stack', 'fly', 'ball']);   // 같이 타기 기술(stack·fly는 2명, ball은 2~4명)
 const GROUP_MAX = 4;
 const INVITE_GAP = 3000;
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow', 'pant']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle', 'sweat']);
+const SNACKS = new Set(['coffee', 'shake', 'ion', 'chicken', 'tanghulu']);   // 매점 간식(손에 든 것, 웹 index.html SNACKS와 맞출 것)
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
 const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
@@ -132,6 +134,19 @@ export class Room extends DurableObject {
     this.others(null).forEach(w => { const a = w.deserializeAttachment(); if (Number.isInteger(a.mat)) by[a.mat] = a.id; });
     return by;
   }
+  /* 매점 줄: 카운터는 한 명씩. 줄 선 시각 shopAt(각자 attachment)이 빠른 순서. 맨 앞 사람이 주문하고 받을 때까지 나머지는 대기.
+     맨 앞이 된 시각 shopFront가 SHOP_HOLD보다 오래되면(창을 내려놓고 자리를 비움) 줄에서 뺀다 */
+  shopQueue() {
+    const ws = this.others(null).filter(w => w.deserializeAttachment().shopAt).sort((x, y) => x.deserializeAttachment().shopAt - y.deserializeAttachment().shopAt);
+    const now = Date.now();
+    while (ws.length) {
+      const a = ws[0].deserializeAttachment();
+      if (!a.shopFront) { a.shopFront = now; ws[0].serializeAttachment(a); break; }
+      if (now - a.shopFront < SHOP_HOLD) break;
+      a.shopAt = a.shopFront = null; ws[0].serializeAttachment(a); ws.shift();
+    }
+    return ws.map(w => w.deserializeAttachment().id);
+  }
   byId(id) {
     return id ? this.others(null).find(w => w.deserializeAttachment().id === id) : null;
   }
@@ -159,7 +174,7 @@ export class Room extends DurableObject {
   // 다른 사람에게 보이는 내 상태(snapshot / join 알림용)
   static pub(a) {
     const { id, name, look, x, z, ry, pose, sit, face, spin } = a;
-    return { id, name, look, x, z, ry, pose, sit, face, spin, ball: a.ball || null };
+    return { id, name, look, x, z, ry, pose, sit, face, spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0 };
   }
 
   async webSocketMessage(ws, raw) {
@@ -201,7 +216,9 @@ export class Room extends DurableObject {
         // 콩벌레 자리: [몇 번째, 몇 명 중] (다른 사람 화면에서 높이·방향을 맞추는 데 씀)
         if (m.ball !== undefined) a.ball = Array.isArray(m.ball) && Number.isInteger(m.ball[0]) && Number.isInteger(m.ball[1])
           && m.ball[1] >= 1 && m.ball[1] <= GROUP_MAX && m.ball[0] >= 0 && m.ball[0] < m.ball[1] ? [m.ball[0], m.ball[1]] : null;
-        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null };
+        if (m.snack !== undefined) a.snack = SNACKS.has(m.snack) ? m.snack : null;
+        if (m.bite !== undefined) a.bite = a.snack && Number.isInteger(m.bite) && m.bite >= 0 && m.bite <= 9 ? m.bite : 0;   // 간식을 몇 입 먹었는지
+        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0 };
         if (EMOTES.has(m.emote)) out.emote = m.emote;   // 이모트는 한 번 뜨고 끝이라 저장하지 않음
         this.broadcast(out, ws);
         break;
@@ -251,6 +268,19 @@ export class Room extends DurableObject {
         this.broadcast({ t: 'pole', i, by: rest[0] || null }, ws);
         ws.serializeAttachment(a);
         return;
+      }
+      case 'shop': {
+        if (!a.shopAt) { a.shopAt = Date.now(); a.shopFront = null; ws.serializeAttachment(a); }
+        const q = this.shopQueue();
+        a.shopFront = ws.deserializeAttachment().shopFront;   // shopQueue() may have just made me the front: keep that when `a` is saved below
+        this.broadcast({ t: 'shop', q }, null);
+        break;
+      }
+      case 'unshop': {
+        if (!a.shopAt) break;
+        a.shopAt = a.shopFront = null; ws.serializeAttachment(a);
+        this.broadcast({ t: 'shop', q: this.shopQueue() }, null);
+        break;
       }
       case 'mat': {
         // 요가 매트: 한 명씩. 다른 매트에 앉으면 앞의 건 풀림
@@ -345,11 +375,11 @@ export class Room extends DurableObject {
       x: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.x) : 0.9,
       z: num(m.x, 20) && num(m.z, 20) && inPark(m.x, m.z) ? round(m.z) : 1.6,
       ry: num(m.ry, 100) ? round(m.ry) : 0, pose: 'stand', sit: null,
-      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, mat: null, grp: null, ball: null,
+      face: FACES.has(m.face) ? m.face : 'auto', spin: false, pole: null, mat: null, grp: null, ball: null, snack: null,
     });
     ws.serializeAttachment(a);
     ws.send(JSON.stringify({
-      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poles: this.poles(), mats: this.mats(),
+      t: 'welcome', id: a.id, name: a.name, cap: this.cap, poles: this.poles(), mats: this.mats(), shop: this.shopQueue(),
       players: this.others(ws).map(w => Room.pub(w.deserializeAttachment())),
     }));
     this.broadcast({ t: 'join', p: Room.pub(a) }, ws);
@@ -366,7 +396,8 @@ export class Room extends DurableObject {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
     const pole = a.pole, rest = a.grp ? this.leaveGroup(a) : [];
-    ws.serializeAttachment({ ...a, joined: false, pole: null, mat: null, grp: null });
+    ws.serializeAttachment({ ...a, joined: false, pole: null, mat: null, grp: null, shopAt: null, shopFront: null });
+    if (a.shopAt) this.broadcast({ t: 'shop', q: this.shopQueue() }, ws);
     if (Number.isInteger(a.mat)) this.broadcast({ t: 'mat', i: a.mat, by: null }, ws);
     this.broadcast({ t: 'leave', id: a.id }, ws);
     if (Number.isInteger(pole)) this.broadcast({ t: 'pole', i: pole, by: rest[0] || null }, ws);

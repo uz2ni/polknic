@@ -35,6 +35,8 @@
 | `photo_take` | 없음 | 셔터 |
 | `photo_save` | `how`(share/download) | 사진 저장 |
 | `chat_send` | 없음 | 채팅 보냄 (내용은 안 보냄) |
+| `snack_buy` | `item`(coffee/shake/ion/chicken/tanghulu) | 매점에서 간식 주문(맨 앞 차례에서 고른 순간) |
+| `snack_finish` | `item` | "한 입"을 눌러 간식을 다 먹음(마지막 한 입) |
 | `page_view` | `return_visit`(true) | 위 재방문 page_view |
 
 닉네임·채팅 내용은 보내지 않는다. 그 밖의 `scroll`, `form_start`, `user_engagement` 등은 GA4 향상된 측정이 자동으로 보낸다(코드에 없음, 마지막 전송 시각에도 안 잡힘).

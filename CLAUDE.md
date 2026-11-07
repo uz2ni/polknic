@@ -2,7 +2,7 @@
 
 서비스 이름: **폴크닉**(폴 + 피크닉). 소개 문구는 "온라인 폴댄스 놀이터" 하나로 통일(탭·링크 제목 "폴크닉 · 온라인 폴댄스 놀이터", 상단 부제, 입장 화면). 링크 설명 "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요." 공유 이미지 `og-image.png`(1200×630, [marketing/logo/og.html](marketing/logo/og.html) → `node export-og.js`). 로고는 글자 로고 [marketing/logo/v2/wordmark.svg](marketing/logo/v2/wordmark.svg)('닉'의 ㅣ를 핑크 캡 폴로 바꾼 Jua 글자)와 P 심볼 `favicon.svg`(= `v2/symbol-p.svg`, 폴 굵기 14의 P 위에 핑크 캡. PNG 아이콘도 같은 모양). 인스타 게시물은 [marketing/instagram/](marketing/instagram/README.md). 로고·아이콘·OG 이미지를 바꾸면 `index.html`의 주소 뒤 `?v=N`(현재 3)을 올릴 것(안 올리면 브라우저·카톡 캐시에 예전 그림이 남음). 도메인을 바꾸면 og:url/og:image 절대 주소도 함께 바꿀 것. 예전 이름은 "야외 폴 연습장"
 
-브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 6개 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
+브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 6개 + 간식 매점 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
 대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
@@ -40,13 +40,14 @@
 | 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·옷장·설정), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
 | 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 3개(`POLES`, 앞쪽 오른편 요가 매트 6개 `MATS`·`onMat()`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
-| 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 나무 푯말 `woodSign(글자, x, z, 회전)`('안전 폴링', 매트 뒤쪽 꽃밭의 '스트레칭존'), 울타리, 바위(`OBSTACLES`), 나비 |
+| 497–590 | 소품: 징검돌, 벤치(`BENCHES`), 매점 위치·메뉴(`SHOP`, `SNACKS`), 나무 푯말 `woodSign(글자, x, z, 회전)`('안전 폴링', 매트 뒤쪽 꽃밭의 '스트레칭존'), 냠냠 매점 건물(카운터·차양·간판·메뉴판), 울타리, 바위(`OBSTACLES`), 나비 |
 | 591–1041 | 캐릭터: 공용 재질(`accM` 등)·헬퍼, `chinify()`, 표정별 `drawFace()`(`EXPRS`), 이모트(`showEmote(av, kind)`), **`createAvatar(look, faceRes)`**(리그 `joint()` → `av.J[name]`, `skull`, 헤어, 팔다리, 치마, 장식), `removeAvatar(av)` |
 | 1042–1097 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `dressAvatar(av)`, 내 아바타 `me`(+ 별칭 `holder`/`char`/`J`/`skull`), `applyOutfit()` |
 | 1098–1227 | `POSES`(앉기 2종 + 동작 5종), `MOVE_ORDER`, `LIMBS`, `solveIK(av, …)` |
 | 1228–1474 | 상태 머신(내 캐릭터 조작), 앉기(`sitDown`/`standUp`/`toggleSit`), `stepOK`, 카메라, `update(dt)`, **`animateAvatar(av, dt)`**, `hang()` |
 | 1475–1607 | 입력(포인터·키보드 `DIRS`), UI(동작 바, 표정, 닉네임·이름표) |
 | 1608–1836 | BGM(`MUSIC`, `unmuteIOS`), 메뉴 숨기기, 입장, 옷장 칩 |
+| (봇 앞) | 매점: 직원 NPC `clerk`(`updateClerk`), 손에 든 간식(`buildSnack`, `setSnack(av, 종류)`, 한 입 `takeBite`, `sipAmount`, `showBites`), 줄 서서 사기(`shopQ`, `shopState`, `shopSpot`, `goShop`, `joinLine`, `leaveShop`, `buySnack`, `updateShop`, `onShopQueue`) |
 | 1872–1988 | 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`), `?bench` |
 | 1989–2246 | 멀티플레이: 접속·재접속(`net`, `netStart`, `netConnect`, `netRetry`), 보내기(`netTick`, `netState`, `netSend`), 다른 사람(`addRemote`, `remoteGoal` 지연 예측, `updateRemote`, `safeLook`), 채팅(`showBubble`, `chatForm`, `toast`) |
 | 2247–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
@@ -92,7 +93,8 @@
 - 메뉴 숨기기(사진·영상용): 오른쪽 위 눈 가림 아이콘 또는 H. `body.clean`이 상·하단 UI를 숨기고, 오른쪽 위 "메뉴 보기" 버튼만 2.5초 뒤 투명해짐(마우스·터치·키 입력 시 다시 보임). 이름표는 별도 토글 그대로
 - BGM: 코드로 합성하는 2곡(`MUSIC.TRACKS`: 오르골 소풍 / 노을 로파이. 우쿨렐레 왈츠는 사용자 선호로 뺌). 입장 시 시작(브라우저 자동재생 정책 때문에 클릭 후에만 소리 가능), "♪ BGM 켜짐/꺼짐" 버튼·M 키로 토글, 곡 이름 버튼으로 다음 곡. 탭이 숨겨지면 일시정지
   - 아이폰은 무음 스위치가 켜져 있으면 Web Audio를 막음 → `unmuteIOS()`가 `navigator.audioSession.type = 'playback'`(iOS 17+)과 무음 `<audio>` 루프(구버전)로 재생 모드로 바꿈. 반드시 탭/클릭 핸들러 안에서 호출
-- 분석: GA4(코드 수정 시 맞출 값·이벤트 목록은 [docs/analytics.md](docs/analytics.md)). `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`(메뉴 숨기기), `camera_mode`, `photo_take`, `photo_save{how}`, `chat_send`. 닉네임·채팅 내용은 보내지 않음. 탭을 숨겼다가 돌아왔을 때 마지막 이벤트 뒤로 `SESSION_TIMEOUT_MS`(30분, GA4 세션 제한 시간과 맞출 것)가 지났으면 `page_view{return_visit:true}`를 보냄(안 보내면 다음 게임 이벤트가 출처 없는 "(not set)" 세션이 됨. 주소창 UTM은 그대로 둬서 같은 링크로 다시 잡힘)
+- 분석: GA4(코드 수정 시 맞출 값·이벤트 목록은 [docs/analytics.md](docs/analytics.md)). `<head>`의 `window.GA_ID`에 측정 ID를 넣으면 켜짐(비어 있으면 아무것도 안 보냄, localhost는 집계 제외). 이벤트는 `polkTrack(name, params)`로: `enter_game`, `pose_start{pose}`, `sit{spot}`, `face_change{face}`, `outfit_change{slot,value}`, `bgm_toggle{on}`, `bgm_track{track}`, `photo_mode{on}`(메뉴 숨기기), `camera_mode`, `photo_take`, `photo_save{how}`, `chat_send`, `snack_buy{item}`, `snack_finish{item}`. 닉네임·채팅 내용은 보내지 않음. 탭을 숨겼다가 돌아왔을 때 마지막 이벤트 뒤로 `SESSION_TIMEOUT_MS`(30분, GA4 세션 제한 시간과 맞출 것)가 지났으면 `page_view{return_visit:true}`를 보냄(안 보내면 다음 게임 이벤트가 출처 없는 "(not set)" 세션이 됨. 주소창 UTM은 그대로 둬서 같은 링크로 다시 잡힘)
+- 간식 매점('냠냠 매점', 서쪽 벤치 왼쪽): 매점이나 직원을 누르거나 매점 근처에서 E → 줄 끝으로 걸어가 줄 섬(서버 `shop`, 줄 자리 `shopSpot(i)`: 0이 카운터 앞 `SHOP.front`, 뒤로 0.75m씩). **카운터는 한 명씩**: 맨 앞이 고르고 직원이 2.5초(`SHOP_MAKE`) 만들어 건넬 때까지 뒷사람은 `#shopMenu`에 "앞에 N명" 대기 안내, 앞사람이 받으면(`unshop`) 한 칸씩 앞으로 걸어감. 맨 앞이 되면 메뉴(카메라는 매점이 보이게 돌림). 25초(`SHOP_IDLE`) 안 고르면 줄에서 나감. 줄에서 멀어지거나 다른 곳 클릭·폴·앉기·✕·Esc면 나감. 혼자(서버 없음)면 줄은 나뿐. 메뉴(`SNACKS`): 아메리카노·단백질 쉐이크(초코)·이온음료·닭가슴살·탕후루, 전부 무료. 받으면 직원 말풍선 + 오른손에 간식(`av.snack`, 팔은 `animateAvatar`가 앞으로 듦). 저절로 먹지 않고, 간식을 들고 있는 동안 동작 바 앉기 옆에 "(아이콘) 한 입" 버튼(`#biteBtn`). 누를 때마다 손을 입으로 가져가 한 입(1.1초 `BITE_T`, 그동안 표정 joy, 도중에 또 누르면 무시). 탕후루는 위에서부터 알이 하나씩 없어지고 닭가슴살은 작아짐(음료는 그대로). 4입(`SNACK_BITES`)이면 버튼이 바로 사라지고 동작이 끝나면 간식도 사라지며 하트. 폴에 오르거나 매트에 앉으면 내려놓음(먹던 것도 없어짐, 남의 화면에서도 폴·매트 위에선 숨김). 다른 사람에겐 `state`의 `bite`(몇 입)로 전해져 같은 동작이 보임. 매점에서 멀어지면 메뉴 닫힘. 메뉴를 바꾸면 서버 `SNACKS`도 같이. 직원은 근처에 오면 6초마다 이모트. 미리보기 `__poleDebug.shop(yaw, pitch, dist, 거리)`, `__poleDebug.snack(종류, 먹은 입 수)`
 - 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 8초(`CHAT_SHOW`, `showBubble`), 동작 바 아래 채팅 기록(`chatLog`, 최근 20줄만 화면에만, 누르면 크게 펼침, 입장·퇴장 알림 포함, 새로고침·방 이동 시 비움), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
 - localStorage 키: `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`, `pole-room`
 

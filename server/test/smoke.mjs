@@ -183,6 +183,27 @@ ok(b1?.kind === 'ball' && b2?.kind === 'ball', 'C의 콩벌레를 A·B 모두 �
 c.send({ t: 'state', pose: 'duoBall', ball: [2, 3] });
 const sb = await a.next('state');
 ok(sb && sb.pose === 'duoBall' && sb.ball.join() === '2,3', '콩벌레 자리(3명 중 3번째) 전달');
+c.send({ t: 'state', snack: 'coffee' });
+const ss = await a.next('state');
+ok(ss && ss.snack === 'coffee', '손에 든 간식(아메리카노) 전달');
+c.send({ t: 'state', bite: 2 });
+const sbite = await a.next('state');
+ok(sbite && sbite.snack === 'coffee' && sbite.bite === 2, '몇 입 먹었는지 전달');
+c.send({ t: 'state', snack: 'pizza' });
+const sx = await a.next('state');
+ok(sx && sx.snack === null, '메뉴에 없는 간식은 빈손으로');
+// 매점 줄: 먼저 줄 선 사람이 맨 앞, 앞사람이 나가면 다음 사람 차례
+const lastQ = async who => { await sleep(200); const q = who.inbox.filter(m => m.t === 'shop').pop(); return q ? q.q.join() : null; };
+b.send({ t: 'shop' });
+ok(await lastQ(a) === wb.id, 'B가 줄 서면 모두에게 줄 알림(B 맨 앞)');
+c.send({ t: 'shop' });
+ok(await lastQ(b) === [wb.id, wc.id].join(), 'C는 B 뒤에서 대기');
+b.send({ t: 'shop' });
+ok(await lastQ(c) === [wb.id, wc.id].join(), '같은 사람이 또 줄 서도 순서 그대로');
+b.send({ t: 'unshop' });
+ok(await lastQ(c) === wc.id, 'B가 받고 나가면 C 차례');
+c.send({ t: 'unshop' });
+ok(await lastQ(a) === '', 'C도 나가면 줄 빔');
 b.send({ t: 'unpole' });
 const g2 = await a.next('duo');
 ok(g2 && g2.members.join() === [wa.id, wc.id].join(), 'B가 내려오면 A·C 둘이 그룹으로 남음');

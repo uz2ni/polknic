@@ -77,6 +77,8 @@
 | `duoMove` | `kind`(`stack`/`fly`/`ball`) | 같이 타기 기술. 그룹 모두에게 전달. stack·fly는 2명일 때만(받은 쪽이 아래), ball은 2~4명 |
 | `duoSpin` | `on` | 같이 타는 중 스핀 폴 켜기/끄기. 그룹 모두에게 |
 | `state`의 `ball` | `[자리, 인원]` | 탕후루 중 내 높이 자리(다른 사람 화면에서 높이·방향을 맞춤) |
+| `state`의 `snack` | 간식 이름 또는 null | 매점에서 산 손에 든 간식(`coffee`/`shake`/`ion`/`chicken`/`tanghulu`, 서버 `SNACKS`). 없는 이름은 null. 같이 오는 `bite`(0~9)는 먹은 입 수(늘면 받는 쪽도 한 입 동작). 스냅샷·join 알림에도 들어감 |
+| `shop` / `unshop` | 없음 | 매점 줄 서기 / 나가기. 줄 선 순서대로 한 명씩(맨 앞이 주문하고 받을 때까지 나머지 대기). 바뀌면 모두에게 `{t:'shop', q:[id…]}`(맨 앞이 카운터). `welcome`에도 `shop`. 맨 앞에서 45초(`SHOP_HOLD`) 넘으면 서버가 빼고, 웹은 25초에 스스로 나감. 줄 선 시각은 각자 attachment `shopAt`이라 잠들었다 깨도 유지 |
 | `mat` / `unmat` | `i`(매트 0~5) | 요가 매트에 앉기 / 일어남. 한 매트에 한 명 |
 | `chat` | `text` | 채팅 60자. 1초에 1개, 금칙어·링크는 보낸 사람에게만 `{t:'chat', ok:false, why:'fast'|'word'|'link'}` |
 | `pole` / `unpole` | `i`(폴 번호 0~4) | 폴 잡기 요청 / 내려옴. `i`가 없으면 0번(예전 웹 호환) |
