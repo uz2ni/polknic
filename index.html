@@ -2539,7 +2539,7 @@ const SHOP_MAKE = 2.5, SHOP_IDLE = 25;   // seconds the clerk takes to make an o
 const shopMenu = document.getElementById('shopMenu'), shopItems = document.getElementById('shopItems'), shopText = document.getElementById('shopText');
 let shopQ = [];          // ids in line, first is at the counter
 let shopState = null;    // null | 'walking' (to the stand) | 'line' (in line, or picking at the front) | 'making' (ordered, the clerk is on it)
-let shopTarget = null, shopOrder = null, shopFrontAt = 0, shopReadyAt = 0;
+let shopTarget = null, shopOrder = null, shopFrontAt = 0, shopReadyAt = 0, shopAskAt = 0;
 SNACK_KEYS.forEach(k => {
   const b = document.createElement('button'); b.type = 'button';
   const icon = document.createElement('i'), label = document.createElement('span'), note = document.createElement('small');
@@ -2560,8 +2560,8 @@ function goShop(){
   sitQueued = null; standUp(); mode = 'roam'; queuedMove = null; shopWalk(p); updateUI();
 }
 function joinLine(){
-  shopState = 'line'; shopFrontAt = 0;
-  if (net.id) netSend({ t:'shop' });   // my place comes back in the 'shop' message
+  shopState = 'line'; shopFrontAt = 0; shopAskAt = clock;
+  if (net.id) netSend({ t:'shop' });   // my place comes back in the 'shop' message (asked again by updateShop if it doesn't)
 }
 function leaveShop(why){
   if (net.id && (shopState === 'line' || shopState === 'making')) netSend({ t:'unshop' });
@@ -2603,6 +2603,11 @@ function updateShop(){
       if (shopState === 'line' && clock - shopFrontAt > SHOP_IDLE){ leaveShop('다음 손님을 위해 줄에서 나왔어요'); return; }
     }
     if (place >= 0 && shopState !== 'making') shopPanel(place);
+    if (place < 0 && shopState === 'line'){
+      // no answer yet: say so, and ask again every 2 s (a 'shop' sent while reconnecting is lost; asking twice is harmless)
+      shopItems.hidden = true; shopText.textContent = '줄 서는 중이에요…'; shopMenu.hidden = false;
+      if (clock - shopAskAt > 2){ shopAskAt = clock; if (net.id) netSend({ t:'shop' }); }
+    }
     if (shopState === 'making' && clock >= shopReadyAt){
       const k = shopOrder; leaveShop();
       setSnack(me, k); netState();
@@ -2889,7 +2894,7 @@ function netMessage(raw){
       net.id = m.id; net.tries = 0; net.stateDirty = true; roomCounts();
       net.poleSent = null; polesBy.fill(null); (m.poles || []).forEach((by, i) => { if (i < polesBy.length) polesBy[i] = by || null; });
       net.matSent = null; matsBy.fill(null); (m.mats || []).forEach((by, i) => { if (i < matsBy.length) matsBy[i] = by || null; });
-      if (shopState){ shopState = null; shopTarget = null; shopMenu.hidden = true; }   // a new connection isn't in the line: walk up again
+      if (shopState === 'line'){ shopAskAt = -9; shopFrontAt = 0; }   // a new connection isn't in the line yet: updateShop asks again right away
       onShopQueue(m.shop);
       if (!loadingEl.hidden) hideLoading();
       (m.players || []).forEach(addRemote);
