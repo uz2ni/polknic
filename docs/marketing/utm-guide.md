@@ -100,3 +100,4 @@ https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaig
 | 날짜 | 위치 | 링크 | 비고 |
 |---|---|---|---|
 | 2026-11-07 | 공식 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=yujamong.pole` | medium `bio` → `social` 변경 |
+| 2026-11-07 | 개인 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=uz2ning_pole` | 새로 추가 |
