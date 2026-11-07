@@ -21,11 +21,19 @@ window.polkTrack = function(){};
 (function(){
   var id = window.GA_ID, h = location.hostname;
   if (!id || location.protocol === 'file:' || h === 'localhost' || h === '127.0.0.1' || /\.local$/.test(h)) return;
+  var SESSION_TIMEOUT_MS = 30 * 60 * 1000;   // GA4 관리 > 데이터 스트림 > 태그 설정 > 세션 제한 시간과 같은 값으로 유지
+  var lastSent = Date.now();   // config below sends the first page_view
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function(){ dataLayer.push(arguments); };
+  window.gtag = function(){ if (arguments[0] === 'event') lastSent = Date.now(); dataLayer.push(arguments); };
   gtag('js', new Date()); gtag('config', id);
   var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id; document.head.appendChild(s);
   window.polkTrack = function(name, params){ gtag('event', name, params || {}); };
+  // Coming back to a tab left open past the GA4 session timeout: without this the next game event starts
+  // a session with no session_start or traffic source ("(not set)"). The page URL keeps its UTM tags,
+  // so this page_view re-attributes the new session to the same link.
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden && Date.now() - lastSent >= SESSION_TIMEOUT_MS) gtag('event', 'page_view', { return_visit: true });
+  });
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
