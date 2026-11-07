@@ -155,6 +155,6 @@
 4. 성능: 캐릭터 메쉬 합치기·LOD, 풀/그림자/픽셀비율 자동 하향
 5. 동작 전환 애니메이션, 다리 접촉점 IK
 6. 필요해지면 Vite 프로젝트화 + three.js 최신화(r128 전용 API 교체, 분리 전후 포즈 스크린샷 비교)
-7. 홍보 시 UTM 링크([docs/DECISIONS.md](docs/DECISIONS.md))
+7. 홍보 시 UTM 링크([docs/marketing/utm-guide.md](docs/marketing/utm-guide.md))
 
 HANDOFF.md 로드맵 중 "VRoid VRM으로 캐릭터 교체"는 치비 스타일 결정으로 보류.

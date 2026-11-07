@@ -35,8 +35,8 @@
 - GA4를 고른 이유: 가장 널리 쓰이고 실시간 접속자·시간대별·유입 경로·이벤트를 무료로 볼 수 있고, **상업 용도도 무료**. 나중에 광고·후원 등 용돈벌이를 할 수 있어서(GoatCounter 무료 요금제는 비상업 전용)
 - 사람들이 실제로 어떻게 노는지 보고 싶어지면 Microsoft Clarity(녹화·히트맵, 상업 무료)를 추가 검토
 - GA4는 쿠키를 씀 → 광고 등을 붙일 때 짧은 개인정보 안내 문구 추가
-- 공유 링크에는 UTM 꼬리표를 붙인다(카톡·인스타 인앱 브라우저가 출처를 지워 `(direct)`로 잡히는 문제). 규칙: 영어 소문자, 이름 일관, `utm_source`=어디서, `utm_medium`=형태, `utm_campaign`=게시물·이벤트
-  - 예: `?utm_source=instagram&utm_medium=bio`, `instagram/story`, `kakao/chat`, `community/post`
+- 공유 링크에는 UTM 꼬리표를 붙인다(카톡·인스타 인앱 브라우저가 출처를 지워 `(direct)`로 잡히는 문제). 규칙과 복사용 링크는 [marketing/utm-guide.md](marketing/utm-guide.md)
+  - 처음엔 `utm_medium=bio`처럼 형태를 넣었는데 GA4에서 Unassigned로 분류돼서, 2026-11-07에 medium은 표준 값(`social`, `paid_social`)만 쓰기로 바꿈
 
 ### 저작권 표기: `© 2026 폴크닉`, 계정 링크 없음
 - 폴 계정(@uz2ning_pole)과 개발자 계정(@dev.yuja_) 중 고민하다 둘 다 넣지 않기로 함
