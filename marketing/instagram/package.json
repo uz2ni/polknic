@@ -5,6 +5,7 @@
   "scripts": {
     "render": "node scripts/render.js",
     "export": "node scripts/export.js",
+    "reel": "node scripts/reel.js",
     "build": "node scripts/render.js && node scripts/export.js"
   },
   "devDependencies": {

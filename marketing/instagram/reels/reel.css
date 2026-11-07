@@ -1,0 +1,11 @@
+/* 릴스 공용: 1080×1920 위에 겹치는 글자·패널. 인스타 릴스 화면은 위 ~200px, 아래 ~380px, 오른쪽 ~150px(좋아요·댓글 버튼)를 가리므로 그 안쪽에만 둔다 */
+#reel{position:fixed;inset:0;pointer-events:none;font-family:var(--f-b);color:var(--ink);--top:210px;--bottom:400px;--right:150px}
+#reel [data-in]{opacity:0}   /* 시간에 맞춰 frame(t)가 보이게 함 */
+#reel .series{top:var(--top);left:var(--pad)}
+#reel .head{position:absolute;top:calc(var(--top) + 96px);left:var(--pad);right:var(--right);transform-origin:0 50%}
+#reel .title{font-size:112px}
+#reel .end{position:absolute;left:var(--pad);right:var(--right);bottom:var(--bottom);padding:30px 34px;display:flex;align-items:center;gap:24px}
+#reel .end .t{font-family:var(--f-d);font-size:44px;line-height:1.15}
+#reel .end .word{height:58px;display:block;margin-bottom:12px}
+#reel .end .d{font-size:28px;font-weight:700;color:var(--ink-soft);margin-top:6px}
+#reel .end .btn{margin-left:auto;font-size:34px;padding:18px 28px}
