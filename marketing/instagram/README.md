@@ -2,6 +2,8 @@
 
 게임 렌더(캐릭터·호숫가) + HTML/CSS 템플릿(글자·패널·칩) → 1080×1440 PNG.
 
+기획부터 캡션까지의 작업 순서와 판단 기준은 Claude skill [instagram-content](../../.claude/skills/instagram-content/SKILL.md)에 있다.
+
 ```
 cd marketing/instagram
 npm install          # 처음 한 번 (playwright-core, 맥 크롬을 그대로 씀)
