@@ -35,13 +35,11 @@ export default {
   // 매일 23:59(한국 시간, wrangler.toml의 crons) 오늘 입장 수를 방마다 모아 슬랙으로
   async scheduled(event, env, ctx) {
     const day = kstDay();
-    const stats = await Promise.all(Array.from({ length: +env.MAX_ROOMS }, (_, i) =>
-      env.ROOMS.get(env.ROOMS.idFromName('room-' + (i + 1))).fetch('https://room/stats?day=' + day).then(r => r.json()).catch(() => ({ n: 0, names: [] }))));
-    const total = stats.reduce((t, r) => t + r.n, 0);
-    const people = new Set(stats.flatMap(r => r.names)).size;
-    const rooms = stats.map((r, i) => `${i + 1}번 ${r.n}`).join(' · ');
+    const v = await statsHub(env).fetch('https://stats/day?day=' + day).then(r => r.json()).catch(() => ({ visits: 0, names: [] }));
+    const rooms = await Promise.all(Array.from({ length: +env.MAX_ROOMS }, (_, i) =>
+      env.ROOMS.get(env.ROOMS.idFromName('room-' + (i + 1))).fetch('https://room/stats?day=' + day).then(r => r.json()).then(j => j.n).catch(() => 0)));
     const [, m, d] = day.split('-').map(Number);
-    await slack(env, `:bar_chart: *${m}월 ${d}일 입장 ${total}회* (닉네임 기준 ${people}명)\n${rooms}`);
+    await slack(env, `:bar_chart: *${m}월 ${d}일 방문 ${v.visits}회* (닉네임 기준 ${v.names.length}명)\n방별 입장 ${rooms.map((n, i) => `${i + 1}번 ${n}`).join(' · ')}`);
   },
 };
 
@@ -50,6 +48,8 @@ async function slack(env, text) {
   if (!env.SLACK_WEBHOOK) return;
   await fetch(env.SLACK_WEBHOOK, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
 }
+// 방문 집계는 방 5개를 통틀어 한 곳(Stats "main")에서
+const statsHub = env => env.STATS.get(env.STATS.idFromName('main'));
 // 한국 날짜 'YYYY-MM-DD'
 const kstDay = (t = Date.now()) => new Date(t + 9*3600*1000).toISOString().slice(0, 10);
 
@@ -70,8 +70,8 @@ const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
 const MAX_MSG = 2048, MAX_PER_SEC = 30, CHAT_LEN = 60, CHAT_GAP = 1000;
 // 이만큼 아무 소식(메시지·ping)이 없으면 나간 것으로 본다. 클라이언트는 화면이 켜져 있는 동안 25초마다 ping
 const IDLE_SEC = 60;
-// 입장 알림(슬랙): 같은 방에 같은 닉네임이 이 시간 안에 다시 들어오면(새로고침·재접속) 또 보내지 않는다
-const NOTIFY_GAP = 10*60*1000;
+// 방문: 같은 닉네임이 마지막 입장·퇴장 뒤 이 시간 안에 다시 들어오면 같은 방문(GA4 세션 제한 시간 30분과 맞춤, docs/analytics.md)
+const VISIT_GAP_SEC = 30*60;
 
 const num = (v, lim) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim;
 const round = v => Math.round(v*1000)/1000;
@@ -411,31 +411,28 @@ export class Room extends DurableObject {
     this.ctx.waitUntil(this.notifyJoin(a).catch(() => {}));   // 알림이 늦거나 실패해도 입장에는 영향 없게
   }
 
-  // 운영자 슬랙으로 입장 알림 + 오늘 입장 수 세기(23:59 요약용).
+  // 입장 집계 + 새 방문이면 운영자 슬랙으로 알림.
   // NOTIFY_SKIP(쉼표로 구분한 닉네임)은 운영자 본인 테스트용으로 알림·집계에서 뺀다
   async notifyJoin(a) {
-    const base = a.name.replace(/#\d+$/, '');
-    if ((this.env.NOTIFY_SKIP || '').split(',').map(s => s.trim()).includes(base)) return;
-    // 날짜별 { n: 입장 횟수, names: 닉네임 목록 }. 닉네임은 요약의 "몇 명" 계산용, 하루치만 남긴다
-    const key = 'joins:' + kstDay(), day = (await this.ctx.storage.get(key)) || { n: 0, names: [] };
+    if (this.skipped(a.name)) return;
+    // 방별 날짜별 입장 수(새로고침·방 이동 포함, 요약의 "방별 입장")
+    const key = 'joins:' + kstDay(), day = (await this.ctx.storage.get(key)) || { n: 0 };
     day.n++;
-    if (!day.names.includes(base) && day.names.length < 2000) day.names.push(base);
     await this.ctx.storage.put(key, day);
-    if (!this.env.SLACK_WEBHOOK) return;
-    const now = Date.now(), sent = (await this.ctx.storage.get('notified')) || {};
-    for (const k in sent) if (now - sent[k] >= NOTIFY_GAP) delete sent[k];
-    if (sent[base]) return;
-    sent[base] = now;
-    await this.ctx.storage.put('notified', sent);
+    const { visit } = await statsHub(this.env).fetch('https://stats/join', { method: 'POST', body: a.name.replace(/#\d+$/, '') }).then(r => r.json());
+    if (!visit) return;
     // 닉네임에 <!channel> 같은 슬랙 문법이 들어가도 글자로만 보이게
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     await slack(this.env, `:wave: *${esc(a.name)}* 님이 ${a.room || '?'}번 호숫가에 들어왔어요 (지금 ${this.others(null).length}명)`);
+  }
+  skipped(name) {
+    return (this.env.NOTIFY_SKIP || '').split(',').map(s => s.trim()).includes(name.replace(/#\d+$/, ''));
   }
   // 그날 입장 수. 지난 날짜 기록은 이때 지운다
   async dayStats(day) {
     const all = await this.ctx.storage.list({ prefix: 'joins:' });
     for (const k of all.keys()) if (k < 'joins:' + day) await this.ctx.storage.delete(k);
-    return all.get('joins:' + day) || { n: 0, names: [] };
+    return all.get('joins:' + day) || { n: 0 };
   }
 
   async webSocketClose(ws, code, reason) {
@@ -448,11 +445,46 @@ export class Room extends DurableObject {
   leave(ws) {
     const a = ws.deserializeAttachment();
     if (!a?.joined) return;
+    // 나간 시각부터 30분을 다시 잰다(오래 놀다 새로고침해도 같은 방문)
+    if (!this.skipped(a.name)) this.ctx.waitUntil(statsHub(this.env).fetch('https://stats/leave', { method: 'POST', body: a.name.replace(/#\d+$/, '') }).catch(() => {}));
     const pole = a.pole, rest = a.grp ? this.leaveGroup(a) : [];
     ws.serializeAttachment({ ...a, joined: false, pole: null, mat: null, grp: null, shopAt: null, shopFront: null });
     if (a.shopAt) this.broadcast({ t: 'shop', q: this.shopQueue() }, ws);
     if (Number.isInteger(a.mat)) this.broadcast({ t: 'mat', i: a.mat, by: null }, ws);
     this.broadcast({ t: 'leave', id: a.id }, ws);
     if (Number.isInteger(pole)) this.broadcast({ t: 'pole', i: pole, by: rest[0] || null }, ws);
+  }
+}
+
+/* ---------- 방문 집계 ----------
+   방(DO)은 서로의 기록을 못 보므로, 방 이동까지 같은 방문으로 묶으려면 한 곳에서 센다.
+   정의는 docs/analytics.md "서버 집계". 닉네임 기준이라 GA4(브라우저 쿠키 기준)와 정확히 같지는 않다 */
+export class Stats extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.gapMs = (+env.VISIT_GAP_SEC || VISIT_GAP_SEC)*1000;   // 시험할 땐 --var VISIT_GAP_SEC:3
+  }
+  async fetch(req) {
+    const url = new URL(req.url), now = Date.now();
+    if (url.pathname === '/day') {
+      const day = url.searchParams.get('day');
+      const all = await this.ctx.storage.list({ prefix: 'day:' });
+      for (const k of all.keys()) if (k < 'day:' + day) await this.ctx.storage.delete(k);
+      return Response.json(all.get('day:' + day) || { visits: 0, names: [] });
+    }
+    const name = (await req.text()).slice(0, 20);
+    // 닉네임별 마지막 입장·퇴장 시각. 30분 지난 건 지운다
+    const last = (await this.ctx.storage.get('last')) || {};
+    for (const k in last) if (now - last[k] >= this.gapMs) delete last[k];
+    const visit = url.pathname === '/join' && !last[name];
+    last[name] = now;
+    await this.ctx.storage.put('last', last);
+    if (visit) {
+      const key = 'day:' + kstDay(), d = (await this.ctx.storage.get(key)) || { visits: 0, names: [] };
+      d.visits++;
+      if (!d.names.includes(name) && d.names.length < 2000) d.names.push(name);
+      await this.ctx.storage.put(key, d);
+    }
+    return Response.json({ visit });
   }
 }
