@@ -6,6 +6,10 @@ compatibility_date = "2026-10-01"
 # [[...]] 표 아래에 두면 그 표의 값이 되어 무시되니 맨 위에 둘 것
 routes = [{ pattern = "polknic-ws.yujamong.com", custom_domain = true }]
 
+# 매일 23:59 한국 시간(= 14:59 UTC) 오늘 입장 수를 슬랙으로 (index.js scheduled)
+[triggers]
+crons = ["59 14 * * *"]
+
 [vars]
 ROOM_CAP = "20"     # 방 정원 (docs/MULTIPLAYER.md)
 MAX_ROOMS = "5"     # 방 개수 상한. 넘으면 클라이언트는 혼자 모드로

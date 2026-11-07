@@ -40,6 +40,7 @@
 - 폴 잠금: 폴이 하나라 한 명만. 소켓 attachment의 `pole` 표시로 판단(잠들었다 깨도 유지), 퇴장하면 자동 해제
 - 검증: 메시지 2KB·초당 30개 초과 시 연결 끊기, 공원 밖 좌표·모르는 포즈/표정/이모트 무시, 옷은 아는 키·16자 이하 문자열만, 닉네임 12자·중복은 `#2`
 - 입장 알림(2026-11-08): `join`이 끝나면 운영자 슬랙 채널로 "닉네임 님이 N번 호숫가에 들어왔어요 (지금 N명)"을 보냄(`notifyJoin`, Slack Incoming Webhook). 같은 방·같은 닉네임은 10분(`NOTIFY_GAP`)에 한 번만(새로고침·재접속 도배 방지, 기록은 방 storage `notified`). 웹훅 주소는 공개 저장소라 `wrangler.toml`에 넣지 말고 `npx wrangler secret put SLACK_WEBHOOK`. 없으면(로컬 개발) 안 보냄. 본인 테스트 닉네임은 `NOTIFY_SKIP`(쉼표 구분, `wrangler secret put` 또는 `[vars]`)으로 뺌. 로컬 확인은 `--var SLACK_WEBHOOK:http://127.0.0.1:포트/`로 가짜 웹훅
+- 하루 요약(2026-11-08): 매일 23:59 한국 시간(cron `59 14 * * *` UTC, `wrangler.toml`의 `[triggers]`)에 Worker `scheduled`가 방마다 `/stats`를 물어 "N월 N일 입장 N회 (닉네임 기준 N명) + 방별 횟수"를 슬랙으로. 방은 입장마다 storage `joins:YYYY-MM-DD`(한국 날짜)에 횟수·닉네임을 세고(10분 중복 알림 생략과 상관없이 전부, `NOTIFY_SKIP`은 뺌), 지난 날짜는 요약 때 지움. 23:59~24:00 사이 입장은 요약에 안 들어감. 로컬 확인은 `wrangler dev --test-scheduled` 후 `curl "localhost:8787/__scheduled?cron=59+14+*+*+*"`
 - 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
 - 개발: `cd server && nvm use 24 && npm i && npx wrangler dev --port 8787 --var ROOM_CAP:3` 후 `npm test`(24개 항목 확인)
 - 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. **2026-11-04 배포**, 주소 `wss://polknic-ws.yujamong.com/ws`(`wrangler.toml`의 `routes`, DNS는 배포 때 자동 생성, workers.dev 주소는 꺼 둠)

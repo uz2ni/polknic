@@ -31,7 +31,27 @@ export default {
     const room = env.ROOMS.get(env.ROOMS.idFromName('room-' + n));
     return room.fetch(req);
   },
+
+  // 매일 23:59(한국 시간, wrangler.toml의 crons) 오늘 입장 수를 방마다 모아 슬랙으로
+  async scheduled(event, env, ctx) {
+    const day = kstDay();
+    const stats = await Promise.all(Array.from({ length: +env.MAX_ROOMS }, (_, i) =>
+      env.ROOMS.get(env.ROOMS.idFromName('room-' + (i + 1))).fetch('https://room/stats?day=' + day).then(r => r.json()).catch(() => ({ n: 0, names: [] }))));
+    const total = stats.reduce((t, r) => t + r.n, 0);
+    const people = new Set(stats.flatMap(r => r.names)).size;
+    const rooms = stats.map((r, i) => `${i + 1}번 ${r.n}`).join(' · ');
+    const [, m, d] = day.split('-').map(Number);
+    await slack(env, `:bar_chart: *${m}월 ${d}일 입장 ${total}회* (닉네임 기준 ${people}명)\n${rooms}`);
+  },
 };
+
+// 운영자 슬랙으로 보내기. SLACK_WEBHOOK(wrangler secret)이 없으면(로컬 개발 등) 보내지 않는다
+async function slack(env, text) {
+  if (!env.SLACK_WEBHOOK) return;
+  await fetch(env.SLACK_WEBHOOK, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
+}
+// 한국 날짜 'YYYY-MM-DD'
+const kstDay = (t = Date.now()) => new Date(t + 9*3600*1000).toISOString().slice(0, 10);
 
 /* ---------- 검증 ---------- */
 const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
@@ -81,7 +101,9 @@ export class Room extends DurableObject {
   }
 
   async fetch(req) {
-    if (new URL(req.url).pathname === '/count') return Response.json({ n: this.others(null).length });
+    const path = new URL(req.url).pathname;
+    if (path === '/count') return Response.json({ n: this.others(null).length });
+    if (path === '/stats') return Response.json(await this.dayStats(new URL(req.url).searchParams.get('day')));
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
     if (this.live().length >= this.cap) {
       // 꽉 참: 방에 등록하지 않는 일반 소켓으로 받아 알리고 바로 닫는다(hibernation 소켓으로 받으면 닫힘이 전달되지 않음)
@@ -389,13 +411,17 @@ export class Room extends DurableObject {
     this.ctx.waitUntil(this.notifyJoin(a).catch(() => {}));   // 알림이 늦거나 실패해도 입장에는 영향 없게
   }
 
-  // 운영자 슬랙으로 입장 알림. SLACK_WEBHOOK(wrangler secret)이 없으면(로컬 개발 등) 보내지 않는다.
-  // NOTIFY_SKIP(쉼표로 구분한 닉네임)은 운영자 본인 테스트용으로 알림에서 뺀다
+  // 운영자 슬랙으로 입장 알림 + 오늘 입장 수 세기(23:59 요약용).
+  // NOTIFY_SKIP(쉼표로 구분한 닉네임)은 운영자 본인 테스트용으로 알림·집계에서 뺀다
   async notifyJoin(a) {
-    const hook = this.env.SLACK_WEBHOOK;
-    if (!hook) return;
     const base = a.name.replace(/#\d+$/, '');
     if ((this.env.NOTIFY_SKIP || '').split(',').map(s => s.trim()).includes(base)) return;
+    // 날짜별 { n: 입장 횟수, names: 닉네임 목록 }. 닉네임은 요약의 "몇 명" 계산용, 하루치만 남긴다
+    const key = 'joins:' + kstDay(), day = (await this.ctx.storage.get(key)) || { n: 0, names: [] };
+    day.n++;
+    if (!day.names.includes(base) && day.names.length < 2000) day.names.push(base);
+    await this.ctx.storage.put(key, day);
+    if (!this.env.SLACK_WEBHOOK) return;
     const now = Date.now(), sent = (await this.ctx.storage.get('notified')) || {};
     for (const k in sent) if (now - sent[k] >= NOTIFY_GAP) delete sent[k];
     if (sent[base]) return;
@@ -403,11 +429,13 @@ export class Room extends DurableObject {
     await this.ctx.storage.put('notified', sent);
     // 닉네임에 <!channel> 같은 슬랙 문법이 들어가도 글자로만 보이게
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const n = this.others(null).length;
-    await fetch(hook, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ text: `:wave: *${esc(a.name)}* 님이 ${a.room || '?'}번 호숫가에 들어왔어요 (지금 ${n}명)` }),
-    });
+    await slack(this.env, `:wave: *${esc(a.name)}* 님이 ${a.room || '?'}번 호숫가에 들어왔어요 (지금 ${this.others(null).length}명)`);
+  }
+  // 그날 입장 수. 지난 날짜 기록은 이때 지운다
+  async dayStats(day) {
+    const all = await this.ctx.storage.list({ prefix: 'joins:' });
+    for (const k of all.keys()) if (k < 'joins:' + day) await this.ctx.storage.delete(k);
+    return all.get('joins:' + day) || { n: 0, names: [] };
   }
 
   async webSocketClose(ws, code, reason) {
