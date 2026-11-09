@@ -3396,7 +3396,7 @@ function drawBoard(){
     note.className = 'note';
     if (boardTab === 'guest'){
       note.style.background = NOTE_COLS[n.id % NOTE_COLS.length];
-      const text = document.createElement('span'), meta = document.createElement('small'), who = document.createElement('span'), when = document.createElement('span');
+      const text = document.createElement('b'), meta = document.createElement('small'), who = document.createElement('span'), when = document.createElement('span');
       const d = new Date(n.at);
       text.textContent = n.text; who.textContent = n.name; when.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
       meta.append(who, when); note.append(text, meta);
