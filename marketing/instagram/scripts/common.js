@@ -12,7 +12,7 @@ exports.launch = () => chromium.launch({ executablePath: CHROME, args: ['--use-a
 // index.html은 그대로 두고, 불러올 때만 내부 객체를 __poleDebug._x로 꺼냄(장면 연출용: 캐릭터 추가·배치·이모트, 릴스용 시간 진행·카메라)
 const GAME_HTML = fs.readFileSync(path.join(REPO, 'index.html'), 'utf8')
   .replace('window.__poleDebug = {', 'window.__poleDebug = { _x: { THREE: T, scene, camera, renderer, me, others, POLES, createAvatar, removeAvatar, showEmote, update, setSpin, ballHeight,'
-    + ' MAT_SPOTS, sitDown, startStretch, takePhoto, get faceMode(){ return faceMode; }, set faceMode(v){ faceMode = v; },'
+    + ' MAT_SPOTS, sitDown, startStretch, takePhoto, setSnack, clerk, SHOP, TABLE, BENCHES, shopSpot, goShop, buySnack, takeBite, angTo: angLerp, get faceMode(){ return faceMode; }, set faceMode(v){ faceMode = v; },'
     + ' get yaw(){ return yaw; }, set yaw(v){ yaw = v; }, get pitch(){ return pitch; }, set pitch(v){ pitch = v; }, get clock(){ return clock; } },');
 const GAME = 'http://polknic.local/index.html';
 exports.GAME = GAME;

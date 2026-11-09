@@ -208,6 +208,94 @@
    "w": 956,
    "h": 760,
    "jsFile": "scenes/chat.js"
+  },
+  {
+   "name": "snack-coffee",
+   "look": "lilac",
+   "w": 420,
+   "h": 360,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=snack&kind=coffee"
+  },
+  {
+   "name": "snack-shake",
+   "look": "sky",
+   "w": 420,
+   "h": 360,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=snack&kind=shake"
+  },
+  {
+   "name": "snack-ion",
+   "look": "coral",
+   "w": 420,
+   "h": 360,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=snack&kind=ion"
+  },
+  {
+   "name": "snack-chicken",
+   "look": "sage",
+   "w": 420,
+   "h": 360,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=snack&kind=chicken"
+  },
+  {
+   "name": "snack-tanghulu",
+   "look": "rose",
+   "w": 420,
+   "h": 360,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=snack&kind=tanghulu"
+  },
+  {
+   "name": "bite-1",
+   "look": "sky",
+   "w": 470,
+   "h": 420,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=bite&n=1"
+  },
+  {
+   "name": "bite-2",
+   "look": "sky",
+   "w": 470,
+   "h": 420,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=bite&n=2"
+  },
+  {
+   "name": "bite-3",
+   "look": "sky",
+   "w": 470,
+   "h": 420,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=bite&n=3"
+  },
+  {
+   "name": "bite-4",
+   "look": "sky",
+   "w": 470,
+   "h": 420,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=bite&n=4"
+  },
+  {
+   "name": "shop-line",
+   "look": "rose",
+   "w": 956,
+   "h": 620,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=line"
+  },
+  {
+   "name": "shop-table",
+   "look": "rose",
+   "w": 956,
+   "h": 700,
+   "jsFile": "scenes/shop.js",
+   "q": "?s=table"
   }
  ]
 }

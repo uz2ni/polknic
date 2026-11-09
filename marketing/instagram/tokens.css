@@ -15,6 +15,8 @@
   --butter-d:#d9a800;   /* 시리즈: 폴메이트 */
   --grass:#79c565;
   --lilac:#a98bd6;      /* 시리즈: 옷장(예정) */
+  --peach:#ffe7d6;
+  --peach-d:#ee8455;    /* 시리즈: 폴짝 매점 */
 
   /* 글꼴 */
   --f-d:"Jua","IBM Plex Sans KR",sans-serif;
@@ -39,6 +41,7 @@
 .series.move{background:var(--sky-d)}
 .series.mate{background:var(--butter-d)}
 .series.closet{background:var(--lilac)}
+.series.shop{background:var(--peach-d)}
 
 /* 헤드라인: 사진 위는 .on-photo(흰 글자+갈색 그림자, 게임 상단 제목과 같은 처리) */
 .title{font-family:var(--f-d);font-weight:400;line-height:1.08;letter-spacing:-.01em;margin:0}

@@ -114,6 +114,70 @@ body.export .ab::before{display:none}
 /* 03-4 같은 호숫가에서 */
 #p03-4-chat .photo{flex:none;height:772px}   /* 테두리 안쪽 956×760 = 렌더 크기 그대로(잘림 없이 말풍선 좌표가 맞음) */
 #p03-4-chat .photo .bubble{font-size:38px;padding:16px 28px}
+
+/* ---------- 04 폴짝 매점: 게임 매점처럼 줄무늬 차양 + 복숭아색 바탕 ---------- */
+.awn{position:absolute;top:0;left:0;right:0;display:flex;z-index:2;filter:drop-shadow(0 8px 0 rgba(90,66,55,.12))}
+.awn i{flex:1;height:112px;border-radius:0 0 45px 45px;background:var(--blush)}
+.awn i:nth-child(even){background:#fff8ea}
+.inner.shop{background:var(--peach);--sc:var(--peach-d);padding-top:150px}
+.inner.shop .series{top:150px}
+.inner.shop .pageno{top:150px}
+.inner.shop .ititle{margin-top:80px}
+#p04-shop{background:var(--peach)}
+#p04-shop .dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.75) 4px,transparent 5px);background-size:44px 44px}
+#p04-shop .series{top:146px}
+#p04-shop .head{position:absolute;top:214px;left:calc(var(--pad) + 8px)}
+#p04-shop .title{font-size:112px}
+#p04-shop .title em{font-style:normal;color:var(--peach-d)}
+#p04-shop .lead{font-size:36px;font-weight:600;margin-top:16px}
+#p04-shop .grid{position:absolute;top:548px;left:var(--pad);right:var(--pad);display:grid;grid-template-columns:repeat(6,1fr);gap:24px}
+#p04-shop .card{grid-column:span 2;background:#fff;border-radius:40px;padding:12px;box-shadow:0 8px 0 rgba(90,66,55,.12)}
+#p04-shop .card:nth-child(4){grid-column:2/span 2}
+#p04-shop .ph{height:226px;border-radius:30px;overflow:hidden}
+#p04-shop .ph img{width:100%;height:100%;object-fit:cover;display:block}
+#p04-shop .lab{display:flex;align-items:center;justify-content:space-between;padding:14px 8px 4px 12px;height:56px}
+#p04-shop .lab b{font-family:var(--f-d);font-weight:400;font-size:37px;white-space:nowrap;letter-spacing:-.02em}
+#p04-shop .lab i{font-style:normal;font-family:var(--f-d);font-size:26px;color:#fff;background:var(--peach-d);border-radius:999px;padding:5px 13px;white-space:nowrap}
+#p04-shop .foot{position:absolute;left:0;right:0;bottom:44px;display:flex;justify-content:center}
+/* 04-2 영수증 */
+#p04-2-menu .receipt{position:relative;background:#fff;padding:36px 52px 58px;flex:1;display:flex;flex-direction:column;transform:rotate(-1deg);filter:drop-shadow(0 8px 0 rgba(90,66,55,.12));
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 22px) no-repeat,conic-gradient(from 135deg at 50% 0,#000 90deg,transparent 0) bottom/44px 22px repeat-x}
+#p04-2-menu .rh{text-align:center;font:400 46px var(--f-d);padding-bottom:22px;border-bottom:5px dashed #e6dac8}
+#p04-2-menu .row{display:flex;align-items:center;flex:1;gap:20px;border-bottom:3px dashed #efe6d8}
+#p04-2-menu .row b{display:block;font:400 48px var(--f-d)}
+#p04-2-menu .row span{display:block;font-size:29px;font-weight:600;color:var(--ink-soft);margin-top:4px}
+#p04-2-menu .row .ic{flex:none;width:96px;height:96px;border-radius:50%;background:var(--peach);display:grid;place-items:center;font-size:52px;font-style:normal;line-height:1}
+#p04-2-menu .sum{display:flex;align-items:center;justify-content:space-between;padding-top:24px;font:400 58px var(--f-d)}
+#p04-2-menu .sum em{font-style:normal;color:var(--peach-d)}
+/* 04-3 줄 서기 */
+#p04-3-line{gap:28px}
+#p04-3-line .photo{height:560px;flex:none}
+#p04-3-line .photo > img{object-position:50% 100%}
+#p04-3-line .photo .bubble{font-size:32px;padding:14px 24px;white-space:nowrap}
+#p04-3-line .steps{display:flex;flex-direction:column;gap:18px;flex:1;justify-content:center}
+#p04-3-line .step{background:#fff;border-radius:34px;padding:20px 30px;display:flex;align-items:center;gap:24px;box-shadow:var(--drop)}
+#p04-3-line .step > i{font:400 36px var(--f-d);font-style:normal;flex:none;width:60px;height:60px;border-radius:50%;background:var(--sc);color:#fff;display:grid;place-items:center}
+#p04-3-line .step .t{font:400 40px var(--f-d)}
+#p04-3-line .step .d{font-size:27px;font-weight:600;color:var(--ink-soft);margin-top:3px}
+/* 04-4 한 입 */
+#p04-4-bite{gap:30px}
+#p04-4-bite .lead{margin:-10px 0 0}
+#p04-4-bite .grid4{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:24px;flex:1;min-height:0}
+#p04-4-bite .tile{background:#fff;border-radius:40px;padding:12px;box-shadow:var(--drop);display:flex;flex-direction:column;min-height:0}
+#p04-4-bite .ph{flex:1;border-radius:30px;overflow:hidden;position:relative;min-height:0}
+#p04-4-bite .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#p04-4-bite .tile b{font:400 42px var(--f-d);padding:12px 14px 4px;display:flex;align-items:center;gap:14px}
+#p04-4-bite .tile b i{display:flex;gap:7px}
+#p04-4-bite .tile b u{display:block;width:24px;height:24px;border-radius:50%;background:#eadfcb}
+#p04-4-bite .tile b u.r{background:#e8475f}#p04-4-bite .tile b u.g{background:#7cc36a}#p04-4-bite .tile b u.p{background:#8c55b8}
+/* 04-5 테이블 */
+#p04-5-table{gap:28px}
+#p04-5-table .photo{height:600px;flex:none}
+#p04-5-table .note{padding:24px 32px;font-size:32px}
+#p04-5-table .cta{margin-top:auto;padding:24px 32px;display:flex;align-items:center;gap:20px}
+#p04-5-table .cta .word{height:58px;display:block}
+#p04-5-table .cta .d{font-size:28px;font-weight:700;color:var(--ink-soft);margin-top:8px}
+#p04-5-table .cta .btn{margin-left:auto}
 </style>
 </head>
 <body>
@@ -271,6 +335,71 @@ body.export .ab::before{display:none}
     <div class="bubble" style="left:690px;top:186px">같이 탈래요?</div>
   </div>
   <div class="note">머리 위 <b>말풍선 채팅</b>으로 이야기를 나눠요.</br>친구랑 같은 방번호로 들어오면 만날 수 있어요!</div>
+</section>
+
+<!-- ====== 04 폴짝 매점. 장면: scenes/shop.js, 메뉴 이름·설명은 index.html SNACKS와 맞출 것 ====== -->
+<section class="ab" id="p04-shop">
+  <div class="dots"></div><div class="awn"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <span class="series shop">폴짝 매점</span>
+  <div class="head">
+    <h1 class="title">폴 타다 출출할 땐<br><em>폴짝 매점</em></h1>
+    <div class="lead">골라 먹는 간식 다섯 가지</div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="ph"><img src="renders/snack-coffee.png" alt=""></div><div class="lab"><b>아메리카노</b></div></div>
+    <div class="card"><div class="ph"><img src="renders/snack-shake.png" alt=""></div><div class="lab"><b>단백질 쉐이크</b></div></div>
+    <div class="card"><div class="ph"><img src="renders/snack-ion.png" alt=""></div><div class="lab"><b>이온음료</b></div></div>
+    <div class="card"><div class="ph"><img src="renders/snack-chicken.png" alt=""></div><div class="lab"><b>닭가슴살</b></div></div>
+    <div class="card"><div class="ph"><img src="renders/snack-tanghulu.png" alt=""></div><div class="lab"><b>탕후루</b></div></div>
+  </div>
+  <div class="foot"><span class="chip">옆으로 넘겨서 주문하기 →</span></div>
+</section>
+
+<section class="ab inner shop" id="p04-2-menu">
+  <div class="awn"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="series shop">폴짝 매점</span><span class="pageno">2 / 5</span>
+  <h2 class="ititle">오늘의 메뉴,<br><em>뭐 먹을까?</em></h2>
+  <div class="receipt">
+    <div class="rh">폴짝 매점 메뉴판</div>
+    <div class="row"><i class="ic">☕</i><div><b>아메리카노</b><span>폴타기 전 커피 한 잔</span></div></div>
+    <div class="row"><i class="ic">🥤</i><div><b>단백질 쉐이크</b><span>초코맛 단백질 듬뿍</span></div></div>
+    <div class="row"><i class="ic">💧</i><div><b>이온음료</b><span>땀 흘린 뒤 수분 보충</span></div></div>
+    <div class="row"><i class="ic">🍗</i><div><b>닭가슴살</b><span>촉촉한 훈제 닭가슴살로 원기충전</span></div></div>
+    <div class="row"><i class="ic">🍡</i><div><b>탕후루</b><span>오늘만 치팅데이</span></div></div>
+  </div>
+</section>
+
+<section class="ab inner shop" id="p04-3-line">
+  <div class="awn"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="series shop">폴짝 매점</span><span class="pageno">3 / 5</span>
+  <h2 class="ititle">줄 서서 <em>주문해요</em></h2>
+  <div class="photo">
+    <img src="renders/shop-line.png" alt="">
+    <div class="bubble" style="left:655px;top:112px">뭐 드릴까요?</div>
+  </div>
+  <div class="steps">
+    <div class="step"><i>1</i><div><div class="t">매점이나 직원을 눌러요</div><div class="d">줄 끝으로 알아서 걸어가요</div></div></div>
+    <div class="step"><i>2</i><div><div class="t">카운터는 한 명씩!</div><div class="d">앞 손님이 받으면 한 칸씩 앞으로</div></div></div>
+    <div class="step"><i>3</i><div><div class="t">내 차례에 메뉴를 골라요</div><div class="d">직원이 금방 만들어 건네줘요</div></div></div>
+  </div>
+</section>
+
+<section class="ab inner shop" id="p04-4-bite">
+  <div class="awn"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="series shop">폴짝 매점</span><span class="pageno">4 / 5</span>
+  <h2 class="ititle">누를 때마다 <em>한 입!</em></h2>
+  <div class="lead">“한 입” 버튼 세 번이면 다 먹어요</div>
+  <div class="grid4">
+    <div class="tile"><div class="ph"><img src="renders/bite-1.png" alt=""></div><b>한 입 <i><u class="r"></u><u class="g"></u><u></u></i></b></div>
+    <div class="tile"><div class="ph"><img src="renders/bite-2.png" alt=""></div><b>두 입 <i><u class="r"></u><u></u><u></u></i></b></div>
+    <div class="tile"><div class="ph"><img src="renders/bite-3.png" alt=""></div><b>세 입 <i><u></u><u></u><u></u></i></b></div>
+    <div class="tile"><div class="ph"><img src="renders/bite-4.png" alt=""></div><b>배불러서 활짝!</b></div>
+  </div>
+</section>
+
+<section class="ab inner shop" id="p04-5-table">
+  <div class="awn"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="series shop">폴짝 매점</span><span class="pageno">5 / 5</span>
+  <h2 class="ititle">테이블에서 <em>같이 먹어요</em></h2>
+  <div class="photo"><img src="renders/shop-table.png" alt=""></div>
+  <div class="note">의자에 앉으면 간식은 <b>테이블 위에</b> 놓여요.<br>한 입 누를 때만 집어서 냠!</div>
+  <div class="cta panel"><div><img class="word" src="../logo/v2/wordmark.svg" alt="폴크닉"><div class="d">프로필 링크에서 바로 입장</div></div><div class="btn pink">간식 먹으러 가기</div></div>
 </section>
 
 <!-- ====== 프로필 사진(1080×1080, 인스타가 원으로 자름: 중요한 건 가운데 원 안에) ====== -->
