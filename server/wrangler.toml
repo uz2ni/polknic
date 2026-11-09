@@ -23,6 +23,12 @@ class_name = "Room"
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
+# 알림판 저장소(방명록·기술 요청·문의, board.js). 처음 배포 전 docs/BOARD.md "배포"대로 만들고 database_id를 채울 것
+[[d1_databases]]
+binding = "DB"
+database_name = "polknic-board"
+database_id = "REPLACE_WITH_D1_ID"
+
 # 방문 집계(방 5개를 통틀어 한 곳, index.js Stats)
 [[durable_objects.bindings]]
 name = "STATS"

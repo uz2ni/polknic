@@ -38,6 +38,9 @@
 | `chat_send` | 없음 | 채팅 보냄 (내용은 안 보냄) |
 | `snack_buy` | `item`(coffee/shake/ion/chicken/tanghulu) | 매점에서 간식 주문(맨 앞 차례에서 고른 순간) |
 | `snack_finish` | `item` | "한 입"을 눌러 간식을 다 먹음(마지막 한 입) |
+| `board_open` | 없음 | 알림판 열기 |
+| `board_post` | `kind`(guest/req/ask/idea) | 방명록·기술 요청·문의·제안 보냄 (내용은 안 보냄) |
+| `board_heart` | 없음 | 기술 요청에 하트 |
 | `page_view` | `return_visit`(true) | 위 재방문 page_view |
 
 닉네임·채팅 내용은 보내지 않는다. 그 밖의 `scroll`, `form_start`, `user_engagement` 등은 GA4 향상된 측정이 자동으로 보낸다(코드에 없음, 마지막 전송 시각에도 안 잡힘).

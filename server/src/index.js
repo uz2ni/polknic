@@ -5,17 +5,20 @@
 // 메시지 형식은 docs/MULTIPLAYER.md "서버 프로토콜" 참고.
 import { DurableObject } from 'cloudflare:workers';
 import { badText } from './words.js';
+import { boardRoute, adminRoute, boardCleanup } from './board.js';
 
 const PROD_ORIGIN = 'https://polknic.yujamong.com';
 // 개발 중 맥(localhost)과 같은 와이파이의 폰(사설 IP)에서 여는 페이지도 허용
 const DEV_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === '/') return new Response('polknic-server ok');
+    if (url.pathname === '/admin' || url.pathname === '/admin/api') return adminRoute(req, env, url);
     const origin = req.headers.get('Origin') || '';
     const allowed = origin === PROD_ORIGIN || DEV_ORIGIN.test(origin);
+    if (url.pathname === '/board' || url.pathname.startsWith('/board/')) return boardRoute(req, env, ctx, url, origin, allowed);
     // 방 고르는 화면용: 방마다 지금 인원. 잠든 방도 잠깐 깨워서 물어본다(요청이 적어 무료 한도 안)
     if (url.pathname === '/rooms') {
       if (!allowed) return new Response('forbidden origin', { status: 403 });
@@ -32,8 +35,9 @@ export default {
     return room.fetch(req);
   },
 
-  // 매일 23:59(한국 시간, wrangler.toml의 crons) 오늘 입장 수를 방마다 모아 슬랙으로
+  // 매일 23:59(한국 시간, wrangler.toml의 crons) 알림판 정리(90일 지난 연락처 삭제) 후, 오늘 입장 수를 방마다 모아 슬랙으로
   async scheduled(event, env, ctx) {
+    await boardCleanup(env).catch(e => console.error('board cleanup', e));   // 실패해도 하루 요약은 보낸다
     const day = kstDay();
     const v = await statsHub(env).fetch('https://stats/day?day=' + day).then(r => r.json()).catch(() => ({ visits: 0, names: [] }));
     const rooms = await Promise.all(Array.from({ length: +env.MAX_ROOMS }, (_, i) =>

@@ -155,6 +155,46 @@ body.clean #mateMenu,body.clean #inviteCard{display:none!important}
 #shopItems i{font-style:normal;font-size:26px;line-height:1.15}
 #shopItems small{font:400 10.5px/1.3 var(--f-body);color:var(--muted);text-align:center}
 body.clean #shopMenu,body.photo #shopMenu{display:none!important}
+/* notice board: a cork board with sticky notes; the "운영자에게" tab is a private letter form */
+#boardBtn{position:relative}
+#boardDot{position:absolute;top:1px;right:1px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+#boardDot[hidden]{display:none}
+#board[hidden]{display:none}
+#board{position:fixed;left:50%;top:calc(68px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:7;width:min(560px,calc(100% - 24px));max-height:calc(100% - 84px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;box-sizing:border-box;padding:12px;border-radius:22px;background:#e4bd86;border:5px solid #a9794a;box-shadow:0 4px 0 rgba(90,66,55,.18),0 12px 28px rgba(60,110,130,.2);color:var(--ink);font:500 14px var(--f-body)}
+#board .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#board .head b{font:400 21px var(--f-display);color:#5a3b22}
+#board .head button{border:0;background:none;font-size:16px;color:#5a3b22;cursor:pointer;padding:4px 6px}
+#boardTabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+#boardTabs button{border:0;border-radius:999px;background:#fff6e4;color:#5a3b22;font:400 14.5px var(--f-display);padding:7px 12px;cursor:pointer}
+#boardTabs button[aria-pressed="true"]{background:#a9794a;color:#fff}
+#boardTabs .gap{flex:1}
+#board form{display:flex;gap:6px;margin-bottom:8px}
+#board input,#board textarea{flex:1;min-width:0;box-sizing:border-box;border:2px solid transparent;border-radius:12px;background:#fffdf6;color:var(--ink);font:500 16px var(--f-body);padding:8px 11px;outline:none}
+#board input:focus,#board textarea:focus{border-color:var(--accent)}
+#board form button.send{flex:0 0 auto;border:0;border-radius:12px;background:var(--accent);color:#fff;font:400 15px var(--f-display);padding:0 14px;cursor:pointer}
+#boardMsg{margin:0 0 8px;color:#5a3b22;font:600 13px/1.4 var(--f-body)}
+#boardMsg[hidden]{display:none}
+#boardNotes{flex:1;min-height:90px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));align-content:start;gap:10px;padding:2px}
+#boardNotes .empty{grid-column:1/-1;text-align:center;color:#5a3b22;padding:22px 0}
+.note{position:relative;min-height:92px;box-sizing:border-box;padding:12px 10px 8px;border-radius:3px;box-shadow:0 2px 3px rgba(90,66,55,.28);display:flex;flex-direction:column;justify-content:space-between;gap:6px;font:500 13.5px/1.4 var(--f-body);overflow-wrap:anywhere}
+.note::before{content:'';position:absolute;top:3px;left:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--accent);box-shadow:0 1px 1px rgba(90,66,55,.4)}
+.note small{display:flex;justify-content:space-between;gap:6px;font:500 11.5px var(--f-body);color:var(--muted)}
+.note.flash{outline:3px solid var(--accent);outline-offset:1px}
+.note b{font:400 15.5px/1.3 var(--f-display)}
+.note .foot{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:28px}
+.note .heart{border:0;background:rgba(255,255,255,.65);border-radius:999px;color:var(--ink);font:600 12.5px var(--f-body);padding:4px 9px;cursor:pointer}
+.note .heart[aria-pressed="true"]{background:var(--accent);color:#fff}
+.note .stamp{font:600 11px var(--f-body);padding:2px 7px;border:1.5px solid currentColor;border-radius:999px;white-space:nowrap}
+#boardMail[hidden]{display:none}
+#boardMail{flex:1;overflow-y:auto;background:#fffdf6;border-radius:14px;padding:12px}
+#boardMail form{display:block;margin:0}
+#boardMail p{margin:0 0 8px;font:500 13px/1.5 var(--f-body);color:var(--muted)}
+#boardMail .kinds{display:flex;gap:6px;margin-bottom:8px}
+#boardMail textarea,#boardMail input{display:block;width:100%;background:#fff;border:2px solid var(--line)}
+#boardMail textarea{height:92px;resize:none}
+#boardMail .count{text-align:right;font:500 11.5px var(--f-body);color:var(--muted);margin:2px 0 8px}
+#boardMail .send{display:block;width:100%;height:42px;margin-top:10px}
+body.clean #board,body.photo #board{display:none!important}
 #toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:8;padding:8px 14px;border-radius:999px;background:rgba(90,66,55,.82);color:#fff;font:500 13px var(--f-body);pointer-events:none;white-space:nowrap}
 
 /* photo mode: menus hidden for clean screenshots / screen recordings; one small button fades in on movement */
@@ -243,6 +283,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <button id="photoBtn" class="iconbtn glass" type="button" aria-label="사진 찍기" title="사진 찍기"><svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2l1.4 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/></svg></button>
   <button id="uiHide" class="iconbtn glass" type="button" aria-label="메뉴 숨기기" title="메뉴 숨기기 (H)"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12 12 0 0 1-2.6 3.6M6.2 6.2C4.3 7.5 3 9.6 2.5 12c1 2.5 4.5 7 9.5 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
   <span class="gap"></span>
+  <button id="boardBtn" class="iconbtn glass" type="button" aria-controls="board" aria-expanded="false" aria-label="알림판" title="알림판"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5V3M7.5 10h9M7.5 14h5.5"/></svg><span id="boardDot" hidden></span></button>
   <button id="wardrobeBtn" class="iconbtn glass" type="button" aria-controls="wardrobe" aria-expanded="false" aria-label="옷장" title="옷장"><svg viewBox="0 0 24 24"><path d="M12 7.5a2 2 0 1 1 2-2M12 7.5v1.2L3.6 15a1.7 1.7 0 0 0 1 3.1h14.8a1.7 1.7 0 0 0 1-3.1L12 8.7"/></svg></button>
   <button id="settingsBtn" class="iconbtn glass" type="button" aria-controls="settings" aria-expanded="false" aria-label="설정" title="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
@@ -270,6 +311,24 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 <div id="flash"></div>
 <div id="photoView" hidden><div class="card glass"><button type="button" class="x" id="photoViewClose" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
 <div id="shopMenu" class="glass" hidden><div class="head"><b>폴짝 매점</b><button type="button" id="shopClose" aria-label="닫기">✕</button></div><p id="shopText"></p><div id="shopItems"></div></div>
+<section id="board" aria-label="알림판" hidden>
+  <div class="head"><b>폴크닉 알림판</b><button type="button" id="boardClose" aria-label="닫기">✕</button></div>
+  <div id="boardTabs"><button type="button" data-tab="guest" aria-pressed="true">방명록</button><button type="button" data-tab="req" aria-pressed="false">기술 요청</button><span class="gap"></span><button type="button" data-tab="mail" aria-pressed="false">운영자에게</button></div>
+  <form id="boardForm" autocomplete="off"><input id="boardInput" type="text" aria-label="포스트잇 내용"><button class="send" type="submit" id="boardSend">붙이기</button></form>
+  <p id="boardMsg" role="status" hidden></p>
+  <div id="boardNotes"></div>
+  <div id="boardMail" hidden>
+    <form id="mailForm" autocomplete="off">
+      <p>운영자만 읽어요. 알림판에 붙지 않아요.</p>
+      <div class="kinds"><button class="chip" type="button" data-kind="ask" aria-pressed="true">문의</button><button class="chip" type="button" data-kind="idea" aria-pressed="false">제안</button></div>
+      <textarea id="mailText" maxlength="200" aria-label="운영자에게 보낼 내용" placeholder="하고 싶은 말을 적어 주세요"></textarea>
+      <div class="count"><span id="mailCount">0</span>/200</div>
+      <input id="mailContact" type="text" maxlength="60" aria-label="답장 받을 이메일이나 인스타 ID (선택)" placeholder="답장 받을 이메일이나 인스타 ID (선택)">
+      <p style="margin-top:6px">답장할 때만 쓰고, 처리 후 또는 90일 뒤 지워요.</p>
+      <button class="send" type="submit" id="mailSend">보내기</button>
+    </form>
+  </div>
+</section>
 <div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
@@ -2040,6 +2099,7 @@ function clickGround(e){
 const DIRS = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right' };
 window.addEventListener('keydown', e => {
   if (photoOn && e.key === 'Escape'){ setPhoto(false); return; }
+  if (!boardEl.hidden && e.key === 'Escape'){ setBoard(false); return; }
   if (e.target.matches && e.target.matches('input, textarea')) return;   // typing a nickname
   if (e.target.closest && e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
   const dir = DIRS[e.code] || DIRS[e.key];
@@ -3275,6 +3335,155 @@ function roomCurtain(text){
 let toastTimer = 0;
 const toastEl = document.getElementById('toast');
 function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2800); }
+
+/* notice board (docs/BOARD.md): guestbook + technique requests are public sticky notes, "운영자에게" goes only to the operator.
+   Everything is plain HTTP to the server's D1, so it works without joining a room. Other people's text goes in with textContent only */
+const BOARD_URL = NET_URL.replace(/^ws/, 'http').replace(/\/ws$/, '/board');
+const NOTE_COLS = ['#fff2b8', '#ffd6e0', '#d9f0c4', '#cfe7fb', '#ffdfc2'];
+const BOARD_TABS = { guest:{ max:40, ph:'다녀간 흔적을 남겨 주세요', send:'붙이기' }, req:{ max:20, ph:'보고 싶은 기술 이름', send:'요청하기' } };
+const REQ_DONE_MSG = { new:'요청을 붙였어요! 하트를 많이 받은 기술부터 만들어요.', merged:'이미 누가 먼저 요청한 기술이에요. 하트 하나 보태 드렸어요!', liked:'이미 요청된 기술이고, 하트도 벌써 눌러 주셨어요.', making:'지금 열심히 만들고 있어요! 하트 하나 보태 드렸어요.', done:'벌써 폴크닉에 있는 기술이에요! 폴에 올라가 해 보세요.' };
+const boardEl = document.getElementById('board'), boardBtn = document.getElementById('boardBtn'), boardDot = document.getElementById('boardDot');
+const boardForm = document.getElementById('boardForm'), boardInput = document.getElementById('boardInput'), boardSend = document.getElementById('boardSend');
+const boardMsg = document.getElementById('boardMsg'), boardNotes = document.getElementById('boardNotes'), boardMail = document.getElementById('boardMail');
+const mailText = document.getElementById('mailText'), mailContact = document.getElementById('mailContact'), mailSend = document.getElementById('mailSend');
+const boardLiked = new Set();   // hearts this page load: one per note per visit, reloading allows another (decided with the user)
+let boardTab = 'guest', boardData = null, boardBusy = false, mailKind = 'ask', boardFlash = null;
+function boardId(){
+  try {
+    let v = localStorage.getItem('pole-board-id');
+    if (!v){ v = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('pole-board-id', v); }
+    return v;
+  } catch (e) { return ''; }
+}
+function boardSay(msg){ boardMsg.textContent = msg || ''; boardMsg.hidden = !msg; }
+const boardLatest = () => boardData ? Math.max(0, ...boardData.guest.map(n => n.at), ...boardData.req.map(n => n.at)) : 0;
+function boardSeen(open){
+  let seen = 0;
+  try { seen = +localStorage.getItem('pole-board-seen') || 0; } catch (e) {}
+  const latest = boardLatest();
+  if (open && latest){ try { localStorage.setItem('pole-board-seen', String(latest)); } catch (e) {} seen = latest; }
+  boardDot.hidden = !(latest > seen);
+}
+async function boardLoad(){
+  const r = await fetch(BOARD_URL, { cache:'no-store' });
+  if (!r.ok) throw new Error('board ' + r.status);
+  boardData = await r.json();
+}
+async function boardPost(path, body){
+  const r = await fetch(`${BOARD_URL}/${path}`, { method:'POST', headers:{ 'content-type':'application/json' }, body:JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) return j;
+  throw new Error(j.error || 'net');
+}
+function boardError(e){
+  const m = e && e.message;
+  boardSay(m === 'bad' ? '그 말은 붙일 수 없어요. 다른 말로 써 주세요.' : m === 'limit' ? '오늘은 더 붙일 수 없어요. 내일 또 와 주세요!' : m === 'gone' ? '이미 내려간 포스트잇이에요.' : '지금은 보낼 수 없어요. 잠시 뒤 다시 해 주세요.');
+}
+function drawBoard(){
+  document.querySelectorAll('#boardTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === boardTab)));
+  const mail = boardTab === 'mail';
+  boardMail.hidden = !mail; boardForm.style.display = mail ? 'none' : ''; boardNotes.style.display = mail ? 'none' : '';
+  if (mail) return;
+  const tab = BOARD_TABS[boardTab];
+  boardInput.maxLength = tab.max; boardInput.placeholder = tab.ph; boardInput.setAttribute('aria-label', tab.ph); boardSend.textContent = tab.send;
+  boardNotes.textContent = '';
+  const empty = msg => { const p = document.createElement('p'); p.className = 'empty'; p.textContent = msg; boardNotes.appendChild(p); };
+  if (!boardData) return empty('지금은 알림판을 불러올 수 없어요');
+  const list = boardData[boardTab];
+  if (!list.length) return empty(boardTab === 'guest' ? '첫 포스트잇을 붙여 주세요!' : '보고 싶은 기술을 적어 주세요!');
+  list.forEach(n => {
+    const note = document.createElement('article');
+    note.className = 'note';
+    if (boardTab === 'guest'){
+      note.style.background = NOTE_COLS[n.id % NOTE_COLS.length];
+      const text = document.createElement('span'), meta = document.createElement('small'), who = document.createElement('span'), when = document.createElement('span');
+      const d = new Date(n.at);
+      text.textContent = n.text; who.textContent = n.name; when.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
+      meta.append(who, when); note.append(text, meta);
+    } else {
+      note.style.background = n.status === 'done' ? NOTE_COLS[2] : NOTE_COLS[1];
+      const title = document.createElement('b'), foot = document.createElement('div');
+      title.textContent = n.title; foot.className = 'foot';
+      if (n.status === 'done'){
+        const c = document.createElement('small'); c.textContent = `♥ ${n.hearts}`; foot.appendChild(c);
+      } else {
+        const h = document.createElement('button');
+        h.type = 'button'; h.className = 'heart'; h.textContent = `♥ ${n.hearts}`; h.setAttribute('aria-label', `${n.title}에 하트, 지금 ${n.hearts}개`); h.setAttribute('aria-pressed', String(boardLiked.has(n.id)));
+        h.addEventListener('click', () => boardHeart(n));
+        foot.appendChild(h);
+      }
+      if (n.status){ const s = document.createElement('span'); s.className = 'stamp'; s.textContent = n.status === 'done' ? '추가됨' : '만드는 중'; foot.appendChild(s); }
+      note.append(title, foot);
+    }
+    if (boardFlash === n.id){ note.classList.add('flash'); requestAnimationFrame(() => note.scrollIntoView({ block:'nearest' })); }
+    boardNotes.appendChild(note);
+  });
+}
+async function boardHeart(n){
+  if (boardLiked.has(n.id)) return boardSay('이번 접속에서는 이미 눌렀어요. 다시 들어오면 또 누를 수 있어요.');
+  if (boardBusy) return;
+  boardBusy = true; boardSay('');
+  try {
+    const j = await boardPost('heart', { id:n.id });
+    boardLiked.add(n.id); n.hearts = j.hearts;
+    polkTrack('board_heart');
+    drawBoard();
+  } catch (e) { boardError(e); }
+  boardBusy = false;
+}
+function setBoard(open){
+  boardEl.hidden = !open; boardBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  setWardrobe(false); setSettings(false); boardSay(''); boardFlash = null;
+  polkTrack('board_open');
+  drawBoard();
+  boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
+}
+boardBtn.addEventListener('click', () => setBoard(boardEl.hidden));
+document.getElementById('boardClose').addEventListener('click', () => setBoard(false));
+[wBtn, sBtn].forEach(b => b.addEventListener('click', () => setBoard(false)));
+document.querySelectorAll('#boardTabs button').forEach(b => b.addEventListener('click', () => { boardTab = b.dataset.tab; boardSay(''); boardFlash = null; drawBoard(); }));
+boardForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = boardInput.value.trim();
+  if (boardBusy) return;
+  if (!v) return boardSay(boardTab === 'guest' ? '내용을 적어 주세요.' : '기술 이름을 적어 주세요.');
+  boardBusy = true; boardSay('');
+  const guest = boardTab === 'guest';
+  try {
+    const j = guest ? await boardPost('guest', { name:playerName || '폴메이트', text:v, bid:boardId() })
+                    : await boardPost('req', { title:v, bid:boardId(), liked:[...boardLiked] });
+    boardInput.value = '';
+    boardFlash = j.id;
+    if (!guest && j.result !== 'done') boardLiked.add(j.id);
+    boardSay(guest ? '포스트잇을 붙였어요!' : REQ_DONE_MSG[j.result]);
+    polkTrack('board_post', { kind:guest ? 'guest' : 'req' });
+    await boardLoad();
+    boardSeen(true);
+    drawBoard();
+  } catch (err) { boardError(err); }
+  boardBusy = false;
+});
+document.querySelectorAll('#boardMail [data-kind]').forEach(b => b.addEventListener('click', () => {
+  mailKind = b.dataset.kind;
+  document.querySelectorAll('#boardMail [data-kind]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+mailText.addEventListener('input', () => { document.getElementById('mailCount').textContent = mailText.value.length; });
+document.getElementById('mailForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = mailText.value.trim();
+  if (boardBusy) return;
+  if (!text) return boardSay('하고 싶은 말을 적어 주세요.');
+  boardBusy = true; boardSay(''); mailSend.disabled = true;
+  try {
+    await boardPost('inbox', { kind:mailKind, text, contact:mailContact.value.trim(), name:playerName, bid:boardId() });
+    mailText.value = ''; mailContact.value = ''; document.getElementById('mailCount').textContent = '0';
+    boardSay('운영자에게 잘 전했어요. 고마워요!');
+    polkTrack('board_post', { kind:mailKind });
+  } catch (err) { boardError(err); }
+  boardBusy = false; mailSend.disabled = false;
+});
+boardLoad().then(() => boardSeen(false)).catch(() => {});
 
 /* photo mode: the camera icon hides every control and frames my character; the shutter flashes, clicks and makes a
    picture of the 3D view plus the name tags and bubbles as they are on screen, with a small watermark (the Instagram account: photos mostly go there, where links don't open). Saving goes
