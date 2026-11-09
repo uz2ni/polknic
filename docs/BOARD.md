@@ -57,7 +57,7 @@ cd server
 npx wrangler d1 create polknic-board
 ```
 
-출력된 `database_id`를 [server/wrangler.toml](../server/wrangler.toml)의 `REPLACE_WITH_D1_ID`에 넣고:
+(2026-11-09에 만들어 `database_id`를 넣어 둠. 새로 만들 때만 위 명령을 실행하고 [server/wrangler.toml](../server/wrangler.toml)의 값을 바꿀 것.) 그다음:
 
 ```bash
 npx wrangler d1 migrations apply polknic-board --remote
