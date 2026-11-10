@@ -3340,7 +3340,7 @@ function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTim
    Everything is plain HTTP to the server's D1, so it works without joining a room. Other people's text goes in with textContent only */
 const BOARD_URL = NET_URL.replace(/^ws/, 'http').replace(/\/ws$/, '/board');
 const NOTE_COLS = ['#fff2b8', '#ffd6e0', '#d9f0c4', '#cfe7fb', '#ffdfc2'];
-const BOARD_TABS = { guest:{ max:40, ph:'다녀간 흔적을 남겨 주세요', send:'붙이기' }, req:{ max:20, ph:'보고 싶은 기술 이름', send:'요청하기' } };
+const BOARD_TABS = { guest:{ max:40, ph:'다녀간 흔적을 남겨 주세요', send:'붙이기' }, req:{ max:20, ph:'하고 싶은 기술 이름', send:'요청하기' } };
 const REQ_DONE_MSG = { new:'요청을 붙였어요! 하트를 많이 받은 기술부터 만들어요.', merged:'이미 누가 먼저 요청한 기술이에요. 하트 하나 보태 드렸어요!', liked:'이미 요청된 기술이고, 하트도 벌써 눌러 주셨어요.', making:'지금 열심히 만들고 있어요! 하트 하나 보태 드렸어요.', done:'벌써 폴크닉에 있는 기술이에요! 폴에 올라가 해 보세요.' };
 const boardEl = document.getElementById('board'), boardBtn = document.getElementById('boardBtn'), boardDot = document.getElementById('boardDot');
 const boardForm = document.getElementById('boardForm'), boardInput = document.getElementById('boardInput'), boardSend = document.getElementById('boardSend');
@@ -3390,7 +3390,7 @@ function drawBoard(){
   const empty = msg => { const p = document.createElement('p'); p.className = 'empty'; p.textContent = msg; boardNotes.appendChild(p); };
   if (!boardData) return empty('지금은 알림판을 불러올 수 없어요');
   const list = boardData[boardTab];
-  if (!list.length) return empty(boardTab === 'guest' ? '첫 포스트잇을 붙여 주세요!' : '보고 싶은 기술을 적어 주세요!');
+  if (!list.length) return empty(boardTab === 'guest' ? '첫 포스트잇을 붙여 주세요!' : '하고 싶은 기술을 적어 주세요!');
   list.forEach(n => {
     const note = document.createElement('article');
     note.className = 'note';
