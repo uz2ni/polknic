@@ -730,6 +730,8 @@ function sunAt(d){
   return [el/R, az];
 }
 let skyHour = null;        // debug override: hour of the day in Seoul (0–24), null = real clock
+const seoulHour = () => skyHour != null ? skyHour : ((Date.now()/36e5 + 9) % 24 + 24) % 24;
+const shopOpen = () => { const h = seoulHour(); return h >= SHOP_HOURS[0] && h < SHOP_HOURS[1]; };
 let skyNext = 0, skyEnvEl = null;
 let skyNight = 0, lampOn = 0;   // 0 = day … 1 = full night / lamps fully lit
 const MOON_DIR = new V3(0.25, 0.8, 0.55).normalize();   // from the front-ish so faces stay lit from the usual camera side
@@ -818,10 +820,11 @@ const POLE_MESHES = [];   // clicking a pole walks to it
 }
 /* props: stepping stones, benches, a sign, low fences, rocks by the water, butterflies */
 const OBSTACLES = [];   // [x, z, r] circles the character walks around
-const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on
+const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on (a bench is two seats on one mesh)
 const BOARD_SPOTS = []; // { x, z, mesh, tab } — the cork board and mailbox by the path; clicking one opens the board panel on that tab
 // snack stand past the west bench, facing the middle of the meadow; the clerk stands behind its counter
 const TABLE = { x:-4.2, z:6.8, r:0.4, h:0.56 };   // the snack table (with three chairs) next to the stand
+const SHOP_HOURS = [9, 21];   // the stand is open from 9 to 21 o'clock, Seoul time (same clock as the sky)
 const SHOP = { x:-6.3, z:5.3 }; SHOP.rot = Math.atan2(-SHOP.x, -(SHOP.z - 1));
 SHOP.front = new V3(SHOP.x + Math.sin(SHOP.rot)*1.0, 0, SHOP.z + Math.cos(SHOP.rot)*1.0);   // where a customer stands at the counter
 // what the stand sells (the server checks the same keys: server/src/index.js SNACKS)
@@ -851,7 +854,9 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
     [-0.55, 0.55].forEach(dx => { box(0.07, 0.42, 0.34, dx, 0.21, 0, woodD); box(0.07, 0.9, 0.06, dx, 0.45, -0.2, woodD); });
     g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -(z - 0.3)); scene.add(g);
     OBSTACLES.push([x, z, 0.8]);
-    BENCHES.push({ x, z, rot:g.rotation.y, mesh:g });
+    // two seats side by side, so two people can share a bench
+    const r = g.rotation.y;
+    [-0.32, 0.32].forEach(dx => BENCHES.push({ x:x + Math.cos(r)*dx, z:z - Math.sin(r)*dx, rot:r, mesh:g }));
   }
   bench(-7, 2.4); bench(7, 2.2);   // out at the sides, looking across the meadow at the stages (in front they hid the poles)
   // a round snack table with three chairs beside the stand. The chairs are seats like the benches (same sitBench pose, seat
@@ -1037,6 +1042,29 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
       const p = new T.Mesh(new T.BoxGeometry(0.44, 0.56, 0.025), [brownM, brownM, brownM, brownM, s > 0 ? toonF('#ffffff', { map:menuTex }) : brownM, brownM]);
       p.position.set(0, 0.27, s*0.07); p.rotation.x = -s*0.18; p.castShadow = true; board.add(p);
     });
+    // outside opening hours a striped curtain (like the awning) drops over the whole front, with a CLOSED board on it (updateClerk)
+    const CW = W + 0.14, CH = 1.56, closedText = ['CLOSED', `영업 ${SHOP_HOURS[0]}시 ~ ${SHOP_HOURS[1]}시`];
+    const drawClosed = (c, s) => {
+      for (let i = 0; i < 10; i++){ c.fillStyle = i % 2 ? '#fffaf0' : '#f6a9bd'; c.fillRect(i*s/10, 0, s/10 + 1, s); }
+      for (let i = 0; i < 10; i++){   // soft folds
+        const g = c.createLinearGradient(i*s/10, 0, (i + 1)*s/10, 0);
+        g.addColorStop(0, 'rgba(90,40,60,.12)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(90,40,60,.12)');
+        c.fillStyle = g; c.fillRect(i*s/10, 0, s/10, s);
+      }
+      // the board, drawn squeezed sideways so it isn't stretched on the wide curtain
+      c.save(); c.translate(s/2, s*0.47); c.scale(CH/CW, 1);
+      c.strokeStyle = '#8a5a3c'; c.lineWidth = 6; c.beginPath(); c.moveTo(-120, -110); c.lineTo(0, -175); c.lineTo(120, -110); c.stroke();   // hanging string
+      c.fillStyle = '#fff3dc'; c.strokeStyle = '#8a5a3c'; c.lineWidth = 12;
+      c.beginPath(); c.roundRect ? c.roundRect(-230, -115, 460, 230, 34) : c.rect(-230, -115, 460, 230); c.fill(); c.stroke();
+      c.fillStyle = '#e0607f'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '120px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(closedText[0], 0, -22, 420);
+      c.fillStyle = '#5a4237'; c.font = '46px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(closedText[1], 0, 70, 420);
+      c.restore();
+    };
+    const closedTex = canvasTex(512, drawClosed);
+    if (document.fonts) document.fonts.load('120px Jua', closedText.join('')).then(() => { drawClosed(closedTex.image.getContext('2d'), 512); closedTex.needsUpdate = true; }).catch(() => {});
+    SHOP.closedSign = add(new T.PlaneGeometry(CW, CH), toonF('#ffffff', { map:closedTex }), 0, CH/2, 0.43, false);
+    SHOP.closedSign.visible = false;
     OBSTACLES.push([SHOP.x + Math.sin(SHOP.rot)*-0.25, SHOP.z + Math.cos(SHOP.rot)*-0.25, 1.15]);
   }
   // low picket fences on the east and west edges of the meadow
@@ -1951,7 +1979,7 @@ let mode = 'roam';          // roam | approach | pole
 let poseName = 'stand';
 let poseStart = 0, poseYaw = 0;
 let walkTarget = null, queuedMove = null, pendingLeave = null;
-let spinPole = false, clock = 0;
+let spinPole = true, clock = 0;   // the pole spins unless the player switches it off
 let myPole = 0;                                    // the pole I'm on or walking to (index into POLES)
 const polesBy = Array(POLES.length).fill(null);    // who holds each pole (player id from the server, null = free)
 let myGroup = null;                                // ids of everyone sharing my pole, in the order they joined (me included), or null
@@ -2070,6 +2098,15 @@ function startStretch(name){
   if (!isMat(sitAt)) return;
   setPose(name); polkTrack('stretch', { pose:name });
 }
+// someone (another player or a bot) is already sitting on this seat
+const seatTaken = b => others.some(av => av.pose === 'sitBench' && Math.hypot(av.holder.position.x - b.x, av.holder.position.z - b.z) < 0.25);
+// the free seat among `list` closest to (x, z), or null when they're all taken
+const freeSeat = (list, x, z) => list.filter(b => !seatTaken(b)).sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z))[0] || null;
+// clicked a bench or chair: walk to its free seat nearest the click
+function pickSeat(list, x, z){
+  const b = freeSeat(list, x, z);
+  if (b) goSitBench(b); else toast('자리가 다 찼어요');
+}
 function goSitBench(b){
   if (mode === 'pole'){ requestLeave(benchFront(b)); sitQueued = b; return; }
   standUp(); mode = 'roam'; queuedMove = null; walkTarget = benchFront(b); sitQueued = b; updateUI();
@@ -2081,9 +2118,7 @@ function toggleSit(){
   if (mode === 'roam' && walkTarget){ sitQueued = 'ground'; updateUI(); return; }   // sit down where she is headed
   const mat = MAT_SPOTS.find(m => onMat(holder.position.x, holder.position.z) && Math.abs(holder.position.x - m.x) < MAT_W/2 + 0.2 && Math.abs(holder.position.z - m.z) < MAT_L/2 + 0.2);
   if (mat){ goSitMat(mat); return; }
-  const d = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
-  const near = BENCHES.filter(b => d(b) < 2.2).sort((a, b) => d(a) - d(b))[0];   // the closest seat (the table has three)
-  if (near) goSitBench(near); else sitDown('ground');
+  sitDown('ground');   // benches and chairs only by clicking them
 }
 
 /* ---------- camera orbit ---------- */
@@ -2151,7 +2186,11 @@ function update(dt){
       if (dir || sitAt || mode !== 'roam') turnTo = null;
       else { holder.rotation.y = angLerp(holder.rotation.y, turnTo, 1 - Math.exp(-12*dt)); if (Math.abs(wrapAng(holder.rotation.y - turnTo)) < 0.02) turnTo = null; }
     }
-    if (mode === 'roam' && sitQueued && !walkTarget && !keyDir) sitDown(sitQueued);   // arrived (or stopped): sit here
+    if (mode === 'roam' && sitQueued && !walkTarget && !keyDir){   // arrived (or stopped): sit here
+      let t = sitQueued;
+      if (t !== 'ground' && !isMat(t) && seatTaken(t)) t = freeSeat(BENCHES.filter(b => b.mesh === t.mesh), t.x, t.z);   // someone got there first
+      if (t) sitDown(t); else { sitQueued = null; toast('자리가 다 찼어요'); updateUI(); }
+    }
     if (pokeFor && (keyDir || mode !== 'roam' || sitAt)) pokeFor = null;   // went somewhere else instead
     else if (pokeFor && !walkTarget) pokeNow(remoteById(pokeFor));   // arrived beside them (or stopped on the way): poke
   }
@@ -2371,11 +2410,10 @@ function clickGround(e){
   const post = ray.intersectObjects(BOARD_SPOTS.map(b => b.mesh), true)[0];
   if (post){ let o = post.object; while (o.parent && o.parent !== scene) o = o.parent; const b = BOARD_SPOTS.find(b => b.mesh === o); if (b){ setBoard(true, b.tab); return; } }
   if (ray.intersectObjects([TABLE.mesh], true)[0]){
-    const chairs = BENCHES.filter(b => b.chair), d = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
-    goSitBench(chairs.sort((a, b) => d(a) - d(b))[0]); return;
+    pickSeat(BENCHES.filter(b => b.chair), holder.position.x, holder.position.z); return;
   }
   const seat = ray.intersectObjects(BENCHES.map(b => b.mesh), true)[0];
-  if (seat){ const b = BENCHES.find(b => b.mesh === seat.object.parent); if (b){ goSitBench(b); return; } }
+  if (seat){ const list = BENCHES.filter(b => b.mesh === seat.object.parent); if (list.length){ pickSeat(list, seat.point.x, seat.point.z); return; } }
   const hit = new V3();
   if (!ray.ray.intersectPlane(groundPlane, hit)) return;
   const pi = nearestPole(hit.x, hit.z);
@@ -2419,7 +2457,7 @@ MOVE_ORDER.forEach(n => {
   movesEl.appendChild(b);
 });
 // on the pole, getting down and the spin toggle take the sit button's place at the front (always on screen)
-movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="false" hidden><span>고정폴</span></button>');
+movesEl.querySelector('#sitSep').insertAdjacentHTML('beforebegin', '<button id="spinTog" class="move side" type="button" aria-pressed="true" hidden><span>회전폴</span></button>');
 // double pole moves: only while my pole-mate and I are both on our pole
 const DUO_MOVES = [['stack', '눈사람'], ['fly', '회전목마'], ['ball', '탕후루']];   // stack/fly: exactly two; ball: two to four
 DUO_MOVES.forEach(([k, label]) => {
@@ -2894,6 +2932,9 @@ const clerkTag = document.createElement('div');   // only shows while the clerk 
 clerkTag.className = 'nameTag'; clerkTag.hidden = true; clerkTag.textContent = '매점 직원'; document.body.appendChild(clerkTag);
 // greet the player with an emote now and then while they stand near the counter
 function updateClerk(dt){
+  const open = shopOpen();
+  clerk.holder.visible = open; SHOP.closedSign.visible = !open;
+  if (!open) return;   // gone home: no greetings
   const near = Math.hypot(holder.position.x - SHOP.x, holder.position.z - SHOP.z) < 2.6;
   if (near && clock > clerkWaveAt){ showEmote(clerk, clerkWaveAt ? 'note' : 'heart'); clerkWaveAt = clock + 6; }
   clerk.faceMode = near ? 'joy' : 'auto';
@@ -2922,6 +2963,7 @@ const nearShop = m => Math.hypot(holder.position.x - SHOP.front.x, holder.positi
 function shopWalk(p){ shopTarget = p; walkTarget = p; }
 function goShop(){
   if (shopState === 'line' || shopState === 'making') return;
+  if (!shopOpen()){ toast(`폴짝 매점은 문을 닫았어요. 아침 ${SHOP_HOURS[0]}시에 다시 열어요`); return; }
   shopState = 'walking';
   const p = shopSpot(shopQ.filter(id => id !== net.id).length);   // the end of the line as it is now
   if (mode === 'pole'){ shopTarget = p; requestLeave(p); return; }
@@ -2951,6 +2993,7 @@ function shopPanel(place){
 }
 // every frame: walk up the line, take my turn, hand the order over, leave the line when she wanders off; eat the snack
 function updateShop(){
+  if ((shopState === 'walking' || shopState === 'line') && !shopOpen()) leaveShop('매점이 문을 닫았어요');   // an order already being made still comes out
   if (shopState === 'walking' && mode === 'roam' && !pendingLeave && walkTarget !== shopTarget){
     if (!walkTarget && shopTarget && Math.hypot(holder.position.x - shopTarget.x, holder.position.z - shopTarget.z) < 1.0) joinLine();
     else shopState = null;   // clicked somewhere else, walked off with the keys, or got stuck behind the stand
