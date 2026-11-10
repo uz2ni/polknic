@@ -1,4 +1,4 @@
-// 알림판 HTTP API. 원본은 D1(env.DB) 한 곳. 설명은 docs/BOARD.md
+// 게시판 HTTP API. 원본은 D1(env.DB) 한 곳. 설명은 docs/BOARD.md
 // - 공개: GET /board, POST /board/guest·req·heart·del
 // - 비공개: POST /board/inbox(쓰기만), /admin(운영자 페이지, ADMIN_KEY 필요)
 import { badText } from './words.js';
@@ -10,7 +10,6 @@ const IP_LIMIT = 20;                             // 같은 IP의 하루 상한(�
 const HEART_PER_MIN = 30;                        // 같은 IP의 분당 하트. 접속당 1회는 클라이언트가 지킴
 const MAX_BODY = 4096, LIST_MAX = 60;
 export const CONTACT_DAYS = 90;
-const STATUS = new Set(['', 'making', 'done']);
 
 const kstDay = (t = Date.now()) => new Date(t + 9*3600*1000).toISOString().slice(0, 10);
 const oneLine = (v, n) => typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '';
@@ -50,7 +49,7 @@ async function overLimit(env, req, scope, bid) {
 async function readBoard(env) {
   const [g, r] = await env.DB.batch([
     env.DB.prepare('SELECT id, name, text, at FROM guest WHERE hidden = 0 ORDER BY at DESC LIMIT ?1').bind(LIST_MAX),
-    env.DB.prepare("SELECT id, title, hearts, status, at FROM req WHERE hidden = 0 ORDER BY status = 'done', hearts DESC, at DESC LIMIT ?1").bind(LIST_MAX),
+    env.DB.prepare('SELECT id, title, hearts, at FROM req WHERE hidden = 0 ORDER BY hearts DESC, at DESC LIMIT ?1').bind(LIST_MAX),
   ]);
   return { guest: g.results, req: r.results };
 }
@@ -86,14 +85,13 @@ export async function boardRoute(req, env, ctx, url, origin, allowed) {
     const title = oneLine(b.title, TITLE_LEN), norm = title.toLowerCase().replace(/\s+/g, '');
     if (!title) return send({ error: 'empty' }, 400);
     if (badText(title)) return send({ error: 'bad' }, 422);
-    const old = await env.DB.prepare('SELECT id, status, hidden FROM req WHERE norm = ?1').bind(norm).first();
+    const old = await env.DB.prepare('SELECT id, hidden FROM req WHERE norm = ?1').bind(norm).first();
     if (old) {
       if (old.hidden) return send({ error: 'bad' }, 422);   // 운영자가 내린 이름은 다시 올리지 못함
-      if (old.status === 'done') return send({ id: old.id, result: 'done' });
       if (Array.isArray(b.liked) && b.liked.includes(old.id)) return send({ id: old.id, result: 'liked' });
       if (await heartLimited(env, req)) return send({ error: 'limit' }, 429);
       await env.DB.prepare('UPDATE req SET hearts = hearts + 1 WHERE id = ?1').bind(old.id).run();
-      return send({ id: old.id, result: old.status === 'making' ? 'making' : 'merged' });
+      return send({ id: old.id, result: 'merged' });
     }
     if (await overLimit(env, req, 'req', b.bid)) return send({ error: 'limit' }, 429);
     const row = await env.DB.prepare('INSERT INTO req(title, norm, at) VALUES(?1, ?2, ?3) RETURNING id').bind(title, norm, now).first();
@@ -102,21 +100,20 @@ export async function boardRoute(req, env, ctx, url, origin, allowed) {
   }
 
   // 내 글 지우기: 이번 접속에서 쓴 글만(새로 붙인 기술 요청 포함, 합쳐진 요청은 표가 없음).
-  // 운영자가 내린 글(다시 못 올리게 막아 둔 이름)과 도장이 찍힌 요청은 지우지 못함
+  // 운영자가 내린 글(다시 못 올리게 막아 둔 이름)은 지우지 못함
   if (url.pathname === '/board/del') {
     const kind = b.kind === 'req' ? 'req' : b.kind === 'guest' ? 'guest' : '';
     if (!kind || !Number.isInteger(b.id)) return send({ error: 'id' }, 400);
     const want = await delKey(env, kind, b.id);
     if (!want || typeof b.key !== 'string' || await sha(b.key) !== await sha(want)) return send({ error: 'denied' }, 403);
-    const sql = kind === 'guest' ? 'DELETE FROM guest WHERE id = ?1 AND hidden = 0' : "DELETE FROM req WHERE id = ?1 AND hidden = 0 AND status = ''";
-    const r = await env.DB.prepare(sql).bind(b.id).run();
+    const r = await env.DB.prepare(`DELETE FROM ${kind} WHERE id = ?1 AND hidden = 0`).bind(b.id).run();
     return r.meta.changes ? send({ ok: true }) : send({ error: 'gone' }, 404);
   }
 
   if (url.pathname === '/board/heart') {
     if (!Number.isInteger(b.id)) return send({ error: 'id' }, 400);
     if (await heartLimited(env, req)) return send({ error: 'limit' }, 429);
-    const row = await env.DB.prepare("UPDATE req SET hearts = hearts + 1 WHERE id = ?1 AND hidden = 0 AND status <> 'done' RETURNING hearts").bind(b.id).first();
+    const row = await env.DB.prepare('UPDATE req SET hearts = hearts + 1 WHERE id = ?1 AND hidden = 0 RETURNING hearts').bind(b.id).first();
     return row ? send({ hearts: row.hearts }) : send({ error: 'gone' }, 404);
   }
 
@@ -158,7 +155,7 @@ export async function adminRoute(req, env, url) {
     const [i, g, r] = await db.batch([
       db.prepare('SELECT * FROM inbox ORDER BY at DESC LIMIT 300'),
       db.prepare('SELECT * FROM guest ORDER BY at DESC LIMIT 200'),
-      db.prepare('SELECT id, title, hearts, status, at, hidden FROM req ORDER BY hearts DESC, at DESC LIMIT 200'),
+      db.prepare('SELECT id, title, hearts, at, hidden FROM req ORDER BY hearts DESC, at DESC LIMIT 200'),
     ]);
     return send({ inbox: i.results, guest: g.results, req: r.results, contactDays: CONTACT_DAYS });
   }
@@ -171,7 +168,6 @@ export async function adminRoute(req, env, url) {
   else if (b.do === 'hideReq') await run('UPDATE req SET hidden = ?1 WHERE id = ?2', b.on ? 1 : 0, id);
   else if (b.do === 'delGuest') await run('DELETE FROM guest WHERE id = ?1', id);
   else if (b.do === 'delReq') await run('DELETE FROM req WHERE id = ?1', id);   // 내린 이름이면 막아 둔 것도 풀림
-  else if (b.do === 'status' && STATUS.has(b.status)) await run('UPDATE req SET status = ?1 WHERE id = ?2', b.status, id);
   else return send({ error: 'do' }, 400);
   return send({ ok: true });
 }

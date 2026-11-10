@@ -187,7 +187,6 @@ body.clean #shopMenu,body.photo #shopMenu{display:none!important}
 .note.mine{padding-right:24px}
 .note .del{position:absolute;top:1px;right:1px;width:26px;height:26px;border:0;border-radius:50%;background:transparent;color:var(--muted);font:600 13px var(--f-body);cursor:pointer}
 .note .del:hover{background:rgba(255,255,255,.6);color:var(--ink)}
-.note .stamp{font:600 11px var(--f-body);padding:2px 7px;border:1.5px solid currentColor;border-radius:999px;white-space:nowrap}
 #boardMail[hidden]{display:none}
 #boardMail{flex:1;overflow-y:auto;background:#fffdf6;border-radius:14px;padding:12px}
 #boardMail form{display:block;margin:0}
@@ -286,7 +285,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <button id="photoBtn" class="iconbtn glass" type="button" aria-label="사진 찍기" title="사진 찍기"><svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2l1.4 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/></svg></button>
   <button id="uiHide" class="iconbtn glass" type="button" aria-label="메뉴 숨기기" title="메뉴 숨기기 (H)"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12 12 0 0 1-2.6 3.6M6.2 6.2C4.3 7.5 3 9.6 2.5 12c1 2.5 4.5 7 9.5 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
   <span class="gap"></span>
-  <button id="boardBtn" class="iconbtn glass" type="button" aria-controls="board" aria-expanded="false" aria-label="알림판" title="알림판"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5V3M7.5 10h9M7.5 14h5.5"/></svg><span id="boardDot" hidden></span></button>
+  <button id="boardBtn" class="iconbtn glass" type="button" aria-controls="board" aria-expanded="false" aria-label="게시판" title="게시판"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5V3M7.5 10h9M7.5 14h5.5"/></svg><span id="boardDot" hidden></span></button>
   <button id="wardrobeBtn" class="iconbtn glass" type="button" aria-controls="wardrobe" aria-expanded="false" aria-label="옷장" title="옷장"><svg viewBox="0 0 24 24"><path d="M12 7.5a2 2 0 1 1 2-2M12 7.5v1.2L3.6 15a1.7 1.7 0 0 0 1 3.1h14.8a1.7 1.7 0 0 0 1-3.1L12 8.7"/></svg></button>
   <button id="settingsBtn" class="iconbtn glass" type="button" aria-controls="settings" aria-expanded="false" aria-label="설정" title="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
@@ -314,15 +313,15 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 <div id="flash"></div>
 <div id="photoView" hidden><div class="card glass"><button type="button" class="x" id="photoViewClose" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="photoImg" alt="찍은 사진"><p id="photoTip"></p><div class="row"><button type="button" id="photoSave">저장</button><button type="button" class="no" id="photoAgain">다시 찍기</button></div></div></div>
 <div id="shopMenu" class="glass" hidden><div class="head"><b>폴짝 매점</b><button type="button" id="shopClose" aria-label="닫기">✕</button></div><p id="shopText"></p><div id="shopItems"></div></div>
-<section id="board" aria-label="알림판" hidden>
-  <div class="head"><b>폴크닉 알림판</b><button type="button" id="boardClose" aria-label="닫기">✕</button></div>
+<section id="board" aria-label="게시판" hidden>
+  <div class="head"><b>폴크닉 게시판</b><button type="button" id="boardClose" aria-label="닫기">✕</button></div>
   <div id="boardTabs"><button type="button" data-tab="guest" aria-pressed="true">방명록</button><button type="button" data-tab="req" aria-pressed="false">기술 요청</button><span class="gap"></span><button type="button" data-tab="mail" aria-pressed="false">운영자에게</button></div>
   <form id="boardForm" autocomplete="off"><input id="boardInput" type="text" aria-label="포스트잇 내용"><button class="send" type="submit" id="boardSend">붙이기</button></form>
   <p id="boardMsg" role="status" hidden></p>
   <div id="boardNotes"></div>
   <div id="boardMail" hidden>
     <form id="mailForm" autocomplete="off">
-      <p>운영자만 읽어요. 알림판에 붙지 않아요.</p>
+      <p>운영자만 읽어요. 게시판에 붙지 않아요.</p>
       <div class="kinds"><button class="chip" type="button" data-kind="ask" aria-pressed="true">문의</button><button class="chip" type="button" data-kind="idea" aria-pressed="false">제안</button></div>
       <textarea id="mailText" maxlength="200" aria-label="운영자에게 보낼 내용" placeholder="하고 싶은 말을 적어 주세요"></textarea>
       <div class="count"><span id="mailCount">0</span>/200</div>
@@ -822,7 +821,7 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
     // notice board: two posts, a wooden frame, a cork face with sticky notes, and a little roof
     const bx = -2.1, bz = 9.05, g = new T.Group(); g.position.set(bx, 0, bz); g.rotation.y = face(bx, bz); scene.add(g);
     const add = (geo, m, x, y, z, shadow = true) => { const o = new T.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = shadow; g.add(o); return o; };
-    const title = '알림판';
+    const title = '게시판';
     const drawCork = (c, s) => {
       c.fillStyle = '#d9a66b'; c.fillRect(0, 0, s, s);
       for (let i = 0; i < 900; i++){ c.fillStyle = rnd() < 0.5 ? 'rgba(140,85,40,.28)' : 'rgba(255,235,200,.3)'; c.fillRect(rnd()*s, rnd()*s, 3, 3); }
@@ -3412,7 +3411,7 @@ function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTim
 const BOARD_URL = NET_URL.replace(/^ws/, 'http').replace(/\/ws$/, '/board');
 const NOTE_COLS = ['#fff2b8', '#ffd6e0', '#d9f0c4', '#cfe7fb', '#ffdfc2'];
 const BOARD_TABS = { guest:{ max:40, ph:'다녀간 흔적을 남겨 주세요', send:'붙이기' }, req:{ max:20, ph:'하고 싶은 기술 이름', send:'요청하기' } };
-const REQ_DONE_MSG = { new:'요청을 붙였어요! 하트를 많이 받은 기술부터 만들어요.', merged:'이미 누가 먼저 요청한 기술이에요. 하트 하나 보태 드렸어요!', liked:'이미 요청된 기술이고, 하트도 벌써 눌러 주셨어요.', making:'지금 열심히 만들고 있어요! 하트 하나 보태 드렸어요.', done:'벌써 폴크닉에 있는 기술이에요! 폴에 올라가 해 보세요.' };
+const REQ_DONE_MSG = { new:'요청을 붙였어요! 하트를 많이 받은 기술부터 만들어요.', merged:'이미 누가 먼저 요청한 기술이에요. 하트 하나 보태 드렸어요!', liked:'이미 요청된 기술이고, 하트도 벌써 눌러 주셨어요.' };
 const boardEl = document.getElementById('board'), boardBtn = document.getElementById('boardBtn'), boardDot = document.getElementById('boardDot');
 const boardForm = document.getElementById('boardForm'), boardInput = document.getElementById('boardInput'), boardSend = document.getElementById('boardSend');
 const boardMsg = document.getElementById('boardMsg'), boardNotes = document.getElementById('boardNotes'), boardMail = document.getElementById('boardMail');
@@ -3460,7 +3459,7 @@ function drawBoard(){
   boardInput.maxLength = tab.max; boardInput.placeholder = tab.ph; boardInput.setAttribute('aria-label', tab.ph); boardSend.textContent = tab.send;
   boardNotes.textContent = '';
   const empty = msg => { const p = document.createElement('p'); p.className = 'empty'; p.textContent = msg; boardNotes.appendChild(p); };
-  if (!boardData) return empty('지금은 알림판을 불러올 수 없어요');
+  if (!boardData) return empty('지금은 게시판을 불러올 수 없어요');
   const list = boardData[boardTab];
   if (!list.length) return empty(boardTab === 'guest' ? '첫 포스트잇을 붙여 주세요!' : '하고 싶은 기술을 적어 주세요!');
   list.forEach(n => {
@@ -3473,22 +3472,16 @@ function drawBoard(){
       text.textContent = n.text; who.textContent = n.name; when.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
       meta.append(who, when); note.append(text, meta);
     } else {
-      note.style.background = n.status === 'done' ? NOTE_COLS[2] : NOTE_COLS[1];
-      const title = document.createElement('b'), foot = document.createElement('div');
+      note.style.background = NOTE_COLS[1];
+      const title = document.createElement('b'), foot = document.createElement('div'), h = document.createElement('button');
       title.textContent = n.title; foot.className = 'foot';
-      if (n.status === 'done'){
-        const c = document.createElement('small'); c.textContent = `♥ ${n.hearts}`; foot.appendChild(c);
-      } else {
-        const h = document.createElement('button');
-        h.type = 'button'; h.className = 'heart'; h.textContent = `♥ ${n.hearts}`; h.setAttribute('aria-label', `${n.title}에 하트, 지금 ${n.hearts}개`); h.setAttribute('aria-pressed', String(boardLiked.has(n.id)));
-        h.addEventListener('click', () => boardHeart(n));
-        foot.appendChild(h);
-      }
-      if (n.status){ const s = document.createElement('span'); s.className = 'stamp'; s.textContent = n.status === 'done' ? '추가됨' : '만드는 중'; foot.appendChild(s); }
+      h.type = 'button'; h.className = 'heart'; h.textContent = `♥ ${n.hearts}`; h.setAttribute('aria-label', `${n.title}에 하트, 지금 ${n.hearts}개`); h.setAttribute('aria-pressed', String(boardLiked.has(n.id)));
+      h.addEventListener('click', () => boardHeart(n));
+      foot.appendChild(h);
       note.append(title, foot);
     }
     const mine = boardMine.get(`${boardTab}:${n.id}`);
-    if (mine && (boardTab === 'guest' || !n.status)){   // a stamped request is the operator's now
+    if (mine){
       const del = document.createElement('button');
       del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = '내 글 지우기'; del.setAttribute('aria-label', '내 글 지우기');
       del.addEventListener('click', () => boardDelete(boardTab, n, mine));
@@ -3550,7 +3543,7 @@ boardForm.addEventListener('submit', async e => {
     boardInput.value = '';
     boardFlash = j.id;
     if (j.key) boardMine.set(`${guest ? 'guest' : 'req'}:${j.id}`, j.key);   // only new notes come with a key (not merged requests)
-    if (!guest && j.result !== 'done') boardLiked.add(j.id);
+    if (!guest) boardLiked.add(j.id);
     boardSay(guest ? '포스트잇을 붙였어요!' : REQ_DONE_MSG[j.result]);
     polkTrack('board_post', { kind:guest ? 'guest' : 'req' });
     await boardLoad();

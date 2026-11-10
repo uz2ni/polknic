@@ -35,7 +35,7 @@ export default {
     return room.fetch(req);
   },
 
-  // 매일 23:59(한국 시간, wrangler.toml의 crons) 알림판 정리(90일 지난 연락처 삭제) 후, 오늘 입장 수를 방마다 모아 슬랙으로
+  // 매일 23:59(한국 시간, wrangler.toml의 crons) 게시판 정리(90일 지난 연락처 삭제) 후, 오늘 입장 수를 방마다 모아 슬랙으로
   async scheduled(event, env, ctx) {
     await boardCleanup(env).catch(e => console.error('board cleanup', e));   // 실패해도 하루 요약은 보낸다
     const day = kstDay();

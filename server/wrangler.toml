@@ -23,7 +23,7 @@ class_name = "Room"
 tag = "v1"
 new_sqlite_classes = ["Room"]
 
-# 알림판 저장소(방명록·기술 요청·문의, board.js, docs/BOARD.md)
+# 게시판 저장소(방명록·기술 요청·문의, board.js, docs/BOARD.md)
 [[d1_databases]]
 binding = "DB"
 database_name = "polknic-board"

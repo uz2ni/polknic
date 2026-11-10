@@ -4,7 +4,7 @@
 
 브라우저 3D 폴댄스 놀이 공간. 파스텔 호숫가 씬 + 무대·폴 3개 + 요가 매트 6개 + 간식 매점·테이블 + 2.5등신 치비 캐릭터(같은 방 최대 20명이 서로 보임), 옷 갈아입기, 폴 기술 5개, 앉기, 표정, BGM. https://polknic.yujamong.com 에 배포 중(예전 주소 https://uz2ni.github.io/polknic/ 은 GitHub이 자동 이동).
 상세 설계·배경·이력은 [HANDOFF.md](docs/HANDOFF.md)에 있음. 단 HANDOFF.md의 캐릭터 치수·포즈 값은 이전 애니풍 7등신 버전 기준이고, 현재 값은 이 파일이 기준이다.
-대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md), 알림판은 [docs/BOARD.md](docs/BOARD.md).
+대화로 정한 것들의 이유는 [docs/DECISIONS.md](docs/DECISIONS.md), 멀티플레이·채팅 계획은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md), 게시판은 [docs/BOARD.md](docs/BOARD.md).
 
 ## 스타일 방향
 
@@ -37,10 +37,10 @@
 |---|---|
 | 1–33 | `<head>`: 제목, 설명·OG 태그, 파비콘, GA4 로더(`GA_ID`, `polkTrack`), 폰트 |
 | 34–126 | `<style>`: 크림색 둥근 패널 UI, 입장 화면, 이름표, 메뉴 숨기기(`body.clean`), 640px 이하 모바일 |
-| 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·알림판·옷장·설정), `#board`(알림판 패널), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
+| 127–178 | HTML: `#scene`, `.brand`(+접속 인원 `#netText`), `.corner`(아이콘: 사진 찍기·메뉴 숨기기·게시판·옷장·설정), `#board`(게시판 패널), `#photoUI`·`#photoView`(사진 모드), `#entry`(닉네임 입장), `#nameTag`, `#wardrobe`, `#settings`(닉네임, 이름·채팅 보기, BGM·곡, 조작법, 저작권), `.hud`(동작 바: 폴 밖에선 앉기, 폴 위에선 내려오기·고정폴/회전폴 토글이 맨 앞 / 그 아래 표정 버튼+채팅 줄), `#uiShow`, `#loading`(로딩 화면) |
 | 179–228 | three.js, renderer/scene, 공용 툰 셰이딩(`grad`, `TOON_K`, `tcol`, `toon`/`toonF`), `canvasTex()` |
 | 229–496 | 하늘, 조명, 호수(`LAKE`, `inLake()`, `lakeShape()`), 잔디·꽃, 나무·덤불·언덕·구름, 데크 무대 + 실버 폴 3개(`POLES`, 앞쪽 오른편 요가 매트 6개 `MATS`·`onMat()`, `STAGE_R`, `onStage()`, `nearestPole()`, `POLE_H`, `STAGE_H`) |
-| 497–590 | 소품: 징검돌, 벤치(`BENCHES`, 테이블 의자 3개도 여기 `chair:true`), 매점 위치·메뉴(`SHOP`, `SNACKS`), 간식 테이블 `TABLE`, 나무 푯말 `woodSign(글자, x, z, 회전)`('안전 폴링', 매트 뒤쪽 꽃밭의 '스트레칭존'), 징검다리 끝의 알림판·우체통(`BOARD_SPOTS`), 폴짝 매점 건물(카운터·차양·간판·메뉴판), 울타리, 바위(`OBSTACLES`), 나비 |
+| 497–590 | 소품: 징검돌, 벤치(`BENCHES`, 테이블 의자 3개도 여기 `chair:true`), 매점 위치·메뉴(`SHOP`, `SNACKS`), 간식 테이블 `TABLE`, 나무 푯말 `woodSign(글자, x, z, 회전)`('안전 폴링', 매트 뒤쪽 꽃밭의 '스트레칭존'), 징검다리 끝의 게시판·우체통(`BOARD_SPOTS`), 폴짝 매점 건물(카운터·차양·간판·메뉴판), 울타리, 바위(`OBSTACLES`), 나비 |
 | 591–1041 | 캐릭터: 공용 재질(`accM` 등)·헬퍼, `chinify()`, 표정별 `drawFace()`(`EXPRS`), 이모트(`showEmote(av, kind)`), **`createAvatar(look, faceRes)`**(리그 `joint()` → `av.J[name]`, `skull`, 헤어, 팔다리, 치마, 장식), `removeAvatar(av)` |
 | 1042–1097 | 옷장: `OPTIONS`, `CLOTH`, `COLORS`, `TOP_PARTS`/`BOT_PARTS`, `DEFAULT`, `dressAvatar(av)`, 내 아바타 `me`(+ 별칭 `holder`/`char`/`J`/`skull`), `applyOutfit()` |
 | 1098–1227 | `POSES`(앉기 2종 + 동작 5종), `MOVE_ORDER`, `LIMBS`, `solveIK(av, …)` |
@@ -50,7 +50,7 @@
 | (봇 앞) | 매점: 직원 NPC `clerk`(`updateClerk`), 손에 든 간식(`buildSnack`, `setSnack(av, 종류)`, 한 입 `takeBite`, `sipAmount`, `showBites`, 손/테이블 `placeSnack`), 줄 서서 사기(`shopQ`, `shopState`, `shopSpot`, `goShop`, `joinLine`, `leaveShop`, `buySnack`, `updateShop`, `onShopQueue`) |
 | 1872–1988 | 테스트 봇(`?bots=N`, `setBots`, `updateBot`), 성능 표시(`perfTick`), `?bench` |
 | 1989–2246 | 멀티플레이: 접속·재접속(`net`, `netStart`, `netConnect`, `netRetry`), 보내기(`netTick`, `netState`, `netSend`), 다른 사람(`addRemote`, `remoteGoal` 지연 예측, `updateRemote`, `safeLook`), 채팅(`showBubble`, `chatForm`, `toast`) |
-| (`toast` 뒤) | 알림판: `BOARD_URL`, `boardLoad`, `drawBoard`, `boardHeart`, `setBoard`, 안내 문구 `REQ_DONE_MSG` |
+| (`toast` 뒤) | 게시판: `BOARD_URL`, `boardLoad`, `drawBoard`, `boardHeart`, `setBoard`, 안내 문구 `REQ_DONE_MSG` |
 | 2247–끝 | `resize`(ResizeObserver), `frame()` 루프, `window.__poleDebug` |
 
 줄 번호는 편집하면서 밀리니 함수명으로 grep 할 것.
@@ -99,7 +99,7 @@
 - 간식 매점('폴짝 매점', 서쪽 벤치 왼쪽): 매점이나 직원을 누르거나 매점 근처에서 E → 줄 끝으로 걸어가 줄 섬(서버 `shop`, 줄 자리 `shopSpot(i)`: 0이 카운터 앞 `SHOP.front`, 뒤로 0.75m씩). **카운터는 한 명씩**: 맨 앞이 고르고 직원이 2.5초(`SHOP_MAKE`) 만들어 건넬 때까지 뒷사람은 `#shopMenu`에 "앞에 N명" 대기 안내, 앞사람이 받으면(`unshop`) 한 칸씩 앞으로 걸어감. 맨 앞이 되면 메뉴(카메라는 매점이 보이게 돌림). 25초(`SHOP_IDLE`) 안 고르면 줄에서 나감. 줄에서 멀어지거나 다른 곳 클릭·폴·앉기·✕·Esc면 나감. 혼자(서버 없음)면 줄은 나뿐. 메뉴(`SNACKS`): 아메리카노·단백질 쉐이크(초코)·이온음료·닭가슴살·탕후루, 전부 무료. 받으면 직원 말풍선 + 오른손에 간식(`av.snack`, 팔은 `animateAvatar`가 앞으로 듦). 저절로 먹지 않고, 간식을 들고 있는 동안 동작 바 앉기 옆에 "(아이콘) 한 입" 버튼(`#biteBtn`). 누를 때마다 손을 입으로 가져가 한 입(1.1초 `BITE_T`, 그동안 표정 joy, 도중에 또 누르면 무시). 탕후루는 알 3개가 위에서부터 하나씩 없어지고 닭가슴살은 1→0.75→0.5로 작아짐(음료는 그대로). 3입(`SNACK_BITES`)이면 버튼이 바로 사라지고 동작이 끝나면 간식도 사라지며 하트 + 배불러서 2.5초 활짝 표정(`av.fullAt`, 표정 설정보다 우선) 후 원래 표정. 폴에 오르거나 매트에 앉으면 내려놓음(먹던 것도 없어짐, 남의 화면에서도 폴·매트 위에선 숨김). 다른 사람에겐 `state`의 `bite`(몇 입)로 전해져 같은 동작이 보임.
 - 간식 테이블(매점 오른쪽 앞 `TABLE`, 둥근 테이블 + 의자 3개): 의자는 `BENCHES`에 `chair:true`로 들어가 벤치처럼 앉음(같은 `sitBench` 포즈, 의자 뒤 `front:-0.62`로 걸어와 앉고 일어나면 의자 뒤에 섬). 테이블을 누르면 가장 가까운 의자로, E는 가장 가까운 자리로. 간식을 든 채 의자에 앉으면 간식이 내 앞 테이블 위(`chair.food`)에 놓이고, "한 입"을 누르면 집어서 먹고 다시 내려놓음(`animateAvatar`가 sitBench + 의자 0.2m 안이면 판단해서 남의 화면에서도 똑같이). 의자 잠금은 없음(벤치와 같음). 미리보기 `__poleDebug.table(의자, 간식, yaw, pitch, dist)` 매점에서 멀어지면 메뉴 닫힘. 메뉴를 바꾸면 서버 `SNACKS`도 같이. 직원은 근처에 오면 6초마다 이모트. 미리보기 `__poleDebug.shop(yaw, pitch, dist, 거리)`, `__poleDebug.snack(종류, 먹은 입 수)`
 - 채팅(서버 연결 중일 때만): HUD 입력창, Enter로 포커스, 60자·1초 1개. 머리 위 말풍선 8초(`CHAT_SHOW`, `showBubble`), 동작 바 아래 채팅 기록(`chatLog`, 최근 20줄만 화면에만, 누르면 크게 펼침, 입장·퇴장 알림 포함, 새로고침·방 이동 시 비움), "채팅 보기/숨김" 토글. 금칙어·링크는 서버가 거절하고 보낸 사람에게만 토스트(`toast`). 금칙어 목록은 [server/src/words.js](server/src/words.js)(닉네임도 검사). 신고·숨기기·강퇴는 아직 없음
-- 알림판(오른쪽 위 핀 아이콘, 또는 징검다리 길 끝 뒤편의 코르크 알림판·분홍 우체통을 누르거나 근처에서 E: 알림판은 방명록, 우체통은 '운영자에게' 탭으로 `setBoard(true, tab)`, [docs/BOARD.md](docs/BOARD.md)): 방명록(40자, 색은 글 번호로)·기술 요청(이름 20자, 같은 이름은 합쳐서 하트 +1, 하트는 접속당 글마다 1회)은 공개 포스트잇(이번 접속에 내가 붙인 글은 ✕로 지움, `boardMine`), 운영자에게(문의/제안 200자, 연락처 선택)는 비공개. 저장은 D1(`env.DB`), 슬랙 알림, 운영자 페이지 `/admin`(`ADMIN_KEY`, 공개 글 내리기·완전 삭제). 연락처는 슬랙에 보내지 않고 처리 완료 또는 90일 뒤 지움(cron `boardCleanup`). 신고 기능은 넣지 않음
+- 게시판(오른쪽 위 핀 아이콘, 또는 징검다리 길 끝 뒤편의 코르크 게시판·분홍 우체통을 누르거나 근처에서 E: 게시판은 방명록, 우체통은 '운영자에게' 탭으로 `setBoard(true, tab)`, [docs/BOARD.md](docs/BOARD.md)): 방명록(40자, 색은 글 번호로)·기술 요청(이름 20자, 같은 이름은 합쳐서 하트 +1, 하트는 접속당 글마다 1회)은 공개 포스트잇(이번 접속에 내가 붙인 글은 ✕로 지움, `boardMine`), 운영자에게(문의/제안 200자, 연락처 선택)는 비공개. 저장은 D1(`env.DB`), 슬랙 알림, 운영자 페이지 `/admin`(`ADMIN_KEY`, 공개 글 내리기·완전 삭제). 연락처는 슬랙에 보내지 않고 처리 완료 또는 90일 뒤 지움(cron `boardCleanup`). 신고 기능은 넣지 않음
 - localStorage 키: `pole-board-id`, `pole-board-seen`, `pole-outfit-v2`(옷), `pole-name`, `pole-name-show`, `pole-face`, `pole-bgm`, `pole-bgm-track`, `pole-chat-show`, `pole-room`
 
 ## 좌표·포즈 규약
