@@ -58,7 +58,7 @@ const statsHub = env => env.STATS.get(env.STATS.idFromName('main'));
 const kstDay = (t = Date.now()) => new Date(t + 9*3600*1000).toISOString().slice(0, 10);
 
 /* ---------- 검증 ---------- */
-const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'chair', 'ppose', 'hera', 'brass', 'split',
+const POSES = new Set(['stand', 'ready', 'sitGround', 'sitBench', 'crouch', 'chair', 'ppose', 'hera', 'brass', 'split',
   'duoStackTop', 'duoStackBase', 'duoFlyTop', 'duoFlyBase', 'duoBall',
   'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
 const SHOP_HOLD = 45000;   // 매점 카운터 맨 앞에서 이만큼(ms) 넘게 있으면 줄에서 뺌(웹은 25초에 스스로 나감)
@@ -205,7 +205,7 @@ export class Room extends DurableObject {
   // 다른 사람에게 보이는 내 상태(snapshot / join 알림용)
   static pub(a) {
     const { id, name, look, x, z, ry, pose, sit, face, spin } = a;
-    return { id, name, look, x, z, ry, pose, sit, face, spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0 };
+    return { id, name, look, x, z, ry, pose, sit, face, spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0, light: !!a.light };
   }
 
   async webSocketMessage(ws, raw) {
@@ -249,7 +249,8 @@ export class Room extends DurableObject {
           && m.ball[1] >= 1 && m.ball[1] <= GROUP_MAX && m.ball[0] >= 0 && m.ball[0] < m.ball[1] ? [m.ball[0], m.ball[1]] : null;
         if (m.snack !== undefined) a.snack = SNACKS.has(m.snack) ? m.snack : null;
         if (m.bite !== undefined) a.bite = a.snack && Number.isInteger(m.bite) && m.bite >= 0 && m.bite <= 9 ? m.bite : 0;   // 간식을 몇 입 먹었는지
-        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0 };
+        if (m.light !== undefined) a.light = m.light === true;   // 폰 라이트를 켜고 있는지
+        const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0, light: !!a.light };
         if (EMOTES.has(m.emote)) out.emote = m.emote;   // 이모트는 한 번 뜨고 끝이라 저장하지 않음
         if (ACTS.has(m.act)) out.act = m.act;   // 몸짓도 마찬가지
         this.broadcast(out, ws);

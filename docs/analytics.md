@@ -38,7 +38,7 @@
 | `chat_send` | 없음 | 채팅 보냄 (내용은 안 보냄) |
 | `snack_buy` | `item`(coffee/shake/ion/chicken/tanghulu) | 매점에서 간식 주문(맨 앞 차례에서 고른 순간) |
 | `snack_finish` | `item` | "한 입"을 눌러 간식을 다 먹음(마지막 한 입) |
-| `gesture` | `kind`(clap/wave/poke) | 박수·인사 버튼, 다른 사람 메뉴의 콕 찌르기 |
+| `gesture` | `kind`(clap/wave/poke/light) | 박수·인사 버튼, 다른 사람 메뉴의 콕 찌르기, 폰 라이트 켜기(light, 켤 때만) |
 | `board_open` | `from`(icon/board/mailbox) | 게시판 열기. 오른쪽 위 아이콘, 호숫가의 게시판(방명록 탭), 우체통(운영자에게 탭) 중 어디서 열었는지 |
 | `board_post` | `kind`(guest/req/ask/idea) | 방명록·기술 요청·문의·제안 보냄 (내용은 안 보냄) |
 | `board_heart` | 없음 | 기술 요청에 하트 |

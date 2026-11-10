@@ -378,6 +378,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
     <button id="biteBtn" class="move side bite" type="button" hidden><span>한 입</span></button>
     <button id="clapBtn" class="move side" type="button"><span>박수</span></button>
     <button id="waveBtn" class="move side" type="button"><span>인사</span></button>
+    <button id="lightBtn" class="move side" type="button" aria-pressed="false"><span>라이트</span></button>
     <span class="sep" id="sitSep" aria-hidden="true"></span>
     <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
   </nav>
@@ -1797,6 +1798,10 @@ const POSES = {
   sitBench: { label:'벤치에서 쉬는 중', p:[0,0.52,0.03], r:[0,0,0],
     j:{ head:[0.06,0,-0.08], lUp:[-0.45,0,0.12], rUp:[-0.45,0,-0.12], lFore:[-0.7,0,0], rFore:[-0.7,0,0],
         lThigh:[-1.5,0,0.08], rThigh:[-1.5,0,-0.08], lShin:[1.15,0,0], rShin:[1.15,0,0], lFoot:[0.2,0,0], rFoot:[0.2,0,0] } },
+  // squatting on the heels (holding up the phone light: the arm is aimed in animateAvatar, the other hand rests on the knee)
+  crouch: { label:'쭈그려 앉기', p:[0,0.15,-0.02], r:[0.12,0,0],
+    j:{ spine:[0.12,0,0], head:[-0.22,0,0], lUp:[-0.75,0,0.2], rUp:[-0.75,0,-0.2], lFore:[-0.75,0,0], rFore:[-0.75,0,0],
+        lThigh:[-2.1,0,0.3], rThigh:[-2.1,0,-0.3], lShin:[2.35,0,0], rShin:[2.35,0,0], lFoot:[-0.35,0,0], rFoot:[-0.35,0,0] } },
   // on a yoga mat: sitting cross-legged, then the four stretches
   matSit: { label:'매트에서 쉬는 중', mat:true, p:[0,0.08,0], r:[0,0,0],
     j:{ head:[0.05,0,0.08], lUp:[-0.35,0,0.25], rUp:[-0.35,0,-0.25], lFore:[-0.6,0,0], rFore:[-0.6,0,0],
@@ -2071,21 +2076,25 @@ const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z
   && OBSTACLES.every(([ox, oz, r]) => { const d1 = Math.hypot(x1 - ox, z1 - oz); return d1 > r || d1 > Math.hypot(x0 - ox, z0 - oz); });
 
 /* ---------- sitting: on the grass wherever she is, or on a bench ---------- */
-let sitAt = null, sitQueued = null;
-let turnTo = null;   // a heading to turn to while standing still (facing someone I poke)   // null | 'ground' | a bench
+let sitAt = null, sitQueued = null;   // null | 'ground' | 'crouch' | a bench / chair / mat
+let turnTo = null;   // a heading to turn to while standing still (facing someone I poke, or the pole I'm shining my light on)
+let lightOn = false;   // holding up the phone light
 const benchFront = b => { const f = b.front ?? 0.95; return new V3(b.x + Math.sin(b.rot)*f, 0, b.z + Math.cos(b.rot)*f); };   // where she walks to sit (chairs: from behind)
-const isMat = t => !!t && t !== 'ground' && t.mat !== undefined;
+const isSpot = t => t === 'ground' || t === 'crouch';   // sitting right where she is (not on a bench, chair or mat)
+const isMat = t => !!t && !isSpot(t) && t.mat !== undefined;
+const groundSit = () => lightOn ? 'crouch' : 'ground';   // with the phone light on she squats instead of sitting down
 function sitDown(target){
-  polkTrack('sit', { spot: target === 'ground' ? 'ground' : isMat(target) ? 'mat' : target.chair ? 'chair' : 'bench' });
+  polkTrack('sit', { spot: isSpot(target) ? target : isMat(target) ? 'mat' : target.chair ? 'chair' : 'bench' });
   walkTarget = null; sitQueued = null;
   if (target === 'ground'){ sitAt = 'ground'; setPose('sitGround'); return; }
+  if (target === 'crouch'){ sitAt = 'crouch'; setPose('crouch'); return; }   // squatting with the phone light up
   rebase(new V3(target.x, 0, target.z), target.rot);
   sitAt = target; setPose(isMat(target) ? 'matSit' : 'sitBench');
 }
 function standUp(){
   if (!sitAt) return;
   if (isMat(sitAt)) rebase(new V3(sitAt.x, 0, sitAt.z), sitAt.rot);   // get up where the mat is
-  else if (sitAt !== 'ground') rebase(benchFront(sitAt), sitAt.rot);
+  else if (!isSpot(sitAt)) rebase(benchFront(sitAt), sitAt.rot);
   sitAt = null; setPose('stand'); updateUI();
 }
 // walk onto a yoga mat and sit on it; the move bar turns into stretches there
@@ -2114,11 +2123,11 @@ function goSitBench(b){
 function toggleSit(){
   if (sitAt){ standUp(); return; }
   if (sitQueued){ sitQueued = null; updateUI(); return; }
-  if (mode === 'pole'){ requestLeave(null); sitQueued = 'ground'; updateUI(); return; }
-  if (mode === 'roam' && walkTarget){ sitQueued = 'ground'; updateUI(); return; }   // sit down where she is headed
+  if (mode === 'pole'){ requestLeave(null); sitQueued = groundSit(); updateUI(); return; }
+  if (mode === 'roam' && walkTarget){ sitQueued = groundSit(); updateUI(); return; }   // sit down where she is headed
   const mat = MAT_SPOTS.find(m => onMat(holder.position.x, holder.position.z) && Math.abs(holder.position.x - m.x) < MAT_W/2 + 0.2 && Math.abs(holder.position.z - m.z) < MAT_L/2 + 0.2);
   if (mat){ goSitMat(mat); return; }
-  sitDown('ground');   // benches and chairs only by clicking them
+  sitDown(groundSit());   // benches and chairs only by clicking them
 }
 
 /* ---------- camera orbit ---------- */
@@ -2182,13 +2191,18 @@ function update(dt){
       else { walkTarget = null; }
       if (mode !== 'pole') holder.rotation.y = angLerp(holder.rotation.y, Math.atan2(dir.x, dir.z), 1 - Math.exp(-10*dt));
     }
+    // phone light on while standing or squatting still: turn to face whoever is on the closest pole
+    if (lightOn && turnTo == null && !dir && !walkTarget && mode === 'roam' && (!sitAt || sitAt === 'crouch')){
+      const o = lightTarget(me, true);
+      if (o){ const a = Math.atan2(o.holder.position.x - holder.position.x, o.holder.position.z - holder.position.z); if (Math.abs(wrapAng(holder.rotation.y - a)) > 0.25) turnTo = a; }
+    }
     if (turnTo != null){
-      if (dir || sitAt || mode !== 'roam') turnTo = null;
+      if (dir || (sitAt && sitAt !== 'crouch') || mode !== 'roam') turnTo = null;
       else { holder.rotation.y = angLerp(holder.rotation.y, turnTo, 1 - Math.exp(-12*dt)); if (Math.abs(wrapAng(holder.rotation.y - turnTo)) < 0.02) turnTo = null; }
     }
     if (mode === 'roam' && sitQueued && !walkTarget && !keyDir){   // arrived (or stopped): sit here
       let t = sitQueued;
-      if (t !== 'ground' && !isMat(t) && seatTaken(t)) t = freeSeat(BENCHES.filter(b => b.mesh === t.mesh), t.x, t.z);   // someone got there first
+      if (!isSpot(t) && !isMat(t) && seatTaken(t)) t = freeSeat(BENCHES.filter(b => b.mesh === t.mesh), t.x, t.z);   // someone got there first
       if (t) sitDown(t); else { sitQueued = null; toast('자리가 다 찼어요'); updateUI(); }
     }
     if (pokeFor && (keyDir || mode !== 'roam' || sitAt)) pokeFor = null;   // went somewhere else instead
@@ -2239,6 +2253,93 @@ function update(dt){
   updateCamera(dt);
 }
 
+/* phone light: anyone can hold up a phone with its torch on. It shines on the closest person on a pole within LIGHT_R
+   in front, otherwise on the grass ahead. Drawn as a soft additive cone + a glow (a real SpotLight would weigh down
+   every material), stronger at night. Others see it through state.light; each screen picks the target by the same rule */
+const LIGHT_R = 4.5;
+const phoneCaseM = toonF('#f6a9bd'), phoneBackM = toonF('#3b3442');
+const flashM = new T.MeshBasicMaterial({ color:0xffffff, toneMapped:false });
+const lightGlowM = new T.SpriteMaterial({ map:glowTex, color:0xfff1d0, transparent:true, depthWrite:false, toneMapped:false, blending:T.AdditiveBlending });
+const lightPoolM = new T.MeshBasicMaterial({ map:glowTex, color:0xfff1d0, transparent:true, depthWrite:false, toneMapped:false, blending:T.AdditiveBlending,
+  polygonOffset:true, polygonOffsetFactor:-3, polygonOffsetUnits:-3 });
+const beamM = new T.ShaderMaterial({
+  uniforms:{ k:{value:0.4} }, transparent:true, depthWrite:false, blending:T.AdditiveBlending, side:T.DoubleSide, fog:false,
+  // brightest at the phone, fading toward the far end and toward the cone's edges
+  vertexShader: 'varying float vT; varying float vE; void main(){ vT = uv.y; vec4 mv = modelViewMatrix*vec4(position,1.0); vec3 n = normalize(normalMatrix*normal); vE = abs(dot(n, normalize(-mv.xyz))); gl_Position = projectionMatrix*mv; }',
+  fragmentShader: 'uniform float k; varying float vT; varying float vE; void main(){ float a = pow(vT, 1.4)*pow(vE, 1.6)*0.5*k; gl_FragColor = vec4(vec3(1.0, 0.96, 0.85)*a, 1.0); }'
+});
+// the closest person on a pole within LIGHT_R of `av` (only in front of her unless anyDir), or null
+function lightTarget(av, anyDir){
+  const h = av.holder.position, fx = Math.sin(av.holder.rotation.y), fz = Math.cos(av.holder.rotation.y);
+  let best = null, bd = LIGHT_R;
+  [me, ...others].forEach(o => {
+    if (o === av || !o.onPole || !o.holder.visible) return;
+    const dx = o.holder.position.x - h.x, dz = o.holder.position.z - h.z, d = Math.hypot(dx, dz);
+    if (d < bd && (anyDir || dx*fx + dz*fz > -0.2*d)){ best = o; bd = d; }
+  });
+  return best;
+}
+// the phone and its light, all in the avatar's holder so removeAvatar takes them along (own geometries: it disposes them)
+function buildPhone(av){
+  const ph = { g:new T.Group() };
+  ph.g.add(new T.Mesh(new T.BoxGeometry(0.06, 0.11, 0.013), [phoneCaseM, phoneCaseM, phoneCaseM, phoneCaseM, phoneBackM, phoneCaseM]));
+  const flash = new T.Mesh(new T.SphereGeometry(0.0075, 8, 6), flashM); flash.position.set(-0.015, 0.036, -0.008); ph.g.add(flash); ph.flash = flash;
+  const cone = new T.ConeGeometry(1, 1, 24, 1, true); cone.translate(0, -0.5, 0);   // tip at the origin, opening down −y
+  ph.beam = new T.Mesh(cone, beamM); ph.beam.frustumCulled = false;
+  ph.flare = new T.Sprite(lightGlowM.clone()); ph.flare.scale.setScalar(0.16);
+  ph.spot = new T.Sprite(lightGlowM.clone());
+  const pg = new T.PlaneGeometry(1, 1); pg.rotateX(-PI/2);
+  ph.pool = new T.Mesh(pg, lightPoolM); ph.pool.renderOrder = 1;
+  [ph.g, ph.beam, ph.flare, ph.spot, ph.pool].forEach(o => av.holder.add(o));
+  return ph;
+}
+const _lt = new V3(), _ls = new V3(), _ld = new V3(), _lh = new V3(), _lm = new T.Matrix4(), _lq = new Q(), _lqi = new Q();
+// point the arm on `side` toward the target (aim false: leave the arm to a gesture), then place the phone and the light
+function drawLight(av, side, aim, dt){
+  const ph = av.phone || (av.phone = buildPhone(av)), { holder, J } = av;
+  holder.updateMatrixWorld(true);
+  const o = lightTarget(av, false);
+  if (o) o.J.chest.getWorldPosition(_lt).y += 0.04;   // their chest
+  else _lt.set(holder.position.x + Math.sin(holder.rotation.y)*1.9, 0.02, holder.position.z + Math.cos(holder.rotation.y)*1.9);   // the grass ahead
+  holder.getWorldQuaternion(_lq); _lqi.copy(_lq).invert();
+  if (aim){
+    // upper arm along the way to the target, but kept in front, a little out to its own side (so the phone isn't in
+    // front of her face) and not up into the big head
+    J[side + 'Up'].getWorldPosition(_ls);
+    _ld.subVectors(_lt, _ls).applyQuaternion(_lqi).normalize();
+    _ld.z = Math.max(_ld.z, 0.6); _ld.y = Math.min(_ld.y, 0.5);
+    _ld.x = side === 'r' ? Math.min(Math.max(_ld.x, -0.6), -0.18) : Math.max(Math.min(_ld.x, 0.6), 0.18);
+    _ld.normalize().applyQuaternion(_lq);
+    J[side + 'Up'].parent.getWorldQuaternion(_q2).invert();
+    _q3.setFromUnitVectors(DOWN, _ld.applyQuaternion(_q2));
+    const kA = 1 - Math.exp(-14*dt);
+    J[side + 'Up'].quaternion.slerp(_q3, kA);
+    J[side + 'Fore'].quaternion.slerp(_q.setFromEuler(_e.set(-0.12, 0, 0)), kA);
+    holder.updateMatrixWorld(true);
+  }
+  // the phone in the hand, its back (with the torch) turned to the target, kept upright
+  J[side + 'Hand'].getWorldPosition(_lh);
+  _ld.subVectors(_lt, _lh).normalize();
+  _lh.addScaledVector(_ld, 0.03);
+  _lm.lookAt(_ls.set(0, 0, 0), _ld, holder.up);   // −z (the back) along the light
+  ph.g.quaternion.setFromRotationMatrix(_lm).premultiply(_lqi);
+  ph.g.position.copy(holder.worldToLocal(_ls.copy(_lh)));
+  ph.g.updateMatrixWorld(true);
+  ph.flash.getWorldPosition(_lh);
+  const len = Math.max(0.3, _lh.distanceTo(_lt)), k = 0.75 + 0.25*skyNight;
+  ph.beam.position.copy(holder.worldToLocal(_ls.copy(_lh)));
+  ph.beam.quaternion.setFromUnitVectors(DOWN, _ld.subVectors(_lt, _lh).normalize()).premultiply(_lqi);
+  ph.beam.scale.set(len*0.17, len, len*0.17);
+  beamM.uniforms.k.value = k;
+  ph.flare.position.copy(ph.beam.position); ph.flare.material.opacity = 0.9;
+  // where it lands: a glow on the person, or a round patch on the grass
+  ph.spot.visible = !!o; ph.pool.visible = !o;
+  if (o){ ph.spot.position.copy(holder.worldToLocal(_ls.copy(_lt))); ph.spot.scale.setScalar(0.7 + len*0.12); ph.spot.material.opacity = 0.55 + 0.3*skyNight; }
+  else { ph.pool.position.copy(holder.worldToLocal(_ls.copy(_lt))); ph.pool.position.y = 0.025; ph.pool.scale.setScalar(0.6 + len*0.2); lightPoolM.opacity = 0.45 + 0.4*skyNight; }
+}
+function hideLight(av){ if (av.phone) [av.phone.g, av.phone.beam, av.phone.flare, av.phone.spot, av.phone.pool].forEach(o => o.visible = false); }
+function showLight(av){ if (av.phone) [av.phone.g, av.phone.beam, av.phone.flare].forEach(o => o.visible = true); }
+
 // pose one avatar from its state: face, hop/squash, root and joint blending, IK grips, hair and skirts
 function animateAvatar(av, dt){
   const { holder, char, J } = av, pose = POSES[av.pose];
@@ -2258,6 +2359,9 @@ function animateAvatar(av, dt){
   const armed = acting && !(av.act === 'clap' && inHand);
   const actSides = !armed ? '' : inHand ? 'l' : av.act === 'clap' || av.act === 'flinch' ? 'lr' : 'r';
   const actArms = armed ? { l:actArm(av.act, tAct, 'l'), r:actArm(av.act, tAct, 'r') } : null;
+  // phone light: in the left hand when the snack has the right; a gesture on that arm takes over the arm for a moment
+  const lit = !!av.light && !av.onPole && !pose.mat && !pose.ball;
+  const litSide = inHand ? 'l' : 'r', litAim = lit && !(armed && actSides.includes(litSide));
 
   // blink
   if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
@@ -2290,6 +2394,7 @@ function animateAvatar(av, dt){
   const breath = panting ? Math.sin(clock*9)*0.06 : Math.sin(clock*1.6)*0.018;   // quick heaving breaths while panting
   JOINTS.forEach(n => {
     if (pose.ikSkip.has(n)) return;
+    if (litAim && (n === litSide + 'Up' || n === litSide + 'Fore')) return;   // drawLight aims this arm
     const b = pose.j[n] || [0,0,0];
     let x = b[0], y = b[1], z = b[2];
     if (av.moveAmp > 0.001){
@@ -2337,6 +2442,8 @@ function animateAvatar(av, dt){
     _q.setFromEuler(_e.set(x, y, z));
     J[n].quaternion.slerp(_q, kj);
   });
+
+  if (lit){ showLight(av); drawLight(av, litSide, litAim, dt); } else hideLight(av);
 
   // IK grips on the pole
   holder.updateMatrixWorld(true);
@@ -2498,6 +2605,8 @@ function updateUI(){
   if (me.snack) bite.firstChild.textContent = SNACKS[me.snack].icon + ' 한 입';
   // gestures: off the pole and off the mats (no clapping with a snack in hand)
   document.getElementById('waveBtn').hidden = onPole || isMat(sitAt);
+  document.getElementById('lightBtn').hidden = onPole || isMat(sitAt);
+  if (lightOn && (onPole || isMat(sitAt))) setLight(false);   // put away on the pole and the mats
   document.getElementById('clapBtn').hidden = onPole || isMat(sitAt) || !bite.hidden;
   ['mv-leave', 'spinTog', 'poleSep'].forEach(id => { document.getElementById(id).hidden = !onPole; });
   // on a mat: stretches instead of pole moves
@@ -2519,6 +2628,14 @@ function playAct(kind){
 }
 document.getElementById('clapBtn').addEventListener('click', () => playAct('clap'));
 document.getElementById('waveBtn').addEventListener('click', () => playAct('wave'));
+// phone light: on and off; it stays on while walking and sitting (squatting when she sits down with it)
+const lightBtn = document.getElementById('lightBtn');
+function setLight(on){
+  lightOn = me.light = on; lightBtn.setAttribute('aria-pressed', String(on));
+  netState();
+  if (on) polkTrack('gesture', { kind:'light' });
+}
+lightBtn.addEventListener('click', () => setLight(!lightOn));
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
@@ -3150,7 +3267,7 @@ function benchTick(now, ms){
 const NET_DEV = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(location.hostname);
 const NET_URL = NET_DEV ? `ws://${location.hostname}:8787/ws` : 'wss://polknic-ws.yujamong.com/ws';
 const NET_ROOMS = 5, ROOM_NAME = n => `${n}번 호숫가`, NET_SEND = 0.1, NET_PING = 25, NET_PONG = 10, WALK = 1.25;
-const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench', 'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
+const GROUND_POSES = new Set(['stand', 'sitGround', 'sitBench', 'crouch', 'matSit', 'matChild', 'matSplit', 'matSquat', 'matPlank', 'matDog', 'matCobra', 'matLegRaise']);
 const net = {
   on:false, ws:null, id:null, room:1, tries:0, retryTimer:0,
   sendT:0, stateT:0, pingT:0, pongBy:0, sent:null, stateDirty:false, emote:null,
@@ -3177,8 +3294,8 @@ function netSend(m){
 function netState(emote, act){ net.stateDirty = true; if (emote) net.emote = emote; if (act) net.act = act; }
 function netFlushState(){
   net.stateT = 0;
-  const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
-  const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null, snack:me.snack || null, bite:me.snack ? me.bites : 0 };
+  const seat = sitAt && !isSpot(sitAt) ? BENCHES.indexOf(sitAt) : null;
+  const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, light:lightOn, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null, snack:me.snack || null, bite:me.snack ? me.bites : 0 };
   if (net.emote) m.emote = net.emote;
   if (net.act) m.act = net.act;
   netSend(m); net.stateDirty = false; net.emote = net.act = null;
@@ -3475,6 +3592,7 @@ function remoteState(av, m){
   }
   if (FACES.some(([v]) => v === m.face)) av.faceMode = m.face;
   av.net.spin = !!m.spin;
+  av.light = m.light === true;
   const snack = SNACK_KEYS.includes(m.snack) ? m.snack : null;
   if (!snack && av.snack && av.bites >= SNACK_BITES) av.fullAt = clock;   // they finished it
   if (snack !== (av.snack || null)) setSnack(av, snack);
@@ -4111,6 +4229,19 @@ window.__poleDebug = {
   shop(y = 0, p = 0.2, d = 4, near = 1.6){ mode = 'roam'; sitAt = null; holder.position.set(SHOP.x + Math.sin(SHOP.rot)*near, 0, SHOP.z + Math.cos(SHOP.rot)*near); holder.rotation.y = SHOP.rot + PI; this.look(SHOP.rot + y, p, d); },
   look(y, p, d){ yaw = y; pitch = p; camDist = d; for (let i = 0; i < 60; i++) update(1/60); renderer.render(scene, camera); },
   bots(n){ setBots(n); return others.length; },
+  // phone light preview: a stand-in doing 브라스 on the left pole, me 2.3 m in front of it with the light (squatting if crouch);
+  // dancer false: no one on the pole, so the light lands on the grass. light(false) clears it
+  light(on = true, crouch = false, dancer = true, y, p, d){
+    let dz = others.find(av => av.lightDummy);
+    if (dz && (!on || !dancer)){ removeAvatar(dz); others.splice(others.indexOf(dz), 1); dz = null; }
+    if (on && dancer && !dz){ dz = createAvatar(Object.assign({}, DEFAULT, { top:'sport', topColor:'#cdbbf0', hair:'tail', hairColor:'#5a3a24' })); dz.lightDummy = true; others.push(dz); }
+    if (dz){ dz.holder.position.copy(POLES[1]); dz.pose = 'brass'; dz.onPole = true; }
+    mode = 'roam'; walkTarget = null; sitAt = null; setPose('stand');
+    holder.position.set(POLES[1].x + 0.5, 0, POLES[1].z + 2.3); holder.rotation.y = 0;
+    setLight(on); if (on && crouch) sitDown('crouch');
+    if (y != null) this.look(y, p, d);
+    return this.step(1.5);
+  },
   // preview a double pole move with a stand-in partner: duo('stack' | 'fly', yaw, pitch, dist), duo(null) removes her
   // preview 탕후루 with n on the pole (stand-ins included): ball(n, turn per person, yaw, pitch, dist)
   ball(n = 4, turn = PI/2, y, pp, d, extra = {}, pose = 'duoBall'){   // extra: look keys for every stand-in, e.g. { bottom:'longSkirt' }
@@ -4151,7 +4282,7 @@ window.__poleDebug = {
   screenOf(name){ const av = others.find(a => a.net && a.net.tag.textContent === name); if (!av) return null; const v = new V3(); av.skull.getWorldPosition(v); v.project(camera); const r = canvas.getBoundingClientRect(); return [Math.round(r.left + (v.x + 1)/2*r.width), Math.round(r.top + (1 - v.y)/2*r.height)]; },
   invite(name){ const av = others.find(a => a.net && a.net.tag.textContent === name); if (av) netSend({ t:'invite', to:av.net.id }); return !!av; },
   duoState(){ const m = mateAv() || groupAvs()[0]; return { leave: !!pendingLeave, since: +(clock - poseStart).toFixed(2), group: myGroup, mate: m && m.net.id, myPole, mode, pose: poseName, spin: spinPole, ready: duoReady(), myRy: +wrapAng(holder.rotation.y).toFixed(2), matePose: m && m.pose, mateRy: m && +wrapAng(m.holder.rotation.y).toFixed(2), polesBy: polesBy.slice() }; },
-  net(){ return { id:net.id, room:net.room, open:!!net.ws, players: others.filter(av => av.net).map(av => ({ name:av.net.tag.textContent, x:+av.holder.position.x.toFixed(2), z:+av.holder.position.z.toFixed(2), to:[av.net.x, av.net.z], pose:av.pose, face:av.faceMode, top:av.outfit.top })) }; }
+  net(){ return { id:net.id, room:net.room, open:!!net.ws, players: others.filter(av => av.net).map(av => ({ name:av.net.tag.textContent, x:+av.holder.position.x.toFixed(2), z:+av.holder.position.z.toFixed(2), to:[av.net.x, av.net.z], pose:av.pose, face:av.faceMode, light:!!av.light, top:av.outfit.top })) }; }
 };
 })();
 </script>
