@@ -3642,7 +3642,7 @@ function setBoard(open, tab){
   boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
 }
 /* ---------- donate: a pink "응원하기" button that opens the 크티 page (new tab, so the game and the room stay) ---------- */
-const DONATE_URL = '';
+const DONATE_URL = 'https://ctee.kr/place/polknic';
 // two copies: next to the camera icon on wide screens, under the logo below 1000px (it would run into the centred logo)
 document.querySelectorAll('.donate').forEach(btn => {
   if (DONATE_URL) btn.href = DONATE_URL;
