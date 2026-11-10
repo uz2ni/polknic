@@ -64,8 +64,11 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.8vw,46px);letter-spacing:.08em;margin:0;text-wrap:balance;display:inline-flex;align-items:center;gap:.3em}
 .brand h1 img{width:1.05em;height:1.05em;border-radius:.25em;box-shadow:0 2px 0 rgba(90,66,55,.25)}
 .brand p{margin:.4em 0 0;font-size:12.5px;font-weight:600;letter-spacing:.12em}
-.brand .donate{pointer-events:auto;display:inline-block;margin-top:9px;padding:7px 15px;border-radius:999px;background:var(--accent);color:#fff;font:400 15px var(--f-display);letter-spacing:.02em;text-decoration:none;text-shadow:none;box-shadow:0 3px 0 rgba(90,66,55,.22)}
-.brand .donate:hover{filter:brightness(1.05)}
+.donate{display:inline-flex;align-items:center;gap:5px;box-sizing:border-box;height:42px;padding:0 15px 0 12px;border:2px solid #fff;border-radius:999px;background:var(--accent);color:#fff;font:400 15px var(--f-display);letter-spacing:.02em;text-decoration:none;text-shadow:none;cursor:pointer;flex:0 0 auto;box-shadow:0 4px 0 rgba(90,66,55,.12),0 12px 28px rgba(60,110,130,.16)}
+.donate svg{width:18px;height:18px;fill:#fff;stroke:none}
+.donate:hover{filter:brightness(1.05)}
+.brand .donate{pointer-events:auto;margin-top:9px;height:36px}
+.donate-m{display:none}
 .brand .now{margin-top:.5em;font-size:12px;letter-spacing:.04em;font-weight:600}
 
 .glass{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:2px solid #fff;box-shadow:0 4px 0 rgba(90,66,55,.12),0 12px 28px rgba(60,110,130,.16);border-radius:22px}
@@ -260,6 +263,8 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
 .name-row{display:flex;gap:6px}
 .name-row input{flex:1;font-size:16px;padding:8px 12px}   /* 16px: iOS zooms the page into smaller inputs */
 .name-row .chip{flex:0 0 auto}
+/* next to the camera only when the centred logo leaves room for it; narrower screens get the copy under the logo */
+@media (max-width:999px){ .donate-w{display:none} .donate-m{display:inline-flex} }
 @media (max-width:640px){
   .brand{top:calc(16px + env(safe-area-inset-top,0px));text-align:left;padding-left:max(16px,env(safe-area-inset-left,0px))}
   .brand h1{letter-spacing:.06em;font-size:26px}
@@ -281,10 +286,11 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <h1><img src="favicon.svg?v=3" alt="">폴크닉</h1>
   <p>온라인 폴댄스 놀이터</p>
   <p class="now" id="netText" hidden></p>
-  <a id="donateBtn" class="donate" target="_blank" rel="noopener">☕ 폴크닉 응원하기</a>
+  <a class="donate donate-m" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.4 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>응원하기</a>
 </header>
 
 <div class="corner">
+  <a class="donate donate-w" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.4 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></svg>응원하기</a>
   <button id="photoBtn" class="iconbtn glass" type="button" aria-label="사진 찍기" title="사진 찍기"><svg viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2l1.4 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/></svg></button>
   <button id="uiHide" class="iconbtn glass" type="button" aria-label="메뉴 숨기기" title="메뉴 숨기기 (H)"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12 12 0 0 1-2.6 3.6M6.2 6.2C4.3 7.5 3 9.6 2.5 12c1 2.5 4.5 7 9.5 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
   <span class="gap"></span>
@@ -3635,16 +3641,16 @@ function setBoard(open, tab){
   drawBoard();
   boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
 }
-/* ---------- donate: a pink button under the logo that opens the 크티 page (new tab, so the game and the room stay) ---------- */
+/* ---------- donate: a pink "응원하기" button that opens the 크티 page (new tab, so the game and the room stay) ---------- */
 const DONATE_URL = '';
-{
-  const btn = document.getElementById('donateBtn');
+// two copies: next to the camera icon on wide screens, under the logo below 1000px (it would run into the centred logo)
+document.querySelectorAll('.donate').forEach(btn => {
   if (DONATE_URL) btn.href = DONATE_URL;
   btn.addEventListener('click', e => {
     if (!DONATE_URL){ e.preventDefault(); return toast('후원 페이지 주소를 아직 넣지 않았어요'); }
     polkTrack('donate_click');
   });
-}
+});
 boardBtn.addEventListener('click', () => setBoard(boardEl.hidden));
 document.getElementById('boardClose').addEventListener('click', () => setBoard(false));
 [wBtn, sBtn].forEach(b => b.addEventListener('click', () => setBoard(false)));
