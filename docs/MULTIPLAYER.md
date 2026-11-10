@@ -77,6 +77,8 @@
 | `invite` / `accept` / `decline` | `to` / `from, i` / `from` | 같이 타기 요청·수락·거절(최대 4명 그룹). 둘 다 혼자면 수락하는 웹이 고른 빈 폴 `i`로 새 그룹, 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류. 요청은 3초에 한 번 |
 | `duoMove` | `kind`(`stack`/`fly`/`ball`) | 같이 타기 기술. 그룹 모두에게 전달. stack·fly는 2명일 때만(받은 쪽이 아래), ball은 2~4명 |
 | `duoSpin` | `on` | 같이 타는 중 스핀 폴 켜기/끄기. 그룹 모두에게 |
+| `state`의 `act` | `clap`/`wave`/`poke`/`flinch` | 한 번 하고 끝나는 몸짓(박수·인사·찌르기·찔려서 움찔). `emote`처럼 저장하지 않고 그 state에만 붙여 전달(서버 `ACTS`) |
+| `poke` | `to` | 콕 찌르기. 찔린 사람에게만 `{t:'poke', from, name}`. 1.5초에 한 번(`POKE_GAP`) |
 | `state`의 `ball` | `[자리, 인원]` | 탕후루 중 내 높이 자리(다른 사람 화면에서 높이·방향을 맞춤) |
 | `state`의 `snack` | 간식 이름 또는 null | 매점에서 산 손에 든 간식(`coffee`/`shake`/`ion`/`chicken`/`tanghulu`, 서버 `SNACKS`). 없는 이름은 null. 같이 오는 `bite`(0~9)는 먹은 입 수(늘면 받는 쪽도 한 입 동작). 스냅샷·join 알림에도 들어감 |
 | `shop` / `unshop` | 없음 | 매점 줄 서기 / 나가기. 줄 선 순서대로 한 명씩(맨 앞이 주문하고 받을 때까지 나머지 대기). 바뀌면 모두에게 `{t:'shop', q:[id…]}`(맨 앞이 카운터). `welcome`에도 `shop`. 맨 앞에서 45초(`SHOP_HOLD`) 넘으면 서버가 빼고, 웹은 25초에 스스로 나감. 줄 선 시각은 각자 attachment `shopAt`이라 잠들었다 깨도 유지 |
@@ -100,6 +102,7 @@
 | `duoEnd` | | 나 말고 다 빠짐. 나는 그 폴을 혼자 잡은 상태 |
 | `duoMove` | `kind, from` | 짝이 더블 기술을 시작함 |
 | `duoSpin` | `on, from` | 짝이 스핀 폴을 켜거나 끔 |
+| `poke` | `from, name` | 누가 나를 콕 찌름(토스트 + 채팅 기록, 내 캐릭터가 움찔하고 `act:'flinch'`를 보냄) |
 | `mat` | `ok?, i, by` | 매트 요청 결과 또는 `i`번 매트 사용자 변경(`welcome.mats[]`에도) |
 | `leave` | `id` | 퇴장 |
 

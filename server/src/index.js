@@ -68,6 +68,8 @@ const GROUP_MAX = 4;
 const INVITE_GAP = 3000;
 const FACES = new Set(['auto', 'open', 'wink', 'joy', 'wow', 'pant']);
 const EMOTES = new Set(['heart', 'note', 'wow', 'sparkle', 'sweat']);
+const ACTS = new Set(['clap', 'wave', 'poke', 'flinch']);   // 한 번 하고 끝나는 몸짓(박수·인사·찌르기·찔려서 움찔), index.html ACTS와 맞출 것
+const POKE_GAP = 1500;   // 찌르기는 1.5초에 한 번
 const SNACKS = new Set(['coffee', 'shake', 'ion', 'chicken', 'tanghulu']);   // 매점 간식(손에 든 것, 웹 index.html SNACKS와 맞출 것)
 const LOOK_KEYS = ['top', 'topColor', 'bottom', 'bottomColor', 'shoes', 'hair', 'acc', 'hairColor', 'eyeColor', 'skin'];
 const POLES = 3;   // 호숫가마다 폴 3개(index.html POLES와 같은 수)
@@ -249,6 +251,7 @@ export class Room extends DurableObject {
         if (m.bite !== undefined) a.bite = a.snack && Number.isInteger(m.bite) && m.bite >= 0 && m.bite <= 9 ? m.bite : 0;   // 간식을 몇 입 먹었는지
         const out = { t: 'state', id: a.id, pose: a.pose, sit: a.sit, face: a.face, spin: a.spin, ball: a.ball || null, snack: a.snack || null, bite: a.bite || 0 };
         if (EMOTES.has(m.emote)) out.emote = m.emote;   // 이모트는 한 번 뜨고 끝이라 저장하지 않음
+        if (ACTS.has(m.act)) out.act = m.act;   // 몸짓도 마찬가지
         this.broadcast(out, ws);
         break;
       }
@@ -330,6 +333,14 @@ export class Room extends DurableObject {
         a.mat = null; ws.serializeAttachment(a);
         this.broadcast({ t: 'mat', i, by: null }, ws);
         return;
+      }
+      case 'poke': {
+        // 콕 찌르기: 찔린 사람에게만 알림(찌르는 손짓·움찔은 각자 state.act로 모두에게 보임)
+        const tw = this.byId(m.to), now = Date.now();
+        if (!tw || tw === ws || now - (a.pokeAt || 0) < POKE_GAP) break;
+        a.pokeAt = now;
+        tw.send(JSON.stringify({ t: 'poke', from: a.id, name: a.name }));
+        break;
       }
       /* 같이 타기: invite → (받은 사람이) accept 또는 decline
          둘 다 혼자면 새 그룹(accept 때 받은 쪽 웹이 고른 빈 폴), 한쪽이 그룹이면 혼자인 쪽이 그 그룹 폴로 합류(최대 4명) */

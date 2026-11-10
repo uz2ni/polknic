@@ -331,7 +331,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
     </form>
   </div>
 </section>
-<div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="mateGo">같이 타기</button></div>
+<div id="mateMenu" class="glass" hidden><span id="mateName"></span><button type="button" id="matePoke">콕 찌르기</button><button type="button" id="mateGo">같이 타기</button></div>
 <div id="inviteCard" class="glass" role="alertdialog" hidden><div id="inviteText"></div><div class="row"><button type="button" id="inviteYes">좋아요</button><button type="button" class="no" id="inviteNo">다음에</button></div></div>
 
 <aside id="wardrobe" class="glass" aria-label="옷장">
@@ -367,6 +367,8 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <nav class="moves glass" id="moves" aria-label="동작">
     <button id="sitTog" class="move side" type="button" aria-pressed="false"><span>앉기</span></button>
     <button id="biteBtn" class="move side bite" type="button" hidden><span>한 입</span></button>
+    <button id="clapBtn" class="move side" type="button"><span>박수</span></button>
+    <button id="waveBtn" class="move side" type="button"><span>인사</span></button>
     <span class="sep" id="sitSep" aria-hidden="true"></span>
     <span class="sep" id="poleSep" aria-hidden="true" hidden></span>
   </nav>
@@ -1301,6 +1303,34 @@ function updateEmote(av){
   e.scale.setScalar(0.17*(t < 0.25 ? 0.5 + 0.5*Math.sin(t/0.25*PI/2)*1.2 : 1.1 - 0.1*Math.min(1, (t - 0.25)/0.2)));
 }
 
+/* gestures on the ground: a short one-off arm motion over whatever pose the avatar is in (others see it through state.act).
+   flinch = jumping a little when someone pokes you (no arm motion) */
+const ACTS = {
+  clap:   { t:1.6, emote:'sparkle', face:'joy' },
+  wave:   { t:1.6, emote:'note',    face:'joy' },
+  poke:   { t:0.9, emote:null,      face:'wink' },
+  flinch: { t:0.6, emote:'wow',     face:'wow' },
+};
+function doAct(av, kind){
+  av.act = kind; av.actAt = clock;
+  if (kind === 'flinch' && !av.onPole) av.hopAt = clock;
+}
+// the arm target [upper, fore] for gesture `kind` t seconds in, for the right arm (the left mirrors y and z)
+function actArm(kind, t, side){
+  const m = side === 'l' ? -1 : 1;
+  if (kind === 'wave'){   // hand up beside the head, the forearm waving side to side
+    const w = Math.sin(t*14);
+    return [[-0.25, 0, -2.5*m], [0, 0, (-0.35 + 0.55*w)*m]];
+  }
+  if (kind === 'clap'){   // both hands in front of the chest, opening and meeting
+    const open = (1 + Math.cos(t*17))/2;
+    return [[-1.15, 0, (0.3 - 0.55*open)*m], [-0.55, 0, 0]];
+  }
+  // poke: arm straight out in front, two quick jabs
+  const jab = Math.abs(Math.sin(t/ACTS.poke.t*PI*2));
+  return [[-1.45, 0, 0.15*m], [-0.7*(1 - jab), 0, 0]];
+}
+
 /* --- one avatar: look = outfit object (kept by reference), faceRes < 1 for smaller face textures --- */
 function createAvatar(look, faceRes = 1){
   const skinM = toon('#ffe2d2');
@@ -1476,7 +1506,7 @@ function createAvatar(look, faceRes = 1){
     outfit: look,
     // what animateAvatar() shows; the player's controls or the network fill these in
     pose:'stand', onPole:false, faceMode:'auto', moveAmp:0, walkPhase:0, spinVel:0, nameShown:true,
-    hopAt:-9, landAt:-9, emoteAt:-9, blinkAt:3, blinking:0,
+    hopAt:-9, landAt:-9, emoteAt:-9, blinkAt:3, blinking:0, act:null, actAt:-9,
   };
   dressAvatar(av);
   return av;
@@ -1845,7 +1875,8 @@ const stepOK = (x0, z0, x1, z1) => Math.hypot(x1, z1 - 1) < 8.5 && !inLake(x1, z
   && OBSTACLES.every(([ox, oz, r]) => { const d1 = Math.hypot(x1 - ox, z1 - oz); return d1 > r || d1 > Math.hypot(x0 - ox, z0 - oz); });
 
 /* ---------- sitting: on the grass wherever she is, or on a bench ---------- */
-let sitAt = null, sitQueued = null;   // null | 'ground' | a bench
+let sitAt = null, sitQueued = null;
+let turnTo = null;   // a heading to turn to while standing still (facing someone I poke)   // null | 'ground' | a bench
 const benchFront = b => { const f = b.front ?? 0.95; return new V3(b.x + Math.sin(b.rot)*f, 0, b.z + Math.cos(b.rot)*f); };   // where she walks to sit (chairs: from behind)
 const isMat = t => !!t && t !== 'ground' && t.mat !== undefined;
 function sitDown(target){
@@ -1946,6 +1977,10 @@ function update(dt){
       else { walkTarget = null; }
       if (mode !== 'pole') holder.rotation.y = angLerp(holder.rotation.y, Math.atan2(dir.x, dir.z), 1 - Math.exp(-10*dt));
     }
+    if (turnTo != null){
+      if (dir || sitAt || mode !== 'roam') turnTo = null;
+      else { holder.rotation.y = angLerp(holder.rotation.y, turnTo, 1 - Math.exp(-12*dt)); if (Math.abs(wrapAng(holder.rotation.y - turnTo)) < 0.02) turnTo = null; }
+    }
     if (mode === 'roam' && sitQueued && !walkTarget && !keyDir) sitDown(sitQueued);   // arrived (or stopped): sit here
   }
   me.moveAmp += ((moving ? 1 : 0) - me.moveAmp)*(1 - Math.exp(-8*dt));
@@ -2005,12 +2040,19 @@ function animateAvatar(av, dt){
   const chair = holding && av.pose === 'sitBench' ? BENCHES.find(b => b.chair && Math.hypot(holder.position.x - b.x, holder.position.z - b.z) < 0.2) : null;
   const inHand = holding && (!chair || clock - av.biteAt < BITE_T);
   if (holding) placeSnack(av, inHand ? null : chair.food);
+  // a gesture (clap / wave / poke): fades in and out over its length; with a snack in the right hand, the left one waves or pokes
+  const act = ACTS[av.act], tAct = clock - av.actAt;
+  const acting = act && tAct < act.t && !av.onPole && !pose.mat && !pose.ball;
+  const actE = acting ? smooth(0, 0.2, tAct)*(1 - smooth(act.t - 0.25, act.t, tAct)) : 0;
+  const armed = acting && av.act !== 'flinch' && !(av.act === 'clap' && inHand);
+  const actSides = !armed ? '' : av.act === 'clap' ? 'lr' : inHand ? 'l' : 'r';
+  const actArms = armed ? { l:actArm(av.act, tAct, 'l'), r:actArm(av.act, tAct, 'r') } : null;
 
   // blink
   if (clock > av.blinkAt){ av.blinking = 0.13; av.blinkAt = clock + 2.5 + Math.random()*3; }
   if (av.blinking > 0) av.blinking -= dt;
   const full = clock - (av.fullAt || -9) < 2.5;   // just finished a snack: a happy full face for a moment, then back to the usual one
-  const expr = full ? 'joy' : av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || (sip > 0.3 ? 'joy' : 'open');
+  const expr = full ? 'joy' : acting && (av.faceMode === 'auto' || av.act === 'flinch') ? act.face : av.faceMode !== 'auto' ? av.faceMode : ((av.onPole || pose.mat) && pose.face) || (sip > 0.3 ? 'joy' : 'open');
   const panting = expr === 'pant';
   av.faceM.map = av.faceTex[av.blinking > 0 && (expr === 'open' || expr === 'wow') ? 'blink' : expr];
 
@@ -2053,6 +2095,13 @@ function animateAvatar(av, dt){
     if (heels && (n === 'lFoot' || n === 'rFoot')) x += 0.35;
     if (inHand && n === 'rUp'){ x = -0.35 - 0.55*sip; y = 0; z = 0.15 + 0.15*sip; }   // snack in front of the chest, up to the mouth for a sip
     if (inHand && n === 'rFore'){ x = -1.25 - 0.3*sip; y = 0; z = 0; }
+    let kj = k;
+    if (actArms && (n === 'lUp' || n === 'lFore' || n === 'rUp' || n === 'rFore') && actSides.includes(n[0])){
+      const g = actArms[n[0]][n.endsWith('Up') ? 0 : 1];
+      x += (g[0] - x)*actE; y += (g[1] - y)*actE; z += (g[2] - z)*actE;
+      kj = 1 - Math.exp(-30*dt);   // quick enough for the claps and jabs to show
+    }
+    if (armed && av.act === 'poke' && n === 'spine') x -= 0.12*actE*Math.abs(Math.sin(tAct/ACTS.poke.t*PI*2));   // lean into each jab
     if (pose.legRaise){   // leg raises: straight legs up to the sky and slowly down
       const u = (1 - Math.cos(clock*1.8))/2;
       if (n === 'lThigh' || n === 'rThigh') x -= 1.45*u;
@@ -2074,7 +2123,7 @@ function animateAvatar(av, dt){
       if (n === 'lShin') x += 0.15 + 0.25*Math.max(0, s); if (n === 'rShin') x += 0.15 + 0.25*Math.max(0, -s);
     }
     _q.setFromEuler(_e.set(x, y, z));
-    J[n].quaternion.slerp(_q, k);
+    J[n].quaternion.slerp(_q, kj);
   });
 
   // IK grips on the pole
@@ -2236,6 +2285,9 @@ function updateUI(){
   const bite = document.getElementById('biteBtn');
   bite.hidden = !me.snack || !!snackDoneAt || onPole || isMat(sitAt);
   if (me.snack) bite.firstChild.textContent = SNACKS[me.snack].icon + ' 한 입';
+  // gestures: off the pole and off the mats (no clapping with a snack in hand)
+  document.getElementById('waveBtn').hidden = onPole || isMat(sitAt);
+  document.getElementById('clapBtn').hidden = onPole || isMat(sitAt) || !bite.hidden;
   ['mv-leave', 'spinTog', 'poleSep'].forEach(id => { document.getElementById(id).hidden = !onPole; });
   // on a mat: stretches instead of pole moves
   const mat = isMat(sitAt);
@@ -2243,6 +2295,19 @@ function updateUI(){
   movesEl.querySelectorAll('.move[data-stretch]').forEach(b => { b.hidden = !mat; b.setAttribute('aria-pressed', String(b.dataset.stretch === poseName)); });
 }
 document.getElementById('biteBtn').addEventListener('click', takeBite);
+// clap / wave / poke: my avatar plays it, the others see it through state.act
+function playAct(kind){
+  if (mode !== 'roam' || isMat(sitAt)) return false;
+  if (me.act && clock - me.actAt < ACTS[me.act].t*0.8 && me.act !== 'flinch') return false;   // still doing the last one
+  doAct(me, kind);
+  const em = ACTS[kind].emote;
+  if (em) showEmote(me, em);
+  netState(em, kind);
+  polkTrack('gesture', { kind });
+  return true;
+}
+document.getElementById('clapBtn').addEventListener('click', () => playAct('clap'));
+document.getElementById('waveBtn').addEventListener('click', () => playAct('wave'));
 const sitTog = document.getElementById('sitTog');
 sitTog.addEventListener('click', toggleSit);
 const spinTog = document.getElementById('spinTog');
@@ -2893,13 +2958,14 @@ function netSend(m){
   if (net.id && net.ws.readyState === 1) net.ws.send(typeof m === 'string' ? m : JSON.stringify(m));
 }
 // pose, sitting, face and spin go out together, at most every NET_SEND (clicking around can't flood the server)
-function netState(emote){ net.stateDirty = true; if (emote) net.emote = emote; }
+function netState(emote, act){ net.stateDirty = true; if (emote) net.emote = emote; if (act) net.act = act; }
 function netFlushState(){
   net.stateT = 0;
   const seat = sitAt && sitAt !== 'ground' ? BENCHES.indexOf(sitAt) : null;
   const m = { t:'state', pose:poseName, sit:seat, face:faceMode, spin:spinPole, ball: poseName === 'duoBall' && myGroup ? [myGroup.indexOf(net.id), myGroup.length] : null, snack:me.snack || null, bite:me.snack ? me.bites : 0 };
   if (net.emote) m.emote = net.emote;
-  netSend(m); net.stateDirty = false; net.emote = null;
+  if (net.act) m.act = net.act;
+  netSend(m); net.stateDirty = false; net.emote = net.act = null;
 }
 
 /* rooms: picked on the entry screen (last one remembered) or switched in settings; counts come from /rooms */
@@ -3032,7 +3098,14 @@ function netMessage(raw){
     case 'join': addRemote(m.p); if (m.p && m.p.name) logLine('', `${String(m.p.name).slice(0, 16)}님이 들어왔어요`, true); break;
     case 'leave': if (av){ logLine('', `${av.net.tag.textContent}님이 나갔어요`, true); dropRemote(av); } break;
     case 'move': if (av){ remoteMove(av, m); } break;
-    case 'state': if (av){ remoteState(av, m); if (EMOTES_OK.has(m.emote)) showEmote(av, m.emote); } break;
+    case 'state': if (av){ remoteState(av, m); if (EMOTES_OK.has(m.emote)) showEmote(av, m.emote); if (Object.keys(ACTS).includes(m.act)) doAct(av, m.act); } break;
+    case 'poke':   // someone poked me: a little jump, and who it was
+      if (typeof m.from === 'string'){
+        const name = (remoteById(m.from) ? remoteById(m.from).net.tag.textContent : String(m.name || '폴메이트')).slice(0, 16);
+        doAct(me, 'flinch'); showEmote(me, 'wow'); netState('wow', 'flinch');
+        toast(`${name}님이 콕 찔렀어요!`); logLine('', `${name}님이 나를 콕 찔렀어요`, true);
+      }
+      break;
     case 'outfit': if (av){ av.outfit = safeLook(m.look); dressAvatar(av); } break;
     case 'name':
       if (m.ok === false) toast('닉네임에 쓸 수 없는 말이 있어서 다른 사람에겐 예전 이름으로 보여요');
@@ -3220,6 +3293,16 @@ function openMateMenu(av, e){
   mateMenu.style.left = e.clientX + 'px'; mateMenu.style.top = e.clientY + 'px'; mateMenu.hidden = false;
 }
 function closeMateMenu(){ mateMenu.hidden = true; menuFor = null; }
+document.getElementById('matePoke').addEventListener('click', () => {
+  const av = menuFor && remoteById(menuFor);
+  closeMateMenu();
+  if (!av) return;
+  if (mode !== 'roam' || isMat(sitAt)){ toast(mode === 'roam' ? '매트에서 일어나서 찔러 주세요' : '폴에서 내려와서 찔러 주세요'); return; }
+  if (!sitAt){ walkTarget = null; sitQueued = null; turnTo = Math.atan2(av.holder.position.x - holder.position.x, av.holder.position.z - holder.position.z); }   // face them first
+  if (!playAct('poke')) return;
+  netSend({ t:'poke', to:av.net.id });
+  toast(`${av.net.tag.textContent}님을 콕 찔렀어요`);
+});
 document.getElementById('mateGo').addEventListener('click', () => {
   if (!menuFor) return;
   netSend({ t:'invite', to:menuFor });
@@ -3747,6 +3830,11 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
 window.__poleDebug = {
   pose(name, y, p, d){ myPole = 0; queuedMove = name; holder.position.set(0, 0, 0.34); mode = 'approach'; enterPole(); if (y != null){ yaw = y; poseYaw = y; } if (p != null) pitch = p; if (d != null) camDist = d; for (let i = 0; i < 240; i++) update(1/60); renderer.render(scene, camera); },
   pause(v){ paused = v; },
+  // play gesture `kind` (clap / wave / poke / flinch) and freeze `t` seconds in, camera at yaw/pitch/dist
+  act(kind = 'wave', t = 0.6, y, p, d){
+    doAct(me, kind); if (y != null) yaw = y; if (p != null) pitch = p; if (d != null) camDist = d;
+    this.step(t, 1/60); return { act:me.act, t:+(clock - me.actAt).toFixed(2) };
+  },
   // sit on yoga mat i and strike a stretch (matSit / matChild / matSplit / matSquat / matPlank / matLegRaise), then look
   mat(i = 1, pose = 'matSit', y, p, d){
     mode = 'roam'; sitAt = null; sitDown(MAT_SPOTS[i]); if (pose !== 'matSit') startStretch(pose);

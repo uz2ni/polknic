@@ -62,6 +62,16 @@ ok(st && st.pose === 'sitGround' && st.face === 'joy' && st.emote === 'heart', '
 b.send({ t: 'state', pose: 'fly' });
 const st2 = await a.next('state');
 ok(st2 && st2.pose === 'sitGround', '모르는 포즈는 무시(이전 값 유지)');
+b.send({ t: 'state', act: 'clap', emote: 'sparkle' });
+const st3 = await a.next('state');
+ok(st3 && st3.act === 'clap' && st3.emote === 'sparkle', '몸짓(박수) 전달');
+b.send({ t: 'state', act: 'dance' });
+ok(!('act' in ((await a.next('state')) || { act: 1 })), '모르는 몸짓은 빼고 전달');
+b.send({ t: 'poke', to: wa.id });
+const pk = await a.next('poke');
+ok(pk && pk.from === wb.id && pk.name === '유자#2', 'A가 B에게 찔림 알림 받음');
+b.send({ t: 'poke', to: wa.id });
+ok(!(await a.next('poke', 400)), '찌르기는 1.5초에 한 번');
 b.send({ t: 'outfit', look: { hair: 'tail' } });
 const of = await a.next('outfit');
 ok(of && of.look.hair === 'tail', 'A가 B 옷 변경 받음');
