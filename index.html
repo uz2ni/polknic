@@ -184,6 +184,9 @@ body.clean #shopMenu,body.photo #shopMenu{display:none!important}
 .note .foot{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:28px}
 .note .heart{border:0;background:rgba(255,255,255,.65);border-radius:999px;color:var(--ink);font:600 12.5px var(--f-body);padding:4px 9px;cursor:pointer}
 .note .heart[aria-pressed="true"]{background:var(--accent);color:#fff}
+.note.mine{padding-right:24px}
+.note .del{position:absolute;top:1px;right:1px;width:26px;height:26px;border:0;border-radius:50%;background:transparent;color:var(--muted);font:600 13px var(--f-body);cursor:pointer}
+.note .del:hover{background:rgba(255,255,255,.6);color:var(--ink)}
 .note .stamp{font:600 11px var(--f-body);padding:2px 7px;border:1.5px solid currentColor;border-radius:999px;white-space:nowrap}
 #boardMail[hidden]{display:none}
 #boardMail{flex:1;overflow-y:auto;background:#fffdf6;border-radius:14px;padding:12px}
@@ -3415,6 +3418,7 @@ const boardForm = document.getElementById('boardForm'), boardInput = document.ge
 const boardMsg = document.getElementById('boardMsg'), boardNotes = document.getElementById('boardNotes'), boardMail = document.getElementById('boardMail');
 const mailText = document.getElementById('mailText'), mailContact = document.getElementById('mailContact'), mailSend = document.getElementById('mailSend');
 const boardLiked = new Set();   // hearts this page load: one per note per visit, reloading allows another (decided with the user)
+const boardMine = new Map();    // 'guest:12' → delete key from the server, for notes I put up this page load (reloading forgets them)
 let boardTab = 'guest', boardData = null, boardBusy = false, mailKind = 'ask', boardFlash = null;
 function boardId(){
   try {
@@ -3445,7 +3449,7 @@ async function boardPost(path, body){
 }
 function boardError(e){
   const m = e && e.message;
-  boardSay(m === 'bad' ? '그 말은 붙일 수 없어요. 다른 말로 써 주세요.' : m === 'limit' ? '오늘은 더 붙일 수 없어요. 내일 또 와 주세요!' : m === 'gone' ? '이미 내려간 포스트잇이에요.' : '지금은 보낼 수 없어요. 잠시 뒤 다시 해 주세요.');
+  boardSay(m === 'bad' ? '그 말은 붙일 수 없어요. 다른 말로 써 주세요.' : m === 'limit' ? '오늘은 더 붙일 수 없어요. 내일 또 와 주세요!' : m === 'gone' ? '이미 내려갔거나 지울 수 없는 포스트잇이에요.' : '지금은 보낼 수 없어요. 잠시 뒤 다시 해 주세요.');
 }
 function drawBoard(){
   document.querySelectorAll('#boardTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === boardTab)));
@@ -3483,6 +3487,13 @@ function drawBoard(){
       if (n.status){ const s = document.createElement('span'); s.className = 'stamp'; s.textContent = n.status === 'done' ? '추가됨' : '만드는 중'; foot.appendChild(s); }
       note.append(title, foot);
     }
+    const mine = boardMine.get(`${boardTab}:${n.id}`);
+    if (mine && (boardTab === 'guest' || !n.status)){   // a stamped request is the operator's now
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = '내 글 지우기'; del.setAttribute('aria-label', '내 글 지우기');
+      del.addEventListener('click', () => boardDelete(boardTab, n, mine));
+      note.appendChild(del); note.classList.add('mine');
+    }
     if (boardFlash === n.id){ note.classList.add('flash'); requestAnimationFrame(() => note.scrollIntoView({ block:'nearest' })); }
     boardNotes.appendChild(note);
   });
@@ -3495,6 +3506,19 @@ async function boardHeart(n){
     const j = await boardPost('heart', { id:n.id });
     boardLiked.add(n.id); n.hearts = j.hearts;
     polkTrack('board_heart');
+    drawBoard();
+  } catch (e) { boardError(e); }
+  boardBusy = false;
+}
+async function boardDelete(kind, n, key){
+  if (boardBusy || !confirm(kind === 'req' && n.hearts > 1 ? `이 요청을 지울까요? 받은 하트 ${n.hearts}개도 함께 없어져요.` : '이 포스트잇을 뗄까요?')) return;
+  boardBusy = true; boardSay('');
+  try {
+    await boardPost('del', { kind, id:n.id, key });
+    boardMine.delete(`${kind}:${n.id}`);
+    boardData[kind] = boardData[kind].filter(x => x.id !== n.id);
+    boardSay('포스트잇을 뗐어요.');
+    polkTrack('board_delete', { kind });
     drawBoard();
   } catch (e) { boardError(e); }
   boardBusy = false;
@@ -3525,6 +3549,7 @@ boardForm.addEventListener('submit', async e => {
                     : await boardPost('req', { title:v, bid:boardId(), liked:[...boardLiked] });
     boardInput.value = '';
     boardFlash = j.id;
+    if (j.key) boardMine.set(`${guest ? 'guest' : 'req'}:${j.id}`, j.key);   // only new notes come with a key (not merged requests)
     if (!guest && j.result !== 'done') boardLiked.add(j.id);
     boardSay(guest ? '포스트잇을 붙였어요!' : REQ_DONE_MSG[j.result]);
     polkTrack('board_post', { kind:guest ? 'guest' : 'req' });

@@ -70,5 +70,25 @@ await admin({ do:'done', id:item.id, on:true });
 list = (await admin({ do:'list' })).j; item = list.inbox.find(x => x.id === item.id);
 ok(item.done === 1 && item.contact === '' && item.memo === '메모', '처리 완료 → 연락처 바로 삭제, 메모 유지');
 
+console.log('내 글 지우기');
+ok(typeof r1.j.key === 'string' && r1.j.key.length === 32 && !r2.j.key, '새 요청엔 지우기 표, 합쳐진 요청엔 없음');
+ok((await post('del', { kind:'req', id:r1.j.id, key:r1.j.key })).status === 404, '도장 찍힌(내린) 요청은 못 지움');
+const g2 = await post('guest', { name:'유자', text:`지울 글 ${tag}`, bid:bid('g2') });
+ok((await post('del', { kind:'guest', id:g2.j.id, key:'0'.repeat(32) })).status === 403, '틀린 표로는 못 지움');
+ok((await post('del', { kind:'req', id:g2.j.id, key:g2.j.key })).status === 403, '다른 종류 글의 표로는 못 지움');
+ok((await post('del', { kind:'guest', id:g2.j.id, key:g2.j.key })).j.ok, '내 방명록 지우기');
+ok(!(await read()).guest.some(n => n.id === g2.j.id), '지운 방명록은 목록에 없음');
+ok((await post('del', { kind:'guest', id:g2.j.id, key:g2.j.key })).status === 404, '두 번 지우면 없음');
+const r4 = await post('req', { title:`지울 요청 ${tag}`.slice(0, 20), bid:bid('r4') });
+ok((await post('del', { kind:'req', id:r4.j.id, key:r4.j.key })).j.ok, '내 기술 요청 지우기');
+ok(!(await read()).req.some(n => n.id === r4.j.id), '지운 요청은 목록에 없음');
+
+console.log('운영자 완전 삭제');
+await admin({ do:'delGuest', id:g.j.id });
+await admin({ do:'delReq', id:r1.j.id });
+list = (await admin({ do:'list' })).j;
+ok(!list.guest.some(x => x.id === g.j.id) && !list.req.some(x => x.id === r1.j.id), '방명록·기술 요청 완전 삭제');
+ok((await post('req', { title, bid:bid('r5') })).j.result === 'new', '내린 이름을 완전 삭제하면 다시 올릴 수 있음');
+
 console.log(failed ? `실패 ${failed}개` : '전부 통과');
 process.exit(failed ? 1 : 0);

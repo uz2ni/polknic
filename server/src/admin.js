@@ -111,6 +111,7 @@ function drawReq(v) {
     const a = el('div', 'acts');
     [['', '도장 없음'], ['making', '만드는 중'], ['done', '추가됨']].forEach(([s, label]) => a.append(btn(label, () => act({ do:'status', id:x.id, status:s }), x.status === s ? 'on' : '')));
     a.append(btn(x.hidden ? '되돌리기' : '내리기', () => act({ do:'hideReq', id:x.id, on:!x.hidden }), 'danger'));
+    a.append(btn('완전 삭제', () => act({ do:'delReq', id:x.id }, x.hidden ? '이 요청을 완전히 지울까요? 되돌릴 수 없어요.\\n내린 이름이라 지우면 같은 이름을 다시 올릴 수 있게 돼요.' : '이 요청을 완전히 지울까요? 하트도 함께 없어지고 되돌릴 수 없어요.'), 'danger'));
     c.append(a);
     v.append(c);
   });
@@ -124,7 +125,10 @@ function drawGuest(v) {
     m.append(el('span', 'tag', x.name), el('span', '', stamp(x.at)));
     if (x.hidden) m.append(el('span', '', '내림'));
     c.append(m, el('p', 'text', x.text));
-    c.append(btn(x.hidden ? '되돌리기' : '내리기', () => act({ do:'hideGuest', id:x.id, on:!x.hidden }), 'danger'));
+    const a = el('div', 'acts');
+    a.append(btn(x.hidden ? '되돌리기' : '내리기', () => act({ do:'hideGuest', id:x.id, on:!x.hidden }), 'danger'));
+    a.append(btn('완전 삭제', () => act({ do:'delGuest', id:x.id }, '이 방명록을 완전히 지울까요? 되돌릴 수 없어요.'), 'danger'));
+    c.append(a);
     v.append(c);
   });
 }

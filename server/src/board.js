@@ -1,5 +1,5 @@
 // 알림판 HTTP API. 원본은 D1(env.DB) 한 곳. 설명은 docs/BOARD.md
-// - 공개: GET /board, POST /board/guest·req·heart
+// - 공개: GET /board, POST /board/guest·req·heart·del
 // - 비공개: POST /board/inbox(쓰기만), /admin(운영자 페이지, ADMIN_KEY 필요)
 import { badText } from './words.js';
 import { ADMIN_HTML } from './admin.js';
@@ -19,6 +19,16 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&
 async function sha(s) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// 글쓴이가 이번 접속에서 자기 글을 지울 때 쓰는 표. 서버에 저장하지 않고 (종류, 글 번호)를 서명해서 만든다.
+// 클라이언트는 메모리에만 들고 있어서 새로고침하면 사라진다. ADMIN_KEY가 없으면 표도 없음
+async function delKey(env, kind, id) {
+  if (!env.ADMIN_KEY) return '';
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey('raw', enc.encode('board-del:' + env.ADMIN_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const s = await crypto.subtle.sign('HMAC', k, enc.encode(kind + ':' + id));
+  return [...new Uint8Array(s)].slice(0, 16).map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 async function slack(env, text) {
@@ -69,7 +79,7 @@ export async function boardRoute(req, env, ctx, url, origin, allowed) {
     if (await overLimit(env, req, 'guest', b.bid)) return send({ error: 'limit' }, 429);
     const row = await env.DB.prepare('INSERT INTO guest(name, text, at) VALUES(?1, ?2, ?3) RETURNING id').bind(name, text, now).first();
     later(slack(env, `:memo: 방명록 *${esc(name)}*: ${esc(text)}\n내리기: ${adminUrl}`));
-    return send({ id: row.id });
+    return send({ id: row.id, key: await delKey(env, 'guest', row.id) });
   }
 
   if (url.pathname === '/board/req') {
@@ -88,7 +98,19 @@ export async function boardRoute(req, env, ctx, url, origin, allowed) {
     if (await overLimit(env, req, 'req', b.bid)) return send({ error: 'limit' }, 429);
     const row = await env.DB.prepare('INSERT INTO req(title, norm, at) VALUES(?1, ?2, ?3) RETURNING id').bind(title, norm, now).first();
     later(slack(env, `:sparkles: 기술 요청: ${esc(title)}\n관리: ${adminUrl}`));
-    return send({ id: row.id, result: 'new' });
+    return send({ id: row.id, result: 'new', key: await delKey(env, 'req', row.id) });
+  }
+
+  // 내 글 지우기: 이번 접속에서 쓴 글만(새로 붙인 기술 요청 포함, 합쳐진 요청은 표가 없음).
+  // 운영자가 내린 글(다시 못 올리게 막아 둔 이름)과 도장이 찍힌 요청은 지우지 못함
+  if (url.pathname === '/board/del') {
+    const kind = b.kind === 'req' ? 'req' : b.kind === 'guest' ? 'guest' : '';
+    if (!kind || !Number.isInteger(b.id)) return send({ error: 'id' }, 400);
+    const want = await delKey(env, kind, b.id);
+    if (!want || typeof b.key !== 'string' || await sha(b.key) !== await sha(want)) return send({ error: 'denied' }, 403);
+    const sql = kind === 'guest' ? 'DELETE FROM guest WHERE id = ?1 AND hidden = 0' : "DELETE FROM req WHERE id = ?1 AND hidden = 0 AND status = ''";
+    const r = await env.DB.prepare(sql).bind(b.id).run();
+    return r.meta.changes ? send({ ok: true }) : send({ error: 'gone' }, 404);
   }
 
   if (url.pathname === '/board/heart') {
@@ -147,6 +169,8 @@ export async function adminRoute(req, env, url) {
   else if (b.do === 'delInbox') await run('DELETE FROM inbox WHERE id = ?1', id);
   else if (b.do === 'hideGuest') await run('UPDATE guest SET hidden = ?1 WHERE id = ?2', b.on ? 1 : 0, id);
   else if (b.do === 'hideReq') await run('UPDATE req SET hidden = ?1 WHERE id = ?2', b.on ? 1 : 0, id);
+  else if (b.do === 'delGuest') await run('DELETE FROM guest WHERE id = ?1', id);
+  else if (b.do === 'delReq') await run('DELETE FROM req WHERE id = ?1', id);   // 내린 이름이면 막아 둔 것도 풀림
   else if (b.do === 'status' && STATUS.has(b.status)) await run('UPDATE req SET status = ?1 WHERE id = ?2', b.status, id);
   else return send({ error: 'do' }, 400);
   return send({ ok: true });
