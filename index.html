@@ -79,6 +79,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .w-sec h3{margin:0;font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1.5px solid var(--line);background:#fff;color:var(--ink);font:500 13px/1 var(--f-body);padding:8px 11px;border-radius:999px;cursor:pointer}
+a.chip{display:inline-block;text-decoration:none}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .sw{display:flex;flex-wrap:wrap;gap:7px}
 .swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
@@ -359,6 +360,10 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   </div></div>
   <div class="w-sec"><h3>조작법</h3>
     <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · Q 내려오기 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
+  </div>
+  <div class="w-sec" id="donateSec" hidden><h3>응원하기</h3>
+    <p class="hint">폴크닉은 무료예요. 마음에 들면 커피 한 잔으로 응원해 주세요!</p>
+    <div class="set-row"><a id="donateLink" class="chip" target="_blank" rel="noopener">☕ 폴크닉 응원하기</a></div>
   </div>
   <p class="copy">© 2026 폴크닉</p>
 </aside>
@@ -3631,6 +3636,14 @@ function setBoard(open, tab){
   polkTrack('board_open', { from: tab === 'mail' ? 'mailbox' : tab ? 'board' : 'icon' });
   drawBoard();
   boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
+}
+/* ---------- donate: a link to the 크티 page in the settings drawer (new tab, so the game and the room stay) ---------- */
+const DONATE_URL = '';
+if (DONATE_URL){
+  const link = document.getElementById('donateLink');
+  link.href = DONATE_URL;
+  link.addEventListener('click', () => polkTrack('donate_click'));
+  document.getElementById('donateSec').hidden = false;
 }
 boardBtn.addEventListener('click', () => setBoard(boardEl.hidden));
 document.getElementById('boardClose').addEventListener('click', () => setBoard(false));
