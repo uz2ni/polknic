@@ -732,6 +732,7 @@ const POLE_MESHES = [];   // clicking a pole walks to it
 /* props: stepping stones, benches, a sign, low fences, rocks by the water, butterflies */
 const OBSTACLES = [];   // [x, z, r] circles the character walks around
 const BENCHES = [];     // { x, z, rot, mesh } — seats she can walk to and sit on
+const BOARD_SPOTS = []; // { x, z, mesh, tab } — the cork board and mailbox by the path; clicking one opens the board panel on that tab
 // snack stand past the west bench, facing the middle of the meadow; the clerk stands behind its counter
 const TABLE = { x:-4.2, z:6.8, r:0.4, h:0.56 };   // the snack table (with three chairs) next to the stand
 const SHOP = { x:-6.3, z:5.3 }; SHOP.rot = Math.atan2(-SHOP.x, -(SHOP.z - 1));
@@ -811,6 +812,68 @@ let snackDoneAt = 0;   // after the last bite: when the snack is gone (up here b
   }
   woodSign('안전 폴링', -2.1, 1.4, 0.35);
   woodSign('스트레칭존', 6.5, 7.1, PI + 0.38);   // in the flowers past the far corner of the yoga mats, facing back toward the stages
+  // a cork notice board and a mailbox side by side a little past the back end of the stepping stones, facing the meadow.
+  // Both open the same board panel: the board on the guestbook, the mailbox on "운영자에게"
+  {
+    const face = (x, z) => Math.atan2(-x, -(z - 1));   // turn toward the middle of the meadow
+    // notice board: two posts, a wooden frame, a cork face with sticky notes, and a little roof
+    const bx = -2.1, bz = 9.05, g = new T.Group(); g.position.set(bx, 0, bz); g.rotation.y = face(bx, bz); scene.add(g);
+    const add = (geo, m, x, y, z, shadow = true) => { const o = new T.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = shadow; g.add(o); return o; };
+    const title = '알림판';
+    const drawCork = (c, s) => {
+      c.fillStyle = '#d9a66b'; c.fillRect(0, 0, s, s);
+      for (let i = 0; i < 900; i++){ c.fillStyle = rnd() < 0.5 ? 'rgba(140,85,40,.28)' : 'rgba(255,235,200,.3)'; c.fillRect(rnd()*s, rnd()*s, 3, 3); }
+      c.fillStyle = '#fff3dc'; c.fillRect(s*0.3, 84, s*0.4, 70);   // name strip at the top (the face shows rows 72–440)
+      c.fillStyle = '#5a4237'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '56px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(title, s/2, 121, s*0.36);
+      [['#fbe39a', 40, 172, -0.08], ['#f6a9bd', 200, 168, 0.05], ['#a9e3cf', 360, 176, -0.03],
+       ['#cdbbf0', 100, 308, 0.06], ['#9fd3ff', 260, 302, -0.06], ['#ffc9a8', 380, 312, 0.04]].forEach(([hex, x, y, a]) => {
+        c.save(); c.translate(x + 55, y + 55); c.rotate(a);
+        c.fillStyle = 'rgba(90,60,30,.18)'; c.fillRect(-51, -47, 110, 110);   // soft shadow
+        c.fillStyle = hex; c.fillRect(-55, -55, 110, 110);
+        c.fillStyle = 'rgba(90,66,55,.35)'; [-18, 4, 26].forEach(ly => c.fillRect(-36, ly, ly > 20 ? 44 : 72, 7));   // scribbled lines
+        c.fillStyle = '#f0789a'; c.beginPath(); c.arc(0, -42, 9, 0, PI*2); c.fill();   // push pin
+        c.restore();
+      });
+    };
+    const cork = canvasTex(512, drawCork); cork.repeat.set(1, 0.72); cork.offset.set(0, 0.14);   // the face is 1.2 × 0.86, so show the middle 72%
+    if (document.fonts) document.fonts.load('56px Jua', title).then(() => { drawCork(cork.image.getContext('2d'), 512); cork.needsUpdate = true; }).catch(() => {});
+    [-0.62, 0.62].forEach(x => add(new T.CylinderGeometry(0.05, 0.055, 1.62, 8), woodD, x, 0.81, 0));
+    const W = 1.2, H = 0.86, Y = 1.12;
+    add(new T.BoxGeometry(W + 0.12, H + 0.12, 0.06), woodM, 0, Y, 0.05);
+    add(new T.BoxGeometry(W, H, 0.02), [woodD, woodD, woodD, woodD, toonF('#ffffff', { map:cork }), woodD], 0, Y, 0.085, false);
+    const roof = add(new T.BoxGeometry(W + 0.4, 0.06, 0.34), toonF('#f6a9bd'), 0, Y + H/2 + 0.09, 0.06); roof.rotation.x = 0.12;
+    add(new T.BoxGeometry(W - 0.1, 0.05, 0.1), woodD, 0, Y - H/2 - 0.04, 0.12);   // a little ledge under the notes
+    OBSTACLES.push([bx, bz, 0.7]);
+    BOARD_SPOTS.push({ x:bx, z:bz, mesh:g, tab:'guest' });
+    // mailbox: a coral box with a rounded lid on a cream post, a slot, a heart and a raised yellow flag
+    const mx = -3.4, mz = 8.5, m = new T.Group(); m.position.set(mx, 0, mz); m.rotation.y = face(mx, mz); scene.add(m);
+    const madd = (geo, mat, x, y, z, shadow = true) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = shadow; m.add(o); return o; };
+    const boxM = toonF('#f48ca0'), creamM = toonF('#fff3dc');
+    madd(new T.CylinderGeometry(0.06, 0.07, 0.8, 10), creamM, 0, 0.4, 0);
+    madd(new T.CylinderGeometry(0.2, 0.22, 0.04, 16), creamM, 0, 0.02, 0, false);
+    const mailText = '우체통';
+    const drawFront = (c, s) => {
+      c.fillStyle = '#f48ca0'; c.fillRect(0, 0, s, s);
+      c.fillStyle = '#8a3f52'; c.fillRect(s*0.18, s*0.14, s*0.64, s*0.07);   // the slot
+      c.fillStyle = '#fff3dc'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '62px Jua, "Apple SD Gothic Neo", sans-serif'; c.fillText(mailText, s/2, s*0.42, s*0.8);
+      c.fillStyle = '#fff3dc'; c.fillRect(s*0.32, s*0.6, s*0.36, s*0.24);   // envelope
+      c.strokeStyle = '#f48ca0'; c.lineWidth = 8; c.beginPath(); c.moveTo(s*0.32, s*0.6); c.lineTo(s/2, s*0.74); c.lineTo(s*0.68, s*0.6); c.stroke();
+      c.fillStyle = '#f0789a'; c.font = '48px sans-serif'; c.fillText('♥', s/2, s*0.775);
+    };
+    const front = canvasTex(256, drawFront);
+    if (document.fonts) document.fonts.load('62px Jua', mailText).then(() => { drawFront(front.image.getContext('2d'), 256); front.needsUpdate = true; }).catch(() => {});
+    const BW = 0.42, BH = 0.36, BD = 0.4;
+    madd(new T.BoxGeometry(BW, BH, BD), [boxM, boxM, boxM, boxM, toonF('#ffffff', { map:front }), boxM], 0, 0.8 + BH/2, 0);
+    const lid = madd(new T.CylinderGeometry(BW/2, BW/2, BD, 20, 1, false, 0, PI), boxM, 0, 0.8 + BH, 0);   // half cylinder on top
+    lid.rotation.set(0, PI/2, PI/2);   // axis front-to-back, round side up
+    const flag = new T.Group(); flag.position.set(-BW/2 - 0.02, 0.85, -0.08); flag.rotation.x = -0.15; m.add(flag);
+    const fp = new T.Mesh(new T.BoxGeometry(0.025, 0.36, 0.025), toonF('#fbe39a')); fp.position.y = 0.18; fp.castShadow = true; flag.add(fp);
+    const fl = new T.Mesh(new T.BoxGeometry(0.02, 0.1, 0.13), toonF('#fbe39a')); fl.position.set(0, 0.31, -0.065); fl.castShadow = true; flag.add(fl);
+    OBSTACLES.push([mx, mz, 0.4]);
+    BOARD_SPOTS.push({ x:mx, z:mz, mesh:m, tab:'mail' });
+  }
   // snack stand at the west edge past the bench: a low counter (so the clerk shows above it), striped awning, sign, menu board
   {
     const g = new T.Group(); g.position.set(SHOP.x, 0, SHOP.z); g.rotation.y = SHOP.rot; scene.add(g); SHOP.mesh = g;   // clicking it walks to the counter
@@ -2081,6 +2144,8 @@ function clickGround(e){
   const matHit = ray.intersectObjects(MAT_SPOTS.map(m => m.mesh), false)[0];
   if (matHit){ const m = MAT_SPOTS.find(sp => sp.mesh === matHit.object); if (m){ goSitMat(m); return; } }
   if (ray.intersectObjects([SHOP.mesh, clerk.holder], true)[0]){ goShop(); return; }
+  const post = ray.intersectObjects(BOARD_SPOTS.map(b => b.mesh), true)[0];
+  if (post){ let o = post.object; while (o.parent && o.parent !== scene) o = o.parent; const b = BOARD_SPOTS.find(b => b.mesh === o); if (b){ setBoard(true, b.tab); return; } }
   if (ray.intersectObjects([TABLE.mesh], true)[0]){
     const chairs = BENCHES.filter(b => b.chair), d = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
     goSitBench(chairs.sort((a, b) => d(a) - d(b))[0]); return;
@@ -2107,7 +2172,10 @@ window.addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.key === 'Escape' || e.code === 'KeyQ'){ requestLeave(null); if (shopState) leaveShop(); }
   if (e.code === 'KeyE'){
+    const postD = b => Math.hypot(holder.position.x - b.x, holder.position.z - b.z);
+    const post = !sitAt && mode === 'roam' && BOARD_SPOTS.filter(b => postD(b) < 1.8).sort((a, b) => postD(a) - postD(b))[0];
     if (!sitAt && mode === 'roam' && nearShop(2.2)){ if (shopState) leaveShop(); else goShop(); }   // at the snack stand: line up instead of sitting
+    else if (post) setBoard(true, post.tab);   // by the notice board or mailbox: open the board there
     else toggleSit();
   }
   if (e.code === 'KeyH') setClean(!document.body.classList.contains('clean'));
@@ -3431,11 +3499,13 @@ async function boardHeart(n){
   } catch (e) { boardError(e); }
   boardBusy = false;
 }
-function setBoard(open){
+// tab: open on that tab (the notice board in the meadow opens the guestbook, the mailbox "운영자에게"); the icon keeps the last tab
+function setBoard(open, tab){
   boardEl.hidden = !open; boardBtn.setAttribute('aria-expanded', String(open));
   if (!open) return;
+  if (tab) boardTab = tab;
   setWardrobe(false); setSettings(false); boardSay(''); boardFlash = null;
-  polkTrack('board_open');
+  polkTrack('board_open', { from: tab === 'mail' ? 'mailbox' : tab ? 'board' : 'icon' });
   drawBoard();
   boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
 }
