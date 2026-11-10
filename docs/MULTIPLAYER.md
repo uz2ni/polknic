@@ -42,8 +42,7 @@
 - 입장 알림(2026-11-08): `join`이 끝나면 **새 방문**일 때만 운영자 슬랙 채널로 "닉네임 님이 N번 호숫가에 들어왔어요 (지금 N명)"을 보냄(`notifyJoin`, Slack Incoming Webhook). 방문은 같은 닉네임의 마지막 입장·퇴장 뒤 30분(`VISIT_GAP_SEC`, GA4 세션과 맞춤) 안 재입장·방 이동을 하나로 묶은 것이고, 방들을 통틀어 Durable Object `Stats`("main") 한 곳에서 판단(방이 입장·퇴장 때 `/join`·`/leave`로 알림). 정의는 [analytics.md](analytics.md) "서버 집계". 웹훅 주소는 공개 저장소라 `wrangler.toml`에 넣지 말고 `npx wrangler secret put SLACK_WEBHOOK`. 없으면(로컬 개발) 안 보냄. 본인 테스트 닉네임은 `NOTIFY_SKIP`(쉼표 구분, `wrangler secret put` 또는 `[vars]`)으로 뺌. 로컬 확인은 `--var SLACK_WEBHOOK:http://127.0.0.1:포트/ --var VISIT_GAP_SEC:3`로 가짜 웹훅
 - 하루 요약(2026-11-08): 매일 23:59 한국 시간(cron `59 14 * * *` UTC, `wrangler.toml`의 `[triggers]`)에 Worker `scheduled`가 `Stats`의 `/day`(방문 수·닉네임, storage `day:YYYY-MM-DD`)와 방마다 `/stats`(입장 수, storage `joins:YYYY-MM-DD`)를 물어 "N월 N일 방문 N회 (닉네임 기준 N명) + 방별 입장"을 슬랙으로(날짜는 한국 기준, `NOTIFY_SKIP`은 뺌). 지난 날짜는 요약 때 지움. 23:59~24:00 사이 입장은 요약에 안 들어감. 로컬 확인은 `wrangler dev --test-scheduled` 후 `curl "localhost:8787/__scheduled?cron=59+14+*+*+*"`
 - 아직 없음: 금칙어(채팅 작업 때), 운영자 강퇴, 벤치 자리 잠금
-- 개발: `cd server && nvm use 24 && npm i && npx wrangler dev --port 8787 --var ROOM_CAP:3` 후 `npm test`(24개 항목 확인)
-- 배포: `npx wrangler login`(본인 Cloudflare 계정으로 브라우저 로그인) → `npm run deploy`. **2026-11-04 배포**, 주소 `wss://polknic-ws.yujamong.com/ws`(`wrangler.toml`의 `routes`, DNS는 배포 때 자동 생성, workers.dev 주소는 꺼 둠)
+- 켜기·테스트·배포 명령은 [server/README.md](../server/README.md). **2026-11-04 첫 배포**, 주소 `wss://polknic-ws.yujamong.com/ws`(`wrangler.toml`의 `routes`, DNS는 배포 때 자동 생성, workers.dev 주소는 꺼 둠)
 - 지연(2026-11-04, 맥·한국 회선에서 측정): Cloudflare 무료 플랜은 한국 접속도 **LA(LAX)** 엣지로 가서 메시지 왕복이 보통 약 0.4초, 가끔 1~3초. 같이 노는 용도로는 보간으로 버틸 만하나 반응이 느리게 느껴지면 서울 서버(Lightsail 서울 + Spring) 이전을 앞당기는 근거. 폰(LTE·와이파이)에서도 재 볼 것
 
 ### DB

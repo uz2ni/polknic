@@ -19,7 +19,7 @@
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
-- 실시간 서버는 [server/](server/) (Cloudflare Worker + Durable Object, JS, Node 24 필요). `wss://polknic-ws.yujamong.com`에 배포 중(`cd server && npm run deploy`, `main` 푸시와 별개로 직접 배포). 설명·프로토콜은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) "서버". 새 방문이면 운영자 슬랙으로 알림(secret `SLACK_WEBHOOK`, 방문 = 같은 닉네임 퇴장 뒤 30분 안 재입장·방 이동은 하나, `Stats` DO), 매일 23:59 방문 수 요약(cron). 숫자 정의는 [docs/analytics.md](docs/analytics.md) "서버 집계"
+- 실시간 서버는 [server/](server/) (Cloudflare Worker + Durable Object, JS, Node 24 필요). `wss://polknic-ws.yujamong.com`에 배포 중(`cd server && npm run deploy`, `main` 푸시와 별개로 직접 배포, 서버 먼저 배포 후 `main`에 합치기). 켜기·테스트·배포 명령은 [server/README.md](server/README.md), 설명·프로토콜은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) "서버". 새 방문이면 운영자 슬랙으로 알림(secret `SLACK_WEBHOOK`, 방문 = 같은 닉네임 퇴장 뒤 30분 안 재입장·방 이동은 하나, `Stats` DO), 매일 23:59 방문 수 요약(cron). 숫자 정의는 [docs/analytics.md](docs/analytics.md) "서버 집계"
 - 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Cloudflare Workers + Durable Objects(DB는 D1)로 시작해, DO 요금이 월 $25를 넘으면 Spring WebSocket(Lightsail)으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 - 문서·UI 텍스트·커밋 메시지는 한국어
 
@@ -142,7 +142,7 @@
   - `__poleDebug.pause(true)` + `__poleDebug.face(0.9)` 얼굴 클로즈업
   - `__poleDebug.state()` 카메라/캐릭터/모드 JSON
   - `__poleDebug.ik()` 현재 포즈의 IK 목표까지 남은 거리(팔은 손목 기준이라 0.032가 정상 도달)와 `headGap`
-  - `__poleDebug.net()` 접속 상태와 받은 다른 사람 목록(위치·포즈·표정·옷). 로컬 멀티 확인은 launch.json의 `server` + `static`을 띄우고 탭 두 개로 입장
+  - `__poleDebug.net()` 접속 상태와 받은 다른 사람 목록(위치·포즈·표정·옷). 로컬 멀티 확인은 launch.json의 `server` + `static`을 띄우고 탭 두 개로 입장(서버 명령은 [server/README.md](server/README.md))
   - `__poleDebug.step(초, dt)` 화면 갱신을 기다리지 않고 게임 시간을 직접 진행(기본 dt 1/30, 끝나면 한 번 그림). 반환값은 mode·pose·타이머 등 상태. 컴퓨터가 느려도 결과가 같음
   - `await __poleDebug.fps(ms)` 그 페이지의 실제 초당 프레임(rAF). 테스트 결과가 이상하면 먼저 이것부터
   - `__poleDebug.bots(n)` 또는 주소에 `?bots=N`(최대 30): 돌아다니는 봇 N명 + 위쪽에 fps·draw call 표시. 폰에서 방 정원 측정용

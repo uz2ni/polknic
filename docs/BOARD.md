@@ -53,35 +53,6 @@
 
 `https://polknic-ws.yujamong.com/admin` ([server/src/admin.js](../server/src/admin.js)). 비밀번호는 secret `ADMIN_KEY`, 페이지는 `noindex`이고 비밀번호는 그 탭의 sessionStorage에만 남는다. 글은 `textContent`로만 그린다.
 
-## 배포
+## 켜기 · 테스트 · 배포
 
-```bash
-cd server
-npx wrangler d1 create polknic-board
-```
-
-(2026-11-09에 만들어 `database_id`를 넣어 둠. 새로 만들 때만 위 명령을 실행하고 [server/wrangler.toml](../server/wrangler.toml)의 값을 바꿀 것.) 그다음:
-
-```bash
-npx wrangler d1 migrations apply polknic-board --remote
-npx wrangler secret put ADMIN_KEY
-npm run deploy
-```
-
-표를 바꿀 땐 `server/migrations/`에 새 파일을 더하고 `migrations apply`를 다시 실행. 서버를 먼저 배포한 뒤 `main`에 합칠 것(거꾸로면 알림판이 잠깐 "불러올 수 없어요"로 보임).
-
-## 로컬 확인
-
-```bash
-cd server
-npx wrangler d1 migrations apply polknic-board --local
-echo 'ADMIN_KEY=아무_시험값' > .dev.vars
-```
-
-`.claude/launch.json`의 `server`와 `static`을 띄운 뒤:
-
-```bash
-cd server && ADMIN_KEY=아무_시험값 npm run test:board
-```
-
-같은 날 다시 돌리면 글 수 제한에 걸릴 수 있으니 `.wrangler/`의 로컬 D1을 지우거나 `limits` 표를 비운다. 90일 삭제 시험은 `npx wrangler dev --port 8788 --test-scheduled` 후 `curl 'http://127.0.0.1:8788/__scheduled?cron=59+14+*+*+*'`.
+명령은 [server/README.md](../server/README.md)에 모아 둠(로컬 DB 준비, `.dev.vars`의 `ADMIN_KEY`, `npm run test:board`, 표를 바꿀 때 `migrations apply --remote`, 비밀값). 서버를 먼저 배포한 뒤 `main`에 합칠 것(거꾸로면 알림판이 잠깐 "불러올 수 없어요"로 보임).
