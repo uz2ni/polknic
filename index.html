@@ -64,6 +64,8 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.8vw,46px);letter-spacing:.08em;margin:0;text-wrap:balance;display:inline-flex;align-items:center;gap:.3em}
 .brand h1 img{width:1.05em;height:1.05em;border-radius:.25em;box-shadow:0 2px 0 rgba(90,66,55,.25)}
 .brand p{margin:.4em 0 0;font-size:12.5px;font-weight:600;letter-spacing:.12em}
+.brand .donate{pointer-events:auto;display:inline-block;margin-top:9px;padding:7px 15px;border-radius:999px;background:var(--accent);color:#fff;font:400 15px var(--f-display);letter-spacing:.02em;text-decoration:none;text-shadow:none;box-shadow:0 3px 0 rgba(90,66,55,.22)}
+.brand .donate:hover{filter:brightness(1.05)}
 .brand .now{margin-top:.5em;font-size:12px;letter-spacing:.04em;font-weight:600}
 
 .glass{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:2px solid #fff;box-shadow:0 4px 0 rgba(90,66,55,.12),0 12px 28px rgba(60,110,130,.16);border-radius:22px}
@@ -79,7 +81,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .w-sec h3{margin:0;font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1.5px solid var(--line);background:#fff;color:var(--ink);font:500 13px/1 var(--f-body);padding:8px 11px;border-radius:999px;cursor:pointer}
-a.chip{display:inline-block;text-decoration:none}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .sw{display:flex;flex-wrap:wrap;gap:7px}
 .swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;cursor:pointer;padding:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
@@ -280,6 +281,7 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   <h1><img src="favicon.svg?v=3" alt="">폴크닉</h1>
   <p>온라인 폴댄스 놀이터</p>
   <p class="now" id="netText" hidden></p>
+  <a id="donateBtn" class="donate" target="_blank" rel="noopener">☕ 폴크닉 응원하기</a>
 </header>
 
 <div class="corner">
@@ -360,10 +362,6 @@ body.photo .brand,body.photo #wardrobe,body.photo #settings,body.photo .corner,b
   </div></div>
   <div class="w-sec"><h3>조작법</h3>
     <p class="hint">바닥 클릭 또는 WASD로 이동 · E 앉기(벤치 클릭하면 벤치에) · 드래그로 시점 회전 · 휠로 확대 · Q 내려오기 · Enter 채팅 · M 음악 · H 메뉴 숨기기</p>
-  </div>
-  <div class="w-sec" id="donateSec" hidden><h3>응원하기</h3>
-    <p class="hint">폴크닉은 무료예요. 마음에 들면 커피 한 잔으로 응원해 주세요!</p>
-    <div class="set-row"><a id="donateLink" class="chip" target="_blank" rel="noopener">☕ 폴크닉 응원하기</a></div>
   </div>
   <p class="copy">© 2026 폴크닉</p>
 </aside>
@@ -3637,13 +3635,15 @@ function setBoard(open, tab){
   drawBoard();
   boardLoad().then(() => { boardSeen(true); drawBoard(); }).catch(() => { if (!boardData) drawBoard(); });
 }
-/* ---------- donate: a link to the 크티 page in the settings drawer (new tab, so the game and the room stay) ---------- */
+/* ---------- donate: a pink button under the logo that opens the 크티 page (new tab, so the game and the room stay) ---------- */
 const DONATE_URL = '';
-if (DONATE_URL){
-  const link = document.getElementById('donateLink');
-  link.href = DONATE_URL;
-  link.addEventListener('click', () => polkTrack('donate_click'));
-  document.getElementById('donateSec').hidden = false;
+{
+  const btn = document.getElementById('donateBtn');
+  if (DONATE_URL) btn.href = DONATE_URL;
+  btn.addEventListener('click', e => {
+    if (!DONATE_URL){ e.preventDefault(); return toast('후원 페이지 주소를 아직 넣지 않았어요'); }
+    polkTrack('donate_click');
+  });
 }
 boardBtn.addEventListener('click', () => setBoard(boardEl.hidden));
 document.getElementById('boardClose').addEventListener('click', () => setBoard(false));

@@ -43,7 +43,7 @@
 | `board_post` | `kind`(guest/req/ask/idea) | 방명록·기술 요청·문의·제안 보냄 (내용은 안 보냄) |
 | `board_heart` | 없음 | 기술 요청에 하트 |
 | `board_delete` | `kind`(guest/req) | 이번 접속에 붙인 내 글 지우기 |
-| `donate_click` | 없음 | 설정 서랍의 "폴크닉 응원하기"(크티 후원 페이지 새 탭) |
+| `donate_click` | 없음 | 로고 아래 "폴크닉 응원하기" 버튼(크티 후원 페이지 새 탭) |
 | `page_view` | `return_visit`(true) | 위 재방문 page_view |
 
 닉네임·채팅 내용은 보내지 않는다. 그 밖의 `scroll`, `form_start`, `user_engagement` 등은 GA4 향상된 측정이 자동으로 보낸다(코드에 없음, 마지막 전송 시각에도 안 잡힘).
