@@ -2152,7 +2152,7 @@ function angLerp(a, b, t){ let d = b - a; d = Math.atan2(Math.sin(d), Math.cos(d
 function update(dt){
   clock += dt;
   waterUniforms.t.value = clock;
-  if (clock >= skyNext){ skyNext = clock + 20; applySky(); }
+  if (clock >= skyNext){ skyNext = clock + 20; applySky(); bgmCheck(); }
   nightU.t.value = clock; nightU.px.value = renderer.getPixelRatio();
   clouds.forEach(c => { c.position.x += c.userData.v*dt; if (c.position.x > 220) c.position.x = -220; });
   updateButterflies(clock);
@@ -2718,6 +2718,15 @@ const MUSIC = (() => {
         const g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 480;
         env(g, t, vol, 0.02, t + len); lp.connect(g); g.connect(dry); osc('triangle', N(m), t, t + len, lp);
       },
+      soft(t, m, vol, decay){             // felt piano: sine with a little 2nd harmonic, gentle attack
+        [[1, vol], [2, vol*0.22], [3, vol*0.05]].forEach(([mul, v], i) => {
+          const g = ctx.createGain(); env(g, t, v, 0.015, t + decay*(i ? 0.4 : 1)); g.connect(bus); osc('sine', N(m)*mul, t, t + decay, g); });
+      },
+      strings(t, m, vol, len){            // soft string section: detuned saws, warm (not dark) lowpass, slow bow
+        const g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700; lp.Q.value = 0.2;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(0.6, len*0.3)); g.gain.setValueAtTime(vol, t + len*0.75); g.gain.linearRampToValueAtTime(0, t + len*1.1);
+        lp.connect(g); g.connect(bus); [-8, 0, 8].forEach(c => { const o = osc('sawtooth', N(m), t, t + len*1.1, lp); o.detune.value = c; });
+      },
       hat(t, vol){
         if (!noise){ noise = ctx.createBuffer(1, ctx.sampleRate*0.2, ctx.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1; }
         const src = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain();
@@ -2757,6 +2766,21 @@ const MUSIC = (() => {
         if (e % 2 === 1) I.hat(t, 0.025);
         if (e === 4) I.hat(t, 0.04);
       } },
+    // evening default (night:true): played from 18:00 to 06:00 Seoul time unless the player picked another song
+    diary: { name:'밤하늘 일기', night:true, bpm:76, steps:8, bars:8, verb:0.4,
+      // piano ballad: flowing eighth-note arpeggios, singing melody, strings join on the second pass. No drums.
+      chords:[[41,[53,60,64,67,69]], [43,[55,62,67,71,74]], [40,[52,59,62,67,71]], [45,[57,64,67,72,76]],
+              [38,[50,57,60,65,69]], [40,[52,59,64,67,71]], [41,[53,60,64,69,72]], [43,[55,62,65,67,72]]],
+      mel:[[81,_,_,_,79,_,77,_], [79,_,_,_,74,_,76,77], [79,_,_,_,_,_,76,_], [72,_,_,_,74,_,76,_],
+           [77,_,_,_,76,_,74,_], [76,_,_,_,79,_,71,_], [72,_,_,_,76,_,81,_], [79,_,_,_,_,_,_,_]],
+      play(I, t, bar, e, loop, E){
+        const [root, arp] = this.chords[bar], m = this.mel[bar][e];
+        I.soft(t, arp[[0, 1, 2, 3, 4, 3, 2, 1][e]], e ? 0.03 : 0.038, 2.2);   // rolling arpeggio
+        if (e === 0) I.bass(t, root, 0.13, E*7.5);
+        if (m != null) I.soft(t, m, 0.085, 2.8);
+        if (loop % 2 && e === 0) arp.slice(1, 4).forEach(n => I.strings(t, n, 0.009, E*8));
+        if (loop % 2 && m != null) I.strings(t, m - 12, 0.008, E*3);   // strings shadow the tune an octave down
+      } },
   };
   function create(ctx, out, trackId = 'musicbox'){
     const master = ctx.createGain(); master.gain.value = 0; master.connect(out);
@@ -2784,14 +2808,36 @@ const MUSIC = (() => {
                master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0.75, ctx.currentTime, 0.6); },
       stop(){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0, ctx.currentTime, 0.25); clearInterval(timer); timer = 0; },
       setTrack(id){ track = TRACKS[id] || track; wet.gain.value = track.verb; step = 0; loop = 0; },
+      fadeTo(id){                          // evening/morning change while playing: fade out, swap, fade back in
+        if (!timer){ this.setTrack(id); return; }
+        master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0, ctx.currentTime, 0.8);
+        setTimeout(() => { if (!timer) return; this.setTrack(id); nextT = ctx.currentTime + 0.1; master.gain.setTargetAtTime(0.75, ctx.currentTime, 1.2); }, 3000);
+      },
       preview(seconds){ nextT = 0.05; master.gain.value = 0.75; schedule(seconds); }   // offline rendering (OfflineAudioContext)
     };
   }
   return { create, TRACKS };
 })();
+// day (06–18 Seoul time) and evening (18–06) each have their own song. Defaults: the first day song by day,
+// the night:true song in the evening. The track button cycles through every song, and each period remembers
+// its own pick (pole-bgm-track / pole-bgm-night).
+const isEvening = () => { const h = seoulHour(); return h >= 18 || h < 6; };
 const TRACK_IDS = Object.keys(MUSIC.TRACKS);
-let bgmOn = true, bgmTrack = TRACK_IDS[0], audioCtx = null, music = null;
-try { bgmOn = localStorage.getItem('pole-bgm') !== '0'; const t = localStorage.getItem('pole-bgm-track'); if (MUSIC.TRACKS[t]) bgmTrack = t; } catch (e) {}
+const BGM_KEY = { day:'pole-bgm-track', night:'pole-bgm-night' };
+const bgmPick = { day: TRACK_IDS.find(k => !MUSIC.TRACKS[k].night), night: TRACK_IDS.find(k => MUSIC.TRACKS[k].night) };
+let bgmSet = isEvening() ? 'night' : 'day';
+let bgmOn = true, audioCtx = null, music = null;
+try {
+  bgmOn = localStorage.getItem('pole-bgm') !== '0';
+  for (const k in BGM_KEY){ const t = localStorage.getItem(BGM_KEY[k]); if (MUSIC.TRACKS[t]) bgmPick[k] = t; }
+} catch (e) {}
+let bgmTrack = bgmPick[bgmSet];
+function bgmCheck(){   // called with the sky update: switch song sets at 18:00 and 06:00
+  const set = isEvening() ? 'night' : 'day';
+  if (set === bgmSet) return;
+  bgmSet = set; bgmTrack = bgmPick[set]; syncBgm();
+  if (music) music.fadeTo(bgmTrack);
+}
 const bgmTog = document.getElementById('bgmTog');
 const bgmTrackBtn = document.getElementById('bgmTrack');
 function syncBgm(){ bgmTog.setAttribute('aria-pressed', String(bgmOn)); bgmTog.textContent = bgmOn ? '♪ BGM 켜짐' : '♪ BGM 꺼짐'; bgmTrackBtn.textContent = MUSIC.TRACKS[bgmTrack].name + ' ›'; }
@@ -2828,9 +2874,9 @@ function setBgm(on){
 }
 bgmTog.addEventListener('click', () => setBgm(!bgmOn));
 bgmTrackBtn.addEventListener('click', () => {   // cycle through the songs; picking one also turns music on
-  bgmTrack = TRACK_IDS[(TRACK_IDS.indexOf(bgmTrack) + 1) % TRACK_IDS.length];
+  bgmTrack = bgmPick[bgmSet] = TRACK_IDS[(TRACK_IDS.indexOf(bgmTrack) + 1) % TRACK_IDS.length];
   polkTrack('bgm_track', { track:bgmTrack });
-  try { localStorage.setItem('pole-bgm-track', bgmTrack); } catch (e) {}
+  try { localStorage.setItem(BGM_KEY[bgmSet], bgmTrack); } catch (e) {}
   if (music) music.setTrack(bgmTrack);
   if (!bgmOn) setBgm(true); else { syncBgm(); startMusic(); }
 });
@@ -4191,7 +4237,7 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
 window.__poleDebug = {
   // sky at hour `h` (0–24, Seoul time) or back to the real clock with null; returns the sun height in degrees
   skyKeys: SKY_KEYS, skyInfo: () => ({ sun:sun.intensity, hemi:hemi.intensity, pos:sun.position.toArray().map(v => +v.toFixed(1)) }),
-  sky(h, y, p, d){ skyHour = h; skyEnvEl = null; const el = applySky(); if (y != null) yaw = y; if (p != null) pitch = p; if (d != null) camDist = d; this.step(0.1); return Math.round(el*10)/10; },
+  sky(h, y, p, d){ skyHour = h; skyEnvEl = null; const el = applySky(); bgmCheck(); if (y != null) yaw = y; if (p != null) pitch = p; if (d != null) camDist = d; this.step(0.1); return Math.round(el*10)/10; },
   pose(name, y, p, d){ myPole = 0; queuedMove = name; holder.position.set(0, 0, 0.34); mode = 'approach'; enterPole(); if (y != null){ yaw = y; poseYaw = y; } if (p != null) pitch = p; if (d != null) camDist = d; for (let i = 0; i < 240; i++) update(1/60); renderer.render(scene, camera); },
   pause(v){ paused = v; },
   // play gesture `kind` (clap / wave / poke / flinch) and freeze `t` seconds in, camera at yaw/pitch/dist
