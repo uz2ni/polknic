@@ -736,10 +736,13 @@ const shopOpen = () => { const h = seoulHour(); return h >= SHOP_HOURS[0] && h <
 let skyNext = 0, skyEnvEl = null;
 let skyNight = 0, lampOn = 0;   // 0 = day … 1 = full night / lamps fully lit
 const MOON_DIR = new V3(0.25, 0.8, 0.55).normalize();   // from the front-ish so faces stay lit from the usual camera side
-function applySky(){
+function skyDate(){   // now, or today at the debug hour
   const d = new Date();
   if (skyHour != null) d.setTime(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + (skyHour - 9)*36e5);
-  const [el, az] = sunAt(d);
+  return d;
+}
+function applySky(){
+  const [el, az] = sunAt(skyDate());
   // where the sun really is (east = +x, north = −z, the lake side) for the glow; lighting keeps it at least 14° up
   // so faces don't go dark from grazing light, and swaps to the moon below the horizon
   const ce = Math.cos(el*PI/180), real = new V3(Math.sin(az)*ce, Math.sin(el*PI/180), -Math.cos(az)*ce);
@@ -2766,8 +2769,8 @@ const MUSIC = (() => {
         if (e % 2 === 1) I.hat(t, 0.025);
         if (e === 4) I.hat(t, 0.04);
       } },
-    // evening default (night:true): played from 18:00 to 06:00 Seoul time unless the player picked another song
-    diary: { name:'밤하늘 일기', night:true, bpm:76, steps:8, bars:8, verb:0.4,
+    // night default (see bgmPeriod)
+    diary: { name:'밤하늘 일기', bpm:76, steps:8, bars:8, verb:0.4,
       // piano ballad: flowing eighth-note arpeggios, singing melody, strings join on the second pass. No drums.
       chords:[[41,[53,60,64,67,69]], [43,[55,62,67,71,74]], [40,[52,59,62,67,71]], [45,[57,64,67,72,76]],
               [38,[50,57,60,65,69]], [40,[52,59,64,67,71]], [41,[53,60,64,69,72]], [43,[55,62,65,67,72]]],
@@ -2818,22 +2821,29 @@ const MUSIC = (() => {
   }
   return { create, TRACKS };
 })();
-// day (06–18 Seoul time) and evening (18–06) each have their own song. Defaults: the first day song by day,
-// the night:true song in the evening. The track button cycles through every song, and each period remembers
-// its own pick (pole-bgm-track / pole-bgm-night).
-const isEvening = () => { const h = seoulHour(); return h >= 18 || h < 6; };
+// three song periods that follow the sky: day → sunset (the evening sun between 10° and −4°, the orange sky:
+// in Seoul about 16:35–17:55 in November, 18:55–20:15 in June) → night (after that until 06:00).
+// Defaults: 오르골 소풍 / 노을 로파이 / 밤하늘 일기. The track button cycles through every song at any time,
+// and each period remembers its own pick (pole-bgm-track / pole-bgm-dusk / pole-bgm-night).
+function bgmPeriod(){
+  const h = seoulHour();
+  if (h < 6) return 'night';
+  if (h < 12) return 'day';
+  const el = sunAt(skyDate())[0];
+  return el < -4 ? 'night' : el < 10 ? 'dusk' : 'day';
+}
 const TRACK_IDS = Object.keys(MUSIC.TRACKS);
-const BGM_KEY = { day:'pole-bgm-track', night:'pole-bgm-night' };
-const bgmPick = { day: TRACK_IDS.find(k => !MUSIC.TRACKS[k].night), night: TRACK_IDS.find(k => MUSIC.TRACKS[k].night) };
-let bgmSet = isEvening() ? 'night' : 'day';
+const BGM_KEY = { day:'pole-bgm-track', dusk:'pole-bgm-dusk', night:'pole-bgm-night' };
+const bgmPick = { day:'musicbox', dusk:'lofi', night:'diary' };
+let bgmSet = bgmPeriod();
 let bgmOn = true, audioCtx = null, music = null;
 try {
   bgmOn = localStorage.getItem('pole-bgm') !== '0';
   for (const k in BGM_KEY){ const t = localStorage.getItem(BGM_KEY[k]); if (MUSIC.TRACKS[t]) bgmPick[k] = t; }
 } catch (e) {}
 let bgmTrack = bgmPick[bgmSet];
-function bgmCheck(){   // called with the sky update: switch song sets at 18:00 and 06:00
-  const set = isEvening() ? 'night' : 'day';
+function bgmCheck(){   // called with the sky update (every 20 s): switch songs when the period changes
+  const set = bgmPeriod();
   if (set === bgmSet) return;
   bgmSet = set; bgmTrack = bgmPick[set]; syncBgm();
   if (music) music.fadeTo(bgmTrack);
