@@ -2821,16 +2821,24 @@ const MUSIC = (() => {
   }
   return { create, TRACKS };
 })();
-// three song periods that follow the sky: day → sunset (the evening sun between 10° and −4°, the orange sky:
-// in Seoul about 16:35–17:55 in November, 18:55–20:15 in June) → night (after that until 06:00).
+// three song periods, switched on whole hours picked from today's sky: sunset starts at the hour nearest to
+// when the evening sun drops to 10° and night at the hour nearest to −4° (the orange sky ends). In Seoul that is
+// 17–18 h in November, 16–18 h in December, 18–19 h in March, 19–20 h in June. Night runs until 06:00.
 // Defaults: 오르골 소풍 / 노을 로파이 / 밤하늘 일기. The track button cycles through every song at any time,
 // and each period remembers its own pick (pole-bgm-track / pole-bgm-dusk / pole-bgm-night).
+let duskDay = '', duskH = [17, 18];
+function duskHours(){
+  const k = new Date(skyDate().getTime() + 9*36e5), base = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate()) - 9*36e5;   // 00:00 KST
+  const key = k.toISOString().slice(0, 10);
+  if (key === duskDay) return duskH;
+  const cross = th => { for (let m = 12*60; m < 24*60; m += 5) if (sunAt(new Date(base + m*6e4))[0] < th) return m/60; return 24; };
+  const a = Math.round(cross(10)), b = Math.max(a + 1, Math.round(cross(-4)));
+  duskDay = key; duskH = [a, b];
+  return duskH;
+}
 function bgmPeriod(){
-  const h = seoulHour();
-  if (h < 6) return 'night';
-  if (h < 12) return 'day';
-  const el = sunAt(skyDate())[0];
-  return el < -4 ? 'night' : el < 10 ? 'dusk' : 'day';
+  const h = seoulHour(), [a, b] = duskHours();
+  return h < 6 || h >= b ? 'night' : h >= a ? 'dusk' : 'day';
 }
 const TRACK_IDS = Object.keys(MUSIC.TRACKS);
 const BGM_KEY = { day:'pole-bgm-track', dusk:'pole-bgm-dusk', night:'pole-bgm-night' };
