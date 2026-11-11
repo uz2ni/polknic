@@ -16,6 +16,7 @@
 
 - 결과물은 단일 파일 [index.html](index.html) (~2300줄, CSS/JS 인라인, 빌드 없음)
   - 예전 이름은 `online-poledance.html`(HANDOFF.md 원문에선 `pole-studio.html`). GitHub Pages 루트에서 바로 열리도록 `index.html`로 바꿈
+  - 검색 노출: 루트 `robots.txt`·`sitemap.xml`, `<head>`의 canonical·JSON-LD(`VideoGame`), `#scene` 바로 뒤 화면에 안 보이는 소개 글 `#about`(기술·스트레칭·매점·방 정원). 플레이어가 보는 기능(기술 이름, 정원 등)을 바꾸면 `#about`도 맞출 것(실제와 다르면 검색엔진이 숨긴 글 스팸으로 봄). 네이버 서치어드바이저·구글 서치 콘솔 등록은 사용자가 직접(확인 태그는 받으면 `<head>`에)
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기

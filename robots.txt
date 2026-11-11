@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://polknic.yujamong.com/sitemap.xml
