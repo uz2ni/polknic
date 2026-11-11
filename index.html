@@ -1122,11 +1122,19 @@ function updateButterflies(t){
   });
 }
 /* night things: stars, the moon, lamps with warm pools of light on the grass, bulbs round the stage rims (faded by applySky → setNight) */
-const glowTex = canvasTex(128, (c, s) => {
-  const g = c.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
-  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = g; c.fillRect(0, 0, s, s);
-});
+// soft round glow, filled pixel by pixel: a canvas radial gradient gets dithered by phone browsers (per colour
+// channel), and additive blending turns that noise into coloured dots around every light at night
+const glowTex = (() => {
+  const S = 128, d = new Uint8Array(S*S*4);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++){
+    const r = Math.hypot(x + 0.5 - S/2, y + 0.5 - S/2)/(S/2);
+    const a = r < 0.35 ? 1 - 0.55*r/0.35 : r < 1 ? 0.45*(1 - (r - 0.35)/0.65) : 0;
+    const i = (y*S + x)*4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = Math.round(a*255);
+  }
+  const t = new T.DataTexture(d, S, S, T.RGBAFormat);
+  t.magFilter = T.LinearFilter; t.minFilter = T.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true;
+  return t;
+})();
 const nightU = { t:{value:0}, k:{value:0}, px:{value:1} };   // star shader; px: device pixel ratio, so stars keep their size on retina screens
 const LAMPS = [[-5.4, 8.0], [-8.0, 1.5], [6.4, 3.3], [-0.9, 9.5]];   // the stages light themselves (rim bulbs below)
 let setNight;
