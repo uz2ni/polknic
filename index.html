@@ -44,6 +44,15 @@ window.polkTrack = function(){};
     if (!document.hidden && Date.now() - lastSent >= SESSION_TIMEOUT_MS) gtag('event', 'page_view', { return_visit: true });
   });
 })();
+// 홈 화면 앱 설치 수: 안드로이드 Chrome은 설치하는 순간 appinstalled가 옴. 아이폰은 신호가 없어서
+// 아이콘으로 처음 연 때(홈 화면 앱은 저장 공간이 새로 시작)를 셈. docs/analytics.md "홈 화면 앱"
+(function(){
+  window.addEventListener('appinstalled', function(){ polkTrack('app_install'); });
+  var ios = navigator.standalone === true;
+  if (!ios && !(window.matchMedia && matchMedia('(display-mode: standalone)').matches)) return;
+  try { if (localStorage.getItem('pole-app-opened')) return; localStorage.setItem('pole-app-opened', '1'); } catch (e) { return; }
+  polkTrack('app_first_open', { platform: ios ? 'ios' : 'other' });
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

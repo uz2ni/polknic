@@ -45,8 +45,23 @@
 | `board_delete` | `kind`(guest/req) | 이번 접속에 붙인 내 글 지우기 |
 | `donate_click` | 없음 | "응원하기" 버튼(카메라 아이콘 왼쪽, 좁은 화면은 로고 아래. 크티 후원 페이지 새 탭) |
 | `page_view` | `return_visit`(true) | 위 재방문 page_view |
+| `app_install` | 없음 | 홈 화면 앱 설치(안드로이드 Chrome 등 `appinstalled`가 오는 브라우저만. 아이폰은 안 옴) |
+| `app_first_open` | `platform`(ios/other) | 홈 화면 아이콘(전체 화면)으로 처음 연 때, 기기당 한 번(`pole-app-opened`). 아이폰 설치 수는 이걸로 셈 |
 
 닉네임·채팅 내용은 보내지 않는다. 그 밖의 `scroll`, `form_start`, `user_engagement` 등은 GA4 향상된 측정이 자동으로 보낸다(코드에 없음, 마지막 전송 시각에도 안 잡힘).
+
+## 홈 화면 앱(아이콘)으로 들어온 접속
+
+2026-11-12 매니페스트 추가부터. "앱으로 들어오면 GA4에 다르게 잡히나?"에 대한 답.
+
+- 아이콘으로 열면 `manifest.webmanifest`의 `start_url`(`/?utm_source=homescreen&utm_medium=pwa`)로 열려서 **세션 소스/매체 = `homescreen / pwa`**. 보는 곳: 보고서 → 획득 → 트래픽 획득 → 기본 측정기준 "세션 소스/매체"
+- 탭을 오래 내렸다가 돌아와 새 세션이 돼도 주소창 UTM을 안 지우므로 계속 `homescreen`
+- 기본 채널 그룹에선 Unassigned로 빠질 가능성이 높음(`pwa`는 GA4 표준 매체가 아님). 채널 그룹 말고 소스/매체로 볼 것
+- 아이폰: 홈 화면 앱은 Safari와 저장 공간(쿠키)이 따로라 같은 사람도 **새 사용자**로 한 번 더 세어짐. `enter_game`의 `returning`도 처음엔 false. 안드로이드 Chrome은 쿠키를 같이 써서 같은 사용자
+- 매니페스트 배포 전에 만든 아이콘은 그냥 바로가기라 추가할 때 보던 주소(인스타 UTM 등)로 열려 `homescreen`으로 안 잡힘
+- 아이폰이 `start_url`을 쓰는지는 실제로 확인 안 함: 아이폰 아이콘으로 들어온 뒤 GA4 실시간에서 소스가 `homescreen`인지 볼 것
+- 설치 수(2026-11-12부터): 안드로이드는 `app_install`, 아이폰은 `app_first_open{platform:'ios'}`(추가하고 한 번이라도 연 사람이라 실제 추가 수보다 조금 적음). 매니페스트 없이 만든 예전 바로가기는 못 셈
+- 안드로이드는 Chrome과 저장 공간을 같이 써서 설치 뒤 첫 실행에 `app_first_open{platform:'other'}`도 한 번 옴. 설치 수는 `app_install`로 볼 것
 
 ## 서버 집계 (슬랙 입장 알림 · 하루 요약)
 
