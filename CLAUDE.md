@@ -21,6 +21,8 @@
   - `<head>`에는 기본 스타일, 제목, 파비콘, 미리보기(OG) 태그, 폰트, 메인 `<style>`이 있고 `<body>`는 `#scene`부터. 파비콘·OG 태그는 반드시 `<head>` 안에 둘 것(예전엔 Artifact 래퍼가 첫 줄에서 head를 닫아 크롬 탭에 파비콘이 안 떴음)
 - git: GitHub `uz2ni/polknic`(공개, 예전 이름 `pole-3d`). 배포는 GitHub Pages, `main` 브랜치 루트(`.nojekyll` 포함) → https://polknic.yujamong.com (루트 `CNAME` 파일, DNS는 Cloudflare `polknic` CNAME → `uz2ni.github.io`, 프록시 끔)
   - `main`에 푸시하면 1~2분 뒤 자동 반영. 작업은 브랜치에서 하고 확인 후 `main`에 합치기
+  - 커밋 나누기: 한 요청에서 같이 한 자잘한 수정은 한 커밋으로 묶어도 됨. 따로 작업한 것, 맥락이 다른 것은 따로 커밋. 특히 앞서 끝내 놓고 커밋 안 한 변경이 나중 작업과 섞이지 않게, 커밋 전에 `git status`로 이번 요청 것과 남아 있던 것을 가를 것
+- 사용자가 앞으로도 지킬 규칙·요청을 말하면 메모리에만 두지 말고 이 파일(또는 그 일에 맞는 문서·스킬, 예: 인스타는 `.claude/skills/instagram-content/SKILL.md`)에 바로 적는다. 메모리는 이 맥의 Claude만 보고, 문서는 어느 세션이든 읽음
 - 실시간 서버는 [server/](server/) (Cloudflare Worker + Durable Object, JS, Node 24 필요). `wss://polknic-ws.yujamong.com`에 배포 중(`cd server && npm run deploy`, `main` 푸시와 별개로 직접 배포, 서버 먼저 배포 후 `main`에 합치기). 켜기·테스트·배포 명령은 [server/README.md](server/README.md), 설명·프로토콜은 [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) "서버". 새 방문이면 운영자 슬랙으로 알림(secret `SLACK_WEBHOOK`, 방문 = 같은 닉네임 퇴장 뒤 30분 안 재입장·방 이동은 하나, `Stats` DO), 매일 23:59 방문 수 요약(cron). 숫자 정의는 [docs/analytics.md](docs/analytics.md) "서버 집계"
 - 사용자 주력 스택: Java / Spring Boot. 멀티플레이는 Cloudflare Workers + Durable Objects(DB는 D1)로 시작해, DO 요금이 월 $25를 넘으면 Spring WebSocket(Lightsail)으로 이전 예정([docs/MULTIPLAYER.md](docs/MULTIPLAYER.md))
 - 문서·UI 텍스트·커밋 메시지는 한국어
