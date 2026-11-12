@@ -226,6 +226,14 @@ body.export .ab::before{display:none}
 #p05-5-done .cta .word{height:58px;display:block}
 #p05-5-done .cta .d{font-size:28px;font-weight:700;color:var(--ink-soft);margin-top:8px}
 #p05-5-done .cta .btn{margin-left:auto}
+#p05-5-done .tap{position:absolute;right:120px;top:158px;width:170px;text-align:center;z-index:2}
+#p05-5-done .tap .ico{position:relative;width:132px;height:132px;margin:0 auto}
+#p05-5-done .tap .ico img{width:100%;border-radius:32px;display:block;box-shadow:0 0 0 5px #fff,0 0 0 11px #3fae8c,0 12px 26px rgba(40,90,70,.3)}
+#p05-5-done .tap .ring{position:absolute;left:50%;top:50%;border-radius:50%;border:5px solid #3fae8c;transform:translate(-50%,-50%);opacity:.35}
+#p05-5-done .tap .hand{position:absolute;right:-50px;bottom:-44px;width:78px}
+#p05-5-done .tap b{display:block;margin-top:20px;transform:translateX(-34px);font:400 32px var(--f-d);color:var(--ink)}
+#p05-5-done .arrow{position:absolute;right:270px;top:200px;width:180px;z-index:2}
+#p05-5-done .photo .chip{position:absolute;right:28px;top:28px;background:#3fae8c;color:#fff;font:400 34px var(--f-d);padding:14px 26px;border-radius:999px;box-shadow:0 6px 16px rgba(40,90,70,.3)}
 </style>
 </head>
 <body>
@@ -515,8 +523,15 @@ body.export .ab::before{display:none}
 <section class="ab inner tip" id="p05-5-done">
   <span class="series tip">폴크닉 꿀팁</span><span class="pageno">5 / 5</span>
   <h2 class="ititle">이제 아이콘만<br><em>톡!</em></h2>
-  <div class="photo"><img src="renders/play-sit.png" alt=""></div>
-  <div class="note">주소를 찾지 않아도 <b>바로 호숫가로!</b></div>
+  <div class="tap">
+    <div class="ico"><span class="ring" style="width:190px;height:190px"></span><span class="ring" style="width:240px;height:240px;opacity:.18"></span><img src="../../apple-touch-icon.png" alt="">
+      <svg class="hand" viewBox="0 0 64 72"><path d="M22 6c0-4 7-4 7 0v26l3-1V24c0-4 7-4 7 0v8l3-1v-4c0-4 7-4 7 0v6l2-1c0-4 7-3 7 1v14c0 12-8 21-20 21h-2c-8 0-13-4-17-10L8 44c-2-4 3-7 6-4l8 8z" fill="#fff" stroke="#5a4237" stroke-width="3.5" stroke-linejoin="round"/></svg>
+    </div>
+    <b>폴크닉</b>
+  </div>
+  <svg class="arrow" viewBox="0 0 190 200"><path d="M180 30C90 20 40 70 34 168" fill="none" stroke="#3fae8c" stroke-width="9" stroke-linecap="round" stroke-dasharray="2 20"/><path d="M12 148l22 28 26-24" fill="none" stroke="#3fae8c" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="photo"><img src="renders/play-sit.png" alt=""><span class="chip">바로 게임 화면!</span></div>
+  <div class="note">아이콘을 누르면 주소 없이 <b>바로 호숫가로!</b></div>
   <div class="cta panel"><div><img class="word" src="../logo/v2/wordmark.svg" alt="폴크닉"><div class="d">프로필 링크에서 바로 입장</div></div><div class="btn pink">홈 화면에 추가하기</div></div>
 </section>
 
