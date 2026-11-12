@@ -1,0 +1,17 @@
+{
+  "name": "폴크닉 · 온라인 폴댄스 놀이터",
+  "short_name": "폴크닉",
+  "description": "귀여운 캐릭터로 호숫가에서 폴 타기. 다양한 폴댄스 기술을 즐겨보세요.",
+  "id": "/",
+  "start_url": "/?utm_source=homescreen&utm_medium=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#c6ebf8",
+  "theme_color": "#c6ebf8",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

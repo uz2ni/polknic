@@ -4,7 +4,7 @@
 
 ## 한눈에 보기
 
-모든 링크의 `utm_source`는 `instagram`.
+모든 링크의 `utm_source`는 `instagram`. 예외: 홈 화면 아이콘(앱)으로 연 접속은 `manifest.webmanifest`의 `start_url`이 `utm_source=homescreen&utm_medium=pwa`로 들어옴(인스타 링크가 아니라 다시 찾아온 사람)
 
 | 경로 | medium | campaign | content | term |
 |---|---|---|---|---|
@@ -109,3 +109,4 @@ https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaig
 | 2026-11-07 | 공식 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=yujamong.pole` | medium `bio` → `social` 변경 |
 | 2026-11-07 | 개인 프로필 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=profile&utm_content=uz2ning_pole` | 새로 추가 |
 | 2026-11-08 | 공식 스토리 | `https://polknic.yujamong.com/?utm_source=instagram&utm_medium=social&utm_campaign=story&utm_content=yujamong.pole` | 새로 추가(스트레칭존·사진 찍기 릴스 홍보) |
+| 2026-11-12 | 홈 화면 아이콘(manifest `start_url`) | `https://polknic.yujamong.com/?utm_source=homescreen&utm_medium=pwa` | 새로 추가(홈 화면에 추가 카드뉴스와 함께) |
