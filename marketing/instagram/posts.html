@@ -178,6 +178,54 @@ body.export .ab::before{display:none}
 #p04-5-table .cta .word{height:58px;display:block}
 #p04-5-table .cta .d{font-size:28px;font-weight:700;color:var(--ink-soft);margin-top:8px}
 #p04-5-table .cta .btn{margin-left:auto}
+
+/* ---------- 05 앱처럼 쓰기(홈 화면에 추가): 민트 바탕 + CSS로 그린 폰 화면. 브라우저·인스타 화면은 특정 앱 모양을 베끼지 않고 단순한 막대·아이콘으로 ---------- */
+.series.tip{background:#3fae8c}
+.inner.tip{background:#e6f6ee;--sc:#3fae8c}
+#p05-home{background:#e6f6ee}
+#p05-home .dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.8) 4px,transparent 5px);background-size:44px 44px}
+#p05-home .series{top:200px}
+#p05-home .head{position:absolute;top:268px;left:calc(var(--pad) + 8px)}
+#p05-home .title{font-size:112px}
+#p05-home .title em{font-style:normal;color:#3fae8c}
+#p05-home .lead{font-size:38px;font-weight:600;margin-top:18px;color:var(--ink-soft)}
+.ph5{position:absolute;width:420px;border-radius:64px;border:14px solid var(--ink);overflow:hidden;box-shadow:var(--drop-lg);background:#fff}
+.ph5 .scr{position:relative;width:100%;height:100%;overflow:hidden}
+.ph5 .wall{position:absolute;inset:0;background:linear-gradient(170deg,#9fd8f0 0%,#c9ecf2 45%,#bfe6c9 75%,#8fd09a 100%)}
+.ph5 .apps{position:absolute;inset:70px 34px auto;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 22px}
+.ph5 .app{aspect-ratio:1;border-radius:24px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px rgba(255,255,255,.4)}
+.ph5 .app.me{background:none;box-shadow:none;position:relative}
+.ph5 .app.me img{width:100%;border-radius:24px;display:block;box-shadow:0 0 0 6px #fff,0 0 0 14px #3fae8c,0 10px 24px rgba(40,90,70,.35)}
+.ph5 .app.me b{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:18px;font:400 27px var(--f-d);color:var(--ink);white-space:nowrap}
+#p05-home .ph5{left:50%;margin-left:-210px;top:600px;height:640px}
+#p05-home .pop{position:absolute;left:640px;top:690px;transform:rotate(6deg)}
+#p05-home .foot{position:absolute;left:0;right:0;bottom:44px;display:flex;justify-content:center;z-index:3}
+/* 안쪽 장: 왼쪽 폰 + 오른쪽 단계 */
+.tip .row{display:flex;gap:44px;align-items:center;flex:1}
+.tip .ph5{position:relative;flex:none;height:800px;width:390px}
+.tip .page{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tip .bar{position:absolute;left:0;right:0;height:84px;background:#f4f1ea;display:flex;align-items:center;justify-content:space-between;padding:0 22px;box-sizing:border-box;font:600 22px var(--f-b);color:var(--ink-soft)}
+.tip .bar.top{top:0}
+.tip .bar.bot{bottom:0;justify-content:space-around}
+.tip .bar .url{flex:1;margin:0 14px;height:46px;border-radius:23px;background:#fff;display:flex;align-items:center;justify-content:center}
+.tip .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
+.tip .ic svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tip .ic.hi{background:#fff;box-shadow:0 0 0 6px #3fae8c}
+.tip .menu{position:absolute;background:#fff;border-radius:26px;box-shadow:0 12px 30px rgba(40,60,50,.3);padding:10px 0;width:300px}
+.tip .menu p{margin:0;padding:16px 26px;font:600 25px var(--f-b);color:var(--ink-soft);display:flex;align-items:center;gap:14px;white-space:nowrap}
+.tip .menu p.hi{color:var(--ink);background:#dff3e9;box-shadow:inset 6px 0 0 #3fae8c}
+.tip .menu p svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tip ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:38px}
+.tip ol li{display:flex;gap:22px;align-items:flex-start;font-size:37px;font-weight:600;line-height:1.35}
+.tip ol li i{font:400 40px var(--f-d);font-style:normal;flex:none;width:64px;height:64px;border-radius:50%;background:var(--sc);color:#fff;display:grid;place-items:center}
+.tip ol li b{font-family:var(--f-d);font-weight:400;color:var(--sc)}
+.tip ol li small{display:block;font-size:27px;color:var(--ink-soft);margin-top:6px}
+.tip .note{font-size:31px;padding:24px 32px}
+#p05-5-done .photo{height:640px;flex:none}
+#p05-5-done .cta{margin-top:auto;padding:24px 32px;display:flex;align-items:center;gap:20px}
+#p05-5-done .cta .word{height:58px;display:block}
+#p05-5-done .cta .d{font-size:28px;font-weight:700;color:var(--ink-soft);margin-top:8px}
+#p05-5-done .cta .btn{margin-left:auto}
 </style>
 </head>
 <body>
@@ -400,6 +448,76 @@ body.export .ab::before{display:none}
   <div class="photo"><img src="renders/shop-table.png" alt=""></div>
   <div class="note">의자에 앉으면 간식은 <b>테이블 위에</b> 놓여요.<br>한 입 누를 때만 집어서 냠!</div>
   <div class="cta panel"><div><img class="word" src="../logo/v2/wordmark.svg" alt="폴크닉"><div class="d">프로필 링크에서 바로 입장</div></div><div class="btn pink">간식 먹으러 가기</div></div>
+</section>
+
+<!-- ====== ⑤ 앱처럼 쓰기: 홈 화면에 추가(manifest.webmanifest로 안드로이드 Chrome은 '설치', 아이폰은 공유 → 홈 화면에 추가) ====== -->
+<section class="ab" id="p05-home">
+  <div class="dots"></div>
+  <span class="series tip">폴크닉 꿀팁</span>
+  <div class="head">
+    <h1 class="title">폴크닉을<br><em>앱처럼</em> 쓰는 법</h1>
+    <div class="lead">홈 화면에 아이콘 하나면 끝</div>
+  </div>
+  <div class="ph5"><div class="scr"><div class="wall"></div><div class="apps"><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app me"><img src="../../apple-touch-icon.png" alt=""><b>폴크닉</b></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span><span class="app"></span></div></div></div>
+  <span class="chip pop">톡 누르면 바로 입장!</span>
+  <div class="foot"><span class="chip">옆으로 넘겨서 따라 하기 →</span></div>
+</section>
+
+<section class="ab inner tip" id="p05-2-insta">
+  <span class="series tip">폴크닉 꿀팁</span><span class="pageno">2 / 5</span>
+  <h2 class="ititle">인스타에서 열었다면<br><em>먼저 브라우저로</em></h2>
+  <div class="row">
+    <div class="ph5"><div class="scr"><img class="page" src="renders/entry.png" alt="">
+      <div class="bar top"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="url">polknic.yujamong.com</span><span class="ic hi"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></span></div>
+      <div class="menu" style="right:16px;top:96px"><p><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>링크 복사</p><p class="hi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/></svg>외부 브라우저로 열기</p></div>
+    </div></div>
+    <ol>
+      <li><i>1</i><div>프로필 링크 누르기</div></li>
+      <li><i>2</i><div>오른쪽 위 <b>점 세 개</b> 누르기</div></li>
+      <li><i>3</i><div><b>외부 브라우저로 열기</b><small>"Safari로 열기"처럼 보일 수도 있어요</small></div></li>
+    </ol>
+  </div>
+  <div class="note">인스타 안에서 연 화면에선 <b>홈 화면에 추가</b>가 안 보여요</div>
+</section>
+
+<section class="ab inner tip" id="p05-3-iphone">
+  <span class="series tip">폴크닉 꿀팁</span><span class="pageno">3 / 5</span>
+  <h2 class="ititle">아이폰은<br><em>Safari에서</em></h2>
+  <div class="row">
+    <div class="ph5"><div class="scr"><img class="page" src="renders/entry.png" alt="">
+      <div class="menu" style="left:30px;bottom:110px"><p><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>복사</p><p class="hi"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>홈 화면에 추가</p></div>
+      <div class="bar bot"><span class="ic"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span><span class="ic hi"><svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></span></div>
+    </div></div>
+    <ol>
+      <li><i>1</i><div><b>공유 버튼</b> 누르기<small>네모에서 화살표가 나온 모양<br>안 보이면 점 세 개 메뉴 안에</small></div></li>
+      <li><i>2</i><div><b>홈 화면에 추가</b><small>목록을 아래로 내리면 있어요</small></div></li>
+      <li><i>3</i><div>오른쪽 위 <b>추가</b></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="ab inner tip" id="p05-4-android">
+  <span class="series tip">폴크닉 꿀팁</span><span class="pageno">4 / 5</span>
+  <h2 class="ititle">안드로이드는<br><em>Chrome에서</em></h2>
+  <div class="row">
+    <div class="ph5"><div class="scr"><img class="page" src="renders/entry.png" alt="">
+      <div class="bar top"><span class="url" style="margin-left:0">polknic.yujamong.com</span><span class="ic hi"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/></svg></span></div>
+      <div class="menu" style="right:16px;top:96px"><p><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>공유</p><p class="hi"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>홈 화면에 추가</p></div>
+    </div></div>
+    <ol>
+      <li><i>1</i><div>오른쪽 위 <b>점 세 개</b> 누르기</div></li>
+      <li><i>2</i><div><b>홈 화면에 추가</b><small>"앱 설치"로 보일 수도 있어요</small></div></li>
+      <li><i>3</i><div><b>설치</b> 누르기</div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="ab inner tip" id="p05-5-done">
+  <span class="series tip">폴크닉 꿀팁</span><span class="pageno">5 / 5</span>
+  <h2 class="ititle">이제 아이콘만<br><em>톡!</em></h2>
+  <div class="photo"><img src="renders/play-sit.png" alt=""></div>
+  <div class="note">주소를 찾지 않아도 <b>바로 호숫가로!</b></div>
+  <div class="cta panel"><div><img class="word" src="../logo/v2/wordmark.svg" alt="폴크닉"><div class="d">프로필 링크에서 바로 입장</div></div><div class="btn pink">홈 화면에 추가하기</div></div>
 </section>
 
 <!-- ====== 프로필 사진(1080×1080, 인스타가 원으로 자름: 중요한 건 가운데 원 안에) ====== -->
